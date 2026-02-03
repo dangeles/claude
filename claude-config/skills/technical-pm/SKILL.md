@@ -793,3 +793,89 @@ Stop and use AskUserQuestion to consult the user if:
 - When agent times out → Use `coordination-patterns.md` timeout response flowchart
 - When assessing risks → Reference `risk-matrix.md` likelihood/impact grid and mitigation strategies
 - When uncertain about escalation → Check Escalation Triggers section and Decision Escalation Framework table
+
+---
+
+## Orchestrated Workflow Mode
+
+When user provides a complex goal requiring multiple skills, technical-pm can orchestrate the workflow automatically.
+
+### When to Orchestrate
+
+Use orchestrated workflow when:
+- 3+ skills required for the goal
+- Clear dependencies between steps
+- User wants single-entry experience
+
+Use direct skill invocation when:
+- 1-2 skills needed
+- Simple, well-defined task
+- User is experienced with individual skills
+
+### Orchestration Protocol
+
+1. **Parse goal**: Identify required skills and their dependencies
+2. **Build plan**: Create execution plan with task ordering
+3. **Execute**: Run skills in sequence (Skill tool) or parallel (Task tool)
+4. **Validate**: Check each skill's output before proceeding
+5. **Synthesize**: Combine outputs if needed
+6. **Deliver**: Return final result to user
+
+### Invocation Pattern
+
+**Sequential tasks (dependent)**:
+```
+Use Skill tool:
+Skill(researcher, topic="X") -> validate ->
+Skill(synthesizer, input=researcher_output) -> validate ->
+Skill(editor, input=synthesizer_output) -> deliver
+```
+
+**Parallel tasks (independent)**:
+```
+Use Task tool:
+Task(general-purpose, "researcher: analyze X")
+Task(general-purpose, "calculator: compute Y")
+-> wait for both ->
+Skill(synthesizer, inputs=[researcher_output, calculator_output])
+```
+
+### References
+
+For detailed protocols, see:
+- **Handoff format**: `references/handoff-format.md` - Schema for context passing
+- **State management**: `references/workflow-state.md` - State machine and persistence
+- **Error handling**: `references/error-handling.md` - Failure modes and recovery
+- **Dependency detection**: `references/dependency-detection.md` - Parallel vs sequential logic
+
+### Quality Gates
+
+Before proceeding to next skill:
+1. Validate handoff document against schema
+2. Verify deliverable file exists and meets minimum length
+3. Check quality indicators (completion_status, confidence)
+4. If validation fails, halt and report to user
+
+### Workflow Example
+
+User: "Write a comprehensive literature review on hepatocyte oxygenation"
+
+technical-pm orchestration:
+1. Parse: Needs researcher -> synthesizer -> devils-advocate -> fact-checker -> editor
+2. Plan: All sequential (each depends on previous)
+3. Execute:
+   - Skill(researcher, topic="hepatocyte oxygenation")
+   - Validate: Check output exists, has citations
+   - Create handoff document
+   - Skill(synthesizer, handoff=researcher_handoff)
+   - ... continue through pipeline
+4. Deliver: Final edited document to user
+
+### Cancellation and Resume
+
+If workflow is interrupted (Ctrl+C):
+- State is preserved to `/tmp/workflow-state-{id}.yaml`
+- Completed outputs are kept
+- User can resume with: "Resume my workflow" or abort with: "Abort workflow"
+
+See `references/workflow-state.md` for full protocol.
