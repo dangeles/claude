@@ -7,6 +7,7 @@ tools:
   - Glob
   - AskUserQuestion
   - Write
+  - Bash
 model: opus-4.5
 permissionMode: default
 ---

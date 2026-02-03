@@ -6,6 +6,8 @@ tools:
   - WebFetch
   - Read
   - Write
+  - Grep
+  - Glob
 model: opus-4.5
 permissionMode: default
 skills:

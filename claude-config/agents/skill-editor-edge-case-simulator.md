@@ -6,6 +6,9 @@ tools:
   - TaskCreate
   - TaskUpdate
   - Write
+  - Bash
+  - Grep
+  - Glob
 model: opus-4.5
 permissionMode: default
 skills:
