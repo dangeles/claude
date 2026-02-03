@@ -87,7 +87,7 @@ If checks fail: Ask user to resolve before proceeding.
 
 **Agent**: `skill-editor-request-refiner`
 
-**Model**: Sonnet 4.5
+**Model**: Opus 4.5
 
 **Process**:
 
@@ -127,9 +127,9 @@ User must approve:
 **Objective**: Analyze proposed change from multiple expert perspectives.
 
 **Agents** (all run in parallel):
-1. `skill-editor-best-practices-reviewer` (Sonnet 4.5)
-2. `skill-editor-external-researcher` (Sonnet 4.5)
-3. `skill-editor-edge-case-simulator` (Sonnet 4.5)
+1. `skill-editor-best-practices-reviewer` (Opus 4.5)
+2. `skill-editor-external-researcher` (Opus 4.5)
+3. `skill-editor-edge-case-simulator` (Opus 4.5)
 
 **Process**:
 
@@ -250,7 +250,7 @@ Check:
 
 **Agent**: `skill-editor-executor`
 
-**Model**: Sonnet 4.5
+**Model**: Opus 4.5
 
 **Process**:
 
@@ -565,7 +565,7 @@ Implementation:
 ## Notes
 
 - **Parallel execution in Phase 2**: All 3 agents run simultaneously (3x faster than sequential)
-- **Opus 4.5 only for critical decisions**: decision-synthesizer and adversarial-reviewer (cost-effective)
+- **All agents use Opus 4.5**: Maximum quality for all workflow phases (requirements analysis, research, edge cases, decision-making, review, execution)
 - **Quality gates enforce standards**: No bypassing validation
 - **Rollback on failure**: Safe to abort at any point
 - **Planning journal provides traceability**: Full documentation of changes
