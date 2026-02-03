@@ -77,6 +77,10 @@ git status
 # Verify in correct directory
 pwd
 # Should be repo root: /Users/davidangelesalbores/repos/claude
+
+# Create session directory for output files
+mkdir -p /tmp/skill-editor-session
+echo "Session directory: /tmp/skill-editor-session"
 ```
 
 If checks fail: Ask user to resolve before proceeding.
@@ -101,7 +105,7 @@ If checks fail: Ask user to resolve before proceeding.
 4. Agent establishes clear boundaries and success criteria
 5. Agent presents refined specification to user
 
-**Output**: `refined-specification.md` with:
+**Output File**: `/tmp/skill-editor-session/refined-specification.md` containing:
 - Objective (one sentence)
 - Scope (IN/OUT lists)
 - Success criteria (measurable)
@@ -154,20 +158,43 @@ Task 3: edge-case-simulator
 
 **Important**: All 3 agents run simultaneously (not sequential). Wait for all to complete before proceeding.
 
-**Outputs**:
-- `best-practices-review.md`
-- `external-research.md`
-- `edge-cases.md`
+**Output Files** (must be created before proceeding to Phase 3):
+- `/tmp/skill-editor-session/best-practices-review.md`
+- `/tmp/skill-editor-session/external-research.md`
+- `/tmp/skill-editor-session/edge-cases.md`
+
+**Verification**: Before Phase 3, verify all output files exist:
+```bash
+ls -lh /tmp/skill-editor-session/*.md
+# Should show all 3 files with content
+```
 
 **Quality Gate 2: Analysis Completion**
 
-Check:
-- [ ] All 3 agents completed successfully
-- [ ] No critical issues flagged
-- [ ] No conflicting recommendations (or conflicts resolved)
+Check agent completion status:
+- **All 3 agents complete**: ✅ Proceed to Phase 3
+- **2 of 3 agents complete**: ⚠️ Ask user to proceed with partial analysis or retry failed agent
+- **<2 agents complete**: ❌ Must retry failed agents or abort workflow
+
+Additional checks:
+- [ ] No critical blocking issues flagged
+- [ ] No conflicting recommendations (or conflicts documented for synthesis)
 - [ ] Sufficient information for decision-making
 
-**If Gate 2 fails**: Re-run specific agent(s) or ask user for guidance.
+**If all 3 agents fail**: Stop workflow, investigate environment/configuration issues.
+
+**If partial completion (2/3)**:
+```
+The [failed-agent-name] agent did not complete.
+
+Options:
+1. Proceed with analysis from 2 agents (faster, less comprehensive)
+2. Retry failed agent (more thorough, takes more time)
+3. Abort workflow
+
+Recommendation: If failed agent is external-researcher, safe to proceed.
+If best-practices-reviewer or edge-case-simulator failed, retry recommended.
+```
 
 **If Gate 2 passes**: Proceed to Phase 3.
 
@@ -199,7 +226,7 @@ Check:
    - Validation steps
    - Rollback plan
 
-**Output**: `implementation-plan.md`
+**Output File**: `/tmp/skill-editor-session/implementation-plan.md`
 
 #### Part B: Adversarial Review
 
@@ -217,7 +244,7 @@ Check:
 6. Check alignment with original specification
 7. Provide go/no-go decision
 
-**Output**: `adversarial-review.md` with:
+**Output File**: `/tmp/skill-editor-session/adversarial-review.md` containing:
 - Architecture assessment
 - Failure mode analysis
 - Integration risk assessment
