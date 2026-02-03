@@ -1,6 +1,8 @@
 ---
 name: skill-editor
-description: Use when creating, modifying, or refactoring Claude Code skills that require structured multi-agent review and quality validation
+description: Multi-agent workflow for editing Claude Code skills with quality gates
+version: 1.0.0
+tags: [meta, workflow, skill-development, multi-agent]
 ---
 
 # Skill Editor
@@ -64,37 +66,9 @@ Phase 4: EXECUTION (60-120 min)
 Before starting workflow:
 
 ```bash
-# Strict git pre-flight checks
-echo "=== Git Safety Checks ==="
-
-# Check for uncommitted changes
-if [ -n "$(git status --porcelain)" ]; then
-  echo "✗ Git working directory is not clean"
-  git status --short
-  echo ""
-  echo "Please commit or stash changes before running skill-editor"
-  exit 1
-fi
-
-# Check for merge/rebase in progress
-if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
-  echo "✗ Rebase in progress"
-  exit 1
-fi
-
-if [ -f .git/MERGE_HEAD ]; then
-  echo "✗ Merge in progress"
-  exit 1
-fi
-
-# Check for detached HEAD
-if ! git symbolic-ref HEAD &>/dev/null; then
-  echo "⚠ WARNING: Detached HEAD state"
-  read -p "Continue anyway? (y/n): " CONTINUE
-  [ "$CONTINUE" != "y" ] && exit 1
-fi
-
-echo "✓ Git working directory is clean"
+# Check git status
+git status
+# Should be clean or show only tracked files
 
 # Check sync status
 ./sync-config.py status
@@ -107,35 +81,9 @@ pwd
 # Create session directory for output files
 mkdir -p /tmp/skill-editor-session
 echo "Session directory: /tmp/skill-editor-session"
-
-# Create/restore session state
-SESSION_FILE="/tmp/skill-editor-session/session-state.json"
-
-if [ -f "$SESSION_FILE" ]; then
-  echo "Found existing session from $(jq -r .timestamp $SESSION_FILE)"
-  echo "Phase: $(jq -r .phase $SESSION_FILE)"
-  read -p "Resume from previous session? (y/n): " RESUME
-  if [ "$RESUME" = "y" ]; then
-    echo "Resuming from Phase $(jq -r .phase $SESSION_FILE)"
-  else
-    rm "$SESSION_FILE"
-    echo "Starting fresh session"
-  fi
-else
-  echo "Starting new session"
-fi
 ```
 
 If checks fail: Ask user to resolve before proceeding.
-
-### If User Cancels (Ctrl+C)
-
-Session state is preserved in `/tmp/skill-editor-session/session-state.json`.
-
-On next invocation:
-1. Offer to resume from last phase
-2. If declined, clean up session: `rm /tmp/skill-editor-session/session-state.json`
-3. Re-sync if needed: `./sync-config.py push`
 
 ### Phase 1: Refinement (Interactive)
 
@@ -174,17 +122,7 @@ User must approve:
 
 **If Gate 1 fails**: Return to request-refiner for more refinement.
 
-**If Gate 1 passes**: Update session state and proceed to Phase 2.
-
-```bash
-# Update session state
-jq -n \
-  --arg phase "2" \
-  --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --argjson agents_completed '["request-refiner"]' \
-  '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
-  > /tmp/skill-editor-session/session-state.json
-```
+**If Gate 1 passes**: Proceed to Phase 2.
 
 ---
 
@@ -219,19 +157,6 @@ Task 3: edge-case-simulator
 ```
 
 **Important**: All 3 agents run simultaneously (not sequential). Wait for all to complete before proceeding.
-
-**Agent Timeouts**: Each agent has a 10-minute timeout. If any agent exceeds this:
-1. User is notified which agent timed out
-2. Options presented:
-   - Wait 5 more minutes
-   - Skip the failed agent (if external-researcher)
-   - Retry the failed agent
-   - Abort workflow
-
-**Critical agents**: best-practices-reviewer, edge-case-simulator (must complete or retry)
-**Supplementary agent**: external-researcher (can skip if necessary)
-
-**Note**: Task tool calls do not currently support explicit timeout parameters. Monitor agent progress and manually intervene if agents run longer than 10 minutes.
 
 **Output Files** (must be created before proceeding to Phase 3):
 - `/tmp/skill-editor-session/best-practices-review.md`
@@ -271,17 +196,7 @@ Recommendation: If failed agent is external-researcher, safe to proceed.
 If best-practices-reviewer or edge-case-simulator failed, retry recommended.
 ```
 
-**If Gate 2 passes**: Update session state and proceed to Phase 3.
-
-```bash
-# Update session state
-jq -n \
-  --arg phase "3" \
-  --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --argjson agents_completed '["request-refiner", "best-practices-reviewer", "external-researcher", "edge-case-simulator"]' \
-  '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
-  > /tmp/skill-editor-session/session-state.json
-```
+**If Gate 2 passes**: Proceed to Phase 3.
 
 ---
 
@@ -352,17 +267,7 @@ Check:
 - If NO-GO: Return to decision-synthesizer, revise plan
 - If user doesn't approve: Refine plan or return to Phase 1
 
-**If Gate 3 passes**: Update session state and proceed to Phase 4.
-
-```bash
-# Update session state
-jq -n \
-  --arg phase "4" \
-  --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --argjson agents_completed '["request-refiner", "best-practices-reviewer", "external-researcher", "edge-case-simulator", "decision-synthesizer", "adversarial-reviewer"]' \
-  '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
-  > /tmp/skill-editor-session/session-state.json
-```
+**If Gate 3 passes**: Proceed to Phase 4.
 
 ---
 

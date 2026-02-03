@@ -112,7 +112,7 @@ feat(skill-name): Add parallel execution
 
 Detailed description.
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
 )"
 
@@ -319,6 +319,28 @@ What if changes were already synced to ~/.claude/? Need to re-sync from repo.
 Run: ./sync-config.py push
 ```
 What if script has uncommitted local modifications? Check git status first.
+
+## Iteration Limit
+
+To prevent infinite refinement loops:
+
+**Maximum iterations**: 3
+
+If you provide a NO-GO or CONDITIONAL decision:
+1. **First time**: Provide detailed feedback, request specific changes
+2. **Second time**: Provide focused feedback on remaining issues
+3. **Third time**:
+   - If still NO-GO: Escalate to user with override option
+   - Document: "After 3 reviews, fundamental issues remain. Options: (1) User override and proceed, (2) Return to Phase 1 for major replanning, (3) Abort"
+
+**Track iterations** in adversarial-review.md header:
+```markdown
+## Review Metadata
+- Review iteration: 1 of 3
+- Previous decision: N/A
+```
+
+This ensures the review process has a definite end state.
 
 ## Output Format
 

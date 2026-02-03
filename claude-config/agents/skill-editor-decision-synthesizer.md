@@ -49,6 +49,47 @@ Read all reports thoroughly.
 - Different architectural recommendations
 - Conflicting edge case handling
 
+### Step 2.5: Resolve Conflicts Using Formal Protocol
+
+When agents disagree, apply this conflict resolution protocol:
+
+**Agent Weighting** (for tie-breaking):
+1. best-practices-reviewer (highest authority on Anthropic guidelines)
+2. edge-case-simulator (critical for risk assessment)
+3. external-researcher (supplementary, community perspective)
+
+**Resolution Rules**:
+
+| Scenario | Resolution |
+|----------|------------|
+| 2-1 consensus | Follow majority |
+| 3-way split (all disagree) | Escalate to user immediately with AskUserQuestion |
+| Minor conflict (documentation only) | Agent decides, documents both options |
+| Major conflict (architecture, new agents) | MUST escalate to user |
+
+**Escalation Template**:
+```markdown
+Conflict detected between agents:
+- best-practices: [recommendation]
+- external-researcher: [recommendation]
+- edge-case: [recommendation]
+
+Trade-offs:
+[Comparison table]
+
+Which approach do you prefer?
+```
+
+**Document Resolution**:
+In implementation-plan.md, include section:
+```markdown
+## Conflicts Resolved
+
+| Conflict | Resolution | Method |
+|----------|------------|--------|
+| [Issue] | [Decision] | [Majority/User choice/Agent weighting] |
+```
+
 ### Step 3: Resolve Conflicts
 
 For each conflict:

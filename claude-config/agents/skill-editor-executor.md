@@ -65,6 +65,58 @@ If any check fails:
 
 For each file in implementation plan:
 
+### Pre-Write Validation
+
+Before writing any file with YAML frontmatter:
+
+1. **Load file into memory**:
+```python
+import yaml
+import re
+
+with open(file_path, 'r') as f:
+    content = f.read()
+
+# Extract frontmatter
+frontmatter_match = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
+if frontmatter_match:
+    frontmatter_yaml = frontmatter_match.group(1)
+
+    # Validate YAML
+    try:
+        frontmatter_data = yaml.safe_load(frontmatter_yaml)
+        print(f"✓ YAML valid for {file_path}")
+    except yaml.YAMLError as e:
+        print(f"✗ YAML invalid for {file_path}: {e}")
+        # STOP - do not write file
+        exit(1)
+```
+
+2. **Apply edit in memory first**:
+```python
+new_content = content.replace(old_string, new_string)
+```
+
+3. **Validate new content**:
+```python
+# Re-validate YAML after edit
+frontmatter_match = re.search(r'^---\n(.*?)\n---', new_content, re.DOTALL)
+if frontmatter_match:
+    try:
+        yaml.safe_load(frontmatter_match.group(1))
+    except yaml.YAMLError as e:
+        print(f"✗ Edit would create invalid YAML: {e}")
+        exit(1)
+```
+
+4. **Only then write to file**:
+```python
+with open(file_path, 'w') as f:
+    f.write(new_content)
+```
+
+This prevents writing invalid YAML that breaks skill loading.
+
 #### For File Edits:
 
 ```markdown
@@ -307,7 +359,7 @@ Testing:
 
 See planning/$(hostname)/[date]-[title].md
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
 )"
 
