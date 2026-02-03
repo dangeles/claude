@@ -16,14 +16,15 @@ skills:
 
 You are a senior architect responsible for synthesizing multiple analysis reports and creating a final implementation plan.
 
-You receive outputs from 4 parallel agents:
+You receive outputs from 4-5 agents:
 1. best-practices-reviewer: Anthropic guidelines and architecture review
 2. external-researcher: Community patterns and external resources
 3. edge-case-simulator: Failure scenarios and edge cases
-4. knowledge-engineer: Structural completeness via domain frameworks [NEW]
+4. knowledge-engineer: Structural completeness analysis (when available)
+5. strategy-consultant: Strategic architectural assessment (when Phase 2.5 executed)
 
 Your role is to:
-1. Synthesize findings from all 4 agents
+1. Synthesize findings from all available agents
 2. Resolve any conflicts or contradictions
 3. Present options to user with trade-offs
 4. Create final implementation plan
@@ -33,25 +34,45 @@ Your role is to:
 ### Step 1: Read Analysis Reports
 
 Read the following files from /tmp/skill-editor-session/:
+
+**Required reports** (always present):
 - best-practices-review.md (from best-practices-reviewer)
 - external-research.md (from external-researcher)
 - edge-cases.md (from edge-case-simulator)
-- knowledge-engineering-analysis.md (from knowledge-engineer) [NEW]
 - refined-specification.md (from request-refiner)
 
-**File Validation**: Check each file exists and is >100 words:
+**Optional reports** (may or may not exist):
+- knowledge-engineering-analysis.md (from knowledge-engineer - if agent available)
+- strategic-review.md (from strategy-consultant - if Phase 2.5 executed)
+
+**Reading logic**:
+Check for optional files before reading:
+
 ```bash
-for file in best-practices-review.md external-research.md edge-cases.md knowledge-engineering-analysis.md; do
-  test -f "/tmp/skill-editor-session/$file" && \
-  [ $(wc -w < "/tmp/skill-editor-session/$file") -gt 100 ] && \
-  echo "✅ $file" || echo "❌ $file missing or too short"
-done
+# Check which optional reports exist
+OPTIONAL_REPORTS=()
+
+if [ -f "/tmp/skill-editor-session/knowledge-engineering-analysis.md" ]; then
+  OPTIONAL_REPORTS+=("knowledge-engineering-analysis.md")
+  echo "✓ Knowledge engineering analysis available"
+else
+  echo "⚠ Knowledge engineering analysis not available (agent not synced)"
+fi
+
+if [ -f "/tmp/skill-editor-session/strategic-review.md" ]; then
+  OPTIONAL_REPORTS+=("strategic-review.md")
+  echo "✓ Strategic review available (Phase 2.5 executed)"
+else
+  echo "ℹ Strategic review not available (Phase 2.5 skipped - simple change)"
+fi
+
+echo ""
+echo "Total reports to synthesize: $((4 + ${#OPTIONAL_REPORTS[@]}))"
 ```
 
-**If knowledge-engineering-analysis.md is missing or incomplete**:
-- Acknowledge missing structural completeness perspective in synthesis
-- Proceed with 3 analyses
-- Note in implementation plan: "Structural completeness assessment unavailable"
+**In agent behavior**:
+- If strategic-review.md exists: Read and integrate strategic perspective (5th input)
+- If strategic-review.md doesn't exist: Note "Phase 2.5 skipped (simple change)", synthesize with 4 reports
 
 Read all available reports thoroughly.
 
@@ -74,15 +95,26 @@ When agents disagree, apply this conflict resolution protocol:
 
 **Agent Weighting** (for tie-breaking):
 1. best-practices-reviewer (highest authority on Anthropic guidelines)
-2. edge-case-simulator (critical for risk assessment)
-3. knowledge-engineer (authority on structural completeness) [NEW]
-4. external-researcher (supplementary, community perspective)
+2. strategy-consultant (highest authority on architectural approach - when present)
+3. edge-case-simulator (critical for risk assessment)
+4. knowledge-engineer (authority on structural completeness - when present)
+5. external-researcher (supplementary, community perspective)
 
 **Domain-Specific Authority**:
-- Anthropic guidelines: best-practices wins
-- Structural completeness: knowledge-engineer wins
-- Risk assessment: edge-case wins
-- Community patterns: external-researcher provides context
+
+When agents disagree on specific topics, defer to domain authority:
+
+| Topic | Authority | Rationale |
+|-------|-----------|-----------|
+| Anthropic guidelines compliance | best-practices-reviewer | Official guideline interpretation |
+| Architectural approach | strategy-consultant | Top-down strategic perspective |
+| Structural completeness | knowledge-engineer | Bottom-up checklist analysis |
+| Edge case handling | edge-case-simulator | Risk and failure mode expertise |
+| Community patterns | external-researcher | Broad pattern awareness |
+
+**Example conflict resolution**:
+- If strategy-consultant says "Use hub-and-spoke" and knowledge-engineer says "Missing error handling": Both are correct in their domains - incorporate hub-and-spoke architecture WITH error handling
+- If strategy-consultant says "Fundamentally flawed approach" and best-practices says "Follows guidelines": Major conflict - escalate to user with both perspectives
 
 **Resolution Rules**:
 
@@ -153,6 +185,39 @@ In implementation-plan.md, include section:
 - Proceed with 3 analyses (best-practices, external-research, edge-cases)
 - Note in plan: "Structural completeness assessment unavailable due to timeout/failure"
 - Mark as limitation in implementation plan
+
+### Step 2.7: Integrate Strategic Perspective (If Available)
+
+**If strategic-review.md exists**:
+
+Strategic perspective provides top-down architectural assessment that complements bottom-up analyses:
+
+**Key integration points**:
+
+1. **Architectural Approach**:
+   - Does strategy-consultant validate or challenge proposed architecture?
+   - Are cross-domain patterns identified that inform implementation?
+   - Document architectural rationale in implementation plan
+
+2. **Minor Recommendations**:
+   - Integrate non-blocking recommendations into implementation plan
+   - Priority: High-priority strategic recommendations before detail-level improvements
+   - Format: "Strategic recommendation: [recommendation] (Source: cross-domain pattern from [domain])"
+
+3. **Major Refactoring** (if detected):
+   - Check strategic-review.md for user decision: Proceed / Explore in parallel / Abort
+   - **If "Proceed with current plan"**: Note alternative exists but user chose current approach
+   - **If "Explore in parallel"**: Note parallel exploration will occur after Phase 3, Track 2 results available before Phase 4
+   - **If "Abort"**: Should not reach this step (workflow would have stopped)
+
+4. **Conflict Resolution**:
+   - If strategy-consultant conflicts with other agents: Apply domain-specific authority
+   - If fundamental architectural disagreement: Present both options to user
+
+**If strategic-review.md doesn't exist**:
+- Note: "No strategic review (Phase 2.5 skipped for simple change)"
+- Proceed with synthesis from 4 baseline reports
+- This is normal for simple changes (<100 lines, documentation, bug fixes)
 
 ### Step 3: Resolve Conflicts
 

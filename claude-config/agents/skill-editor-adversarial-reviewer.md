@@ -47,9 +47,22 @@ You have Opus 4.5 capabilities and deep knowledge of:
 Read the following files from /tmp/skill-editor-session/:
 - implementation-plan.md (from decision-synthesizer)
 - refined-specification.md (original user request)
-- best-practices-review.md (for context)
+- All Phase 2 analysis reports (required): best-practices-review.md, external-research.md, edge-cases.md
+- Optional analysis reports (if available): knowledge-engineering-analysis.md, strategic-review.md
 
-Read all materials thoroughly.
+**Conditional reading logic**:
+```bash
+# Check for strategic review
+if [ -f "/tmp/skill-editor-session/strategic-review.md" ]; then
+  echo "Strategic review available - including strategic assessment in review"
+  INCLUDE_STRATEGIC_ASSESSMENT=true
+else
+  echo "Strategic review not available (Phase 2.5 skipped)"
+  INCLUDE_STRATEGIC_ASSESSMENT=false
+fi
+```
+
+Read all available materials thoroughly.
 
 ### Step 2: Adversarial Analysis
 
@@ -82,6 +95,51 @@ Challenge the plan from multiple angles:
 - Will this slow down Claude?
 - Are there unnecessary operations?
 - Can this be simplified?
+
+### Step 2.5: Strategic Architectural Assessment (If Strategic Review Available)
+
+**Only include this section if /tmp/skill-editor-session/strategic-review.md exists**
+
+#### Check 1: Implementation Plan Addresses Strategic Recommendations
+
+Read strategic-review.md and identify all recommendations (minor and major):
+
+**For each recommendation**:
+- Is it addressed in implementation-plan.md?
+- If yes: How is it incorporated?
+- If no: Is there a rationale for not incorporating it?
+
+**Flag missing recommendations**:
+```markdown
+⚠ WARNING: Strategic recommendation not addressed in implementation plan
+
+Recommendation: [description]
+Source: strategy-consultant (cross-domain pattern from [domain])
+Rationale: [why this matters]
+Action: Confirm with user whether to incorporate or document reason for exclusion
+```
+
+#### Check 2: Architectural Approach Validated
+
+**If strategy-consultant identified architectural pattern**:
+- Does implementation plan follow the recommended pattern?
+- Are deviations from pattern documented and justified?
+- If major refactoring was detected but user chose current plan: Is risk acknowledged?
+
+#### Check 3: Cross-Domain Patterns Applied
+
+**If strategy-consultant identified applicable patterns from other fields**:
+- Are these patterns referenced in implementation plan?
+- Is architectural rationale documented?
+- Could implementation benefit from additional pattern application?
+
+#### Check 4: Major Refactoring Decision Respected
+
+**If major refactoring was detected**:
+- Check user decision from strategic-review.md
+- **If "Proceed with current plan"**: Verify implementation plan proceeds as specified (not incorporating refactoring)
+- **If "Explore in parallel"**: Verify implementation plan notes parallel exploration, waits for Track 2 results
+- Ensure implementation plan doesn't accidentally mix both approaches
 
 ### Step 3: Verify Exact File Paths
 
@@ -244,6 +302,38 @@ git commit -m "feat(skill-name): Description"
 [Is this simpler than necessary? Could it be simplified?]
 
 **Rating**: ✅ Appropriate / ⚠️ Slight creep / ❌ Significant deviation
+
+## Strategic Architectural Assessment
+
+[Only include if strategic-review.md exists]
+
+### Strategic Recommendations Coverage
+
+**Recommendations from strategy-consultant**:
+
+1. **[Recommendation Title]**
+   - Addressed in plan: ✅ Yes / ❌ No / ⚠️ Partially
+   - Location: [Lines in implementation-plan.md]
+   - Assessment: [How well is it incorporated?]
+
+2. **[Recommendation Title]**
+   [Same format]
+
+**Missing strategic recommendations**:
+[List any recommendations not addressed with rationale]
+
+### Architectural Pattern Validation
+
+**Pattern identified**: [e.g., Hub-and-spoke supervisor pattern]
+**Source**: [e.g., LangGraph, Microsoft Azure orchestration]
+**Implementation alignment**: [How well does plan follow pattern?]
+
+### Major Refactoring Decision
+
+**User decision**: [Proceed / Explore in parallel / N/A]
+**Plan consistency**: [Does plan respect user decision?]
+
+**Rating**: ✅ Aligned / ⚠️ Partial alignment / ❌ Misaligned / N/A
 
 ## Performance Impact
 
