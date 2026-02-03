@@ -19,7 +19,7 @@ Use this skill when:
 This skill provides:
 - Structured 4-phase workflow
 - Interactive requirements refinement
-- Parallel expert analysis (3 simultaneous agents)
+- Parallel expert analysis (4 simultaneous agents)
 - Adversarial review before implementation
 - Automated validation and testing
 - Integration with sync-config.py and planning journal
@@ -188,48 +188,69 @@ jq -n \
 
 ---
 
-### Phase 2: Parallel Analysis (3 Simultaneous Agents)
+### Phase 2: Parallel Analysis (4 Simultaneous Agents)
 
 **Objective**: Analyze proposed change from multiple expert perspectives.
 
 **Agents** (all run in parallel):
-1. `skill-editor-best-practices-reviewer` (Opus 4.5)
-2. `skill-editor-external-researcher` (Opus 4.5)
-3. `skill-editor-edge-case-simulator` (Opus 4.5)
+1. `skill-editor-best-practices-reviewer` (Opus 4.5) - Critical
+2. `skill-editor-external-researcher` (Opus 4.5) - Supplementary
+3. `skill-editor-edge-case-simulator` (Opus 4.5) - Critical
+4. `skill-editor-knowledge-engineer` (Opus 4.5) - Critical [NEW]
 
 **Process**:
 
-Launch all 3 agents in parallel (single message with 3 Task tool calls):
+Launch all 4 agents with wave-based execution to reduce resource contention:
 
+**Wave 1 (T=0s)**: Launch critical analysis agents
 ```markdown
 Task 1: best-practices-reviewer
 - Reviews against Anthropic guidelines
 - Checks skill structure specification
 - Identifies architectural concerns
 
-Task 2: external-researcher
-- Searches community patterns and forums
-- Finds relevant documentation and examples
-- Identifies recommended approaches
-
-Task 3: edge-case-simulator
+Task 2: edge-case-simulator
 - Simulates failure scenarios
 - Identifies edge cases
 - Proposes handling strategies
 ```
 
-**Important**: All 3 agents run simultaneously (not sequential). Wait for all to complete before proceeding.
+**Wave 2 (T=30s)**: Launch structural analysis agent
+```markdown
+Task 3: knowledge-engineer [NEW]
+- Analyzes structural completeness via domain frameworks
+- Identifies missing elements using professional standards
+- Provides cross-domain pattern recommendations
+```
 
-**Agent Timeouts**: Each agent has a 10-minute timeout. If any agent exceeds this:
-1. User is notified which agent timed out
-2. Options presented:
-   - Wait 5 more minutes
-   - Skip the failed agent (if external-researcher)
-   - Retry the failed agent
+**Wave 3 (T=60s)**: Launch supplementary research agent
+```markdown
+Task 4: external-researcher
+- Searches community patterns and forums
+- Finds relevant documentation and examples
+- Identifies recommended approaches
+```
+
+**Rationale for wave-based execution**: Staggering launches by 30-60 seconds reduces system resource contention and improves reliability for parallel agent execution.
+
+**Important**: All 4 agents run in parallel (waves overlap). Wait for all to complete before proceeding to Phase 3.
+
+**Agent Timeouts and Retry Logic**: Each agent has a 10-minute timeout. If any agent exceeds this:
+
+**For Critical Agents** (best-practices-reviewer, edge-case-simulator, knowledge-engineer):
+1. Automatic retry (wait 30 seconds, retry once)
+2. If second failure: Ask user
+   - Proceed with placeholder report
    - Abort workflow
 
-**Critical agents**: best-practices-reviewer, edge-case-simulator (must complete or retry)
-**Supplementary agent**: external-researcher (can skip if necessary)
+**For Supplementary Agent** (external-researcher):
+1. No automatic retry
+2. Proceed without this analysis (note in synthesis)
+
+**Retry Protocol**:
+- First failure → Wait 30s → Retry automatically
+- Second failure → User decision required
+- Maximum 2 attempts per critical agent
 
 **Note**: Task tool calls do not currently support explicit timeout parameters. Monitor agent progress and manually intervene if agents run longer than 10 minutes.
 
@@ -237,39 +258,50 @@ Task 3: edge-case-simulator
 - `/tmp/skill-editor-session/best-practices-review.md`
 - `/tmp/skill-editor-session/external-research.md`
 - `/tmp/skill-editor-session/edge-cases.md`
+- `/tmp/skill-editor-session/knowledge-engineering-analysis.md` [NEW]
 
 **Verification**: Before Phase 3, verify all output files exist:
 ```bash
 ls -lh /tmp/skill-editor-session/*.md
-# Should show all 3 files with content
+# Should show all 4 files with content
 ```
 
 **Quality Gate 2: Analysis Completion**
 
 Check agent completion status:
-- **All 3 agents complete**: ✅ Proceed to Phase 3
-- **2 of 3 agents complete**: ⚠️ Ask user to proceed with partial analysis or retry failed agent
-- **<2 agents complete**: ❌ Must retry failed agents or abort workflow
+- [ ] best-practices-review.md exists and is >100 words
+- [ ] edge-cases.md exists and is >100 words
+- [ ] knowledge-engineering-analysis.md exists and is >100 words [NEW]
+- [ ] external-research.md exists and is >100 words
+
+**Gate 2 Decision Logic**:
+
+| Completed Agents | Critical Agents Status | Action |
+|------------------|----------------------|--------|
+| 4/4 | All critical complete | ✅ PASS - Proceed to Phase 3 |
+| 3/4 | All critical complete (only external-researcher failed) | ✅ PASS - Proceed with note |
+| 3/4 | 1 critical failed (first attempt) | 🔄 RETRY - Retry failed critical agent once |
+| 3/4 | 1 critical failed (after retry) | ⚠️ ASK USER - Proceed with placeholder or abort? |
+| 2/4 or fewer | Multiple critical failed | ❌ FAIL - Retry all failed critical agents or abort |
+
+**Critical Agents**: best-practices-reviewer, edge-case-simulator, knowledge-engineer
+**Supplementary**: external-researcher
+
+**Retry Protocol** (for critical agent failure):
+1. First failure → Automatic retry (wait 30s, retry once)
+2. Second failure → Ask user: "Proceed with placeholder report or abort?"
+3. User chooses proceed → Create placeholder noting timeout/failure
+4. User chooses abort → Stop workflow, rollback changes
+
+**Graceful Degradation** (if user approves proceeding after retry):
+- Create placeholder report noting timeout/failure
+- Proceed to Phase 3 with 3 complete analyses
+- decision-synthesizer acknowledges missing perspective in synthesis
 
 Additional checks:
 - [ ] No critical blocking issues flagged
 - [ ] No conflicting recommendations (or conflicts documented for synthesis)
 - [ ] Sufficient information for decision-making
-
-**If all 3 agents fail**: Stop workflow, investigate environment/configuration issues.
-
-**If partial completion (2/3)**:
-```
-The [failed-agent-name] agent did not complete.
-
-Options:
-1. Proceed with analysis from 2 agents (faster, less comprehensive)
-2. Retry failed agent (more thorough, takes more time)
-3. Abort workflow
-
-Recommendation: If failed agent is external-researcher, safe to proceed.
-If best-practices-reviewer or edge-case-simulator failed, retry recommended.
-```
 
 **If Gate 2 passes**: Update session state and proceed to Phase 3.
 
@@ -278,7 +310,7 @@ If best-practices-reviewer or edge-case-simulator failed, retry recommended.
 jq -n \
   --arg phase "3" \
   --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --argjson agents_completed '["request-refiner", "best-practices-reviewer", "external-researcher", "edge-case-simulator"]' \
+  --argjson agents_completed '["request-refiner", "best-practices-reviewer", "external-researcher", "edge-case-simulator", "knowledge-engineer"]' \
   '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
   > /tmp/skill-editor-session/session-state.json
 ```
@@ -297,7 +329,7 @@ jq -n \
 
 **Process**:
 
-1. Read all 3 analysis reports + refined specification
+1. Read all 4 analysis reports + refined specification
 2. Identify consensus and conflicts
 3. Resolve conflicts or present options to user:
    - **Major decisions**: MUST ask user (new agents, structure changes)
@@ -686,8 +718,8 @@ Implementation:
 
 ## Notes
 
-- **Parallel execution in Phase 2**: All 3 agents run simultaneously (3x faster than sequential)
-- **All agents use Opus 4.5**: Maximum quality for all workflow phases (requirements analysis, research, edge cases, decision-making, review, execution)
+- **Parallel execution in Phase 2**: All 4 agents run simultaneously with wave-based launches (30-60s stagger reduces resource contention)
+- **All agents use Opus 4.5**: Maximum quality for all workflow phases (requirements analysis, research, edge cases, structural completeness, decision-making, review, execution)
 - **Quality gates enforce standards**: No bypassing validation
 - **Rollback on failure**: Safe to abort at any point
 - **Planning journal provides traceability**: Full documentation of changes
