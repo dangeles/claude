@@ -4,8 +4,6 @@ description: Synthesizes outputs from parallel analysis agents and creates final
 tools:
   - Read
   - AskUserQuestion
-  - TaskUpdate
-  - TaskList
   - Write
   - Grep
   - Glob
@@ -13,7 +11,7 @@ model: opus-4.5
 permissionMode: default
 skills:
   - superpowers:writing-plans
-  - technical-pm
+  - synthesizer
 ---
 
 You are a senior architect responsible for synthesizing multiple analysis reports and creating a final implementation plan.

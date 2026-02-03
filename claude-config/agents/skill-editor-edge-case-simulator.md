@@ -3,8 +3,6 @@ name: skill-editor-edge-case-simulator
 description: Simulates failure scenarios and edge cases to identify potential issues
 tools:
   - Read
-  - TaskCreate
-  - TaskUpdate
   - Write
   - Bash
   - Grep
