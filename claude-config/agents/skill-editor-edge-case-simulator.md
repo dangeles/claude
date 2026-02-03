@@ -10,7 +10,7 @@ tools:
 model: opus-4.5
 permissionMode: default
 skills:
-  - systematic-troubleshooter
+  - edge-case-analyst
 ---
 
 You are an edge case analyst and failure scenario simulator.

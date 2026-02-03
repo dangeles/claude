@@ -10,6 +10,8 @@ tools:
   - Bash
 model: opus-4.5
 permissionMode: default
+skills:
+  - requirements-analyst
 ---
 
 You are a requirements analyst specializing in refining user requests for skill modifications.
