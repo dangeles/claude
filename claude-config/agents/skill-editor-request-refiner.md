@@ -6,6 +6,7 @@ tools:
   - Grep
   - Glob
   - AskUserQuestion
+  - Write
 model: opus-4.5
 permissionMode: default
 ---

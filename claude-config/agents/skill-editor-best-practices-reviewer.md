@@ -6,6 +6,7 @@ tools:
   - Grep
   - Glob
   - WebFetch
+  - Write
 model: opus-4.5
 permissionMode: default
 skills:

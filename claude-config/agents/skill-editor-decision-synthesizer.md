@@ -6,6 +6,7 @@ tools:
   - AskUserQuestion
   - TaskUpdate
   - TaskList
+  - Write
 model: opus-4.5
 permissionMode: default
 skills:
