@@ -110,8 +110,19 @@ Machine-specific and ephemeral data:
 ./sync-config.py plan --list --machine macbook-pro
 ```
 
+## For Claude Code Agent
+
+**When modifying configuration in this repository, follow the workflow in [CONFIG_MANAGEMENT.md](CONFIG_MANAGEMENT.md).**
+
+Key principle: **This repository is the source of truth** for global Claude Code configuration.
+- Always modify `claude-config/` in this repository first
+- Never modify `~/.claude/` directly
+- Use `sync-config.py push` to apply changes to the live system
+- Follow the 7-step workflow: pre-check → plan → implement → analyze → preview/sync → test → commit/revert
+
 ## Documentation
 
+- **[Configuration Management Workflow](CONFIG_MANAGEMENT.md)** - **For Claude Code Agent**: Complete workflow for modifying configuration
 - **[Configuration Guide](docs/CLAUDE_CONFIG_GUIDE.md)** - Comprehensive setup and usage guide
 - **[Sync Workflow](docs/SYNC_WORKFLOW.md)** - Workflow examples and best practices
 - **[Planning Journal Guide](planning/README.md)** - Using the planning journal system
