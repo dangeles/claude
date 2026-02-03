@@ -36,32 +36,35 @@ Do NOT use this skill when:
 ## Workflow Overview
 
 ```
-Phase 1: REFINEMENT (10-30 min)
-├─→ request-refiner: Interactive specification
-└─→ Quality Gate 1: User approves specification
+SIMPLE MODE (15-45 min)
+├── Phase 1: Refinement (5-15 min)
+├── Mode Selection: User confirms SIMPLE
+├── [SKIP Phase 2: No parallel analysis]
+├── [SKIP Phase 2.5: No strategic review]
+├── Phase 3: Lightweight Decision (10-20 min)
+│   └── Minimal synthesis from specification only
+└── Phase 4: Execution (10-20 min)
+    └── Gates 4 & 5 always run
 
-Phase 2: PARALLEL ANALYSIS (30-60 min)
-├─→ best-practices-reviewer ┐
-├─→ external-researcher      ├─ Run in parallel
-├─→ edge-case-simulator      │
-└─→ knowledge-engineer       ┘
-└─→ Quality Gate 2: All analyses complete
+STANDARD MODE (1.5-3 hours) [Current default]
+├── Phase 1: Refinement (10-30 min)
+├── Mode Selection: User confirms STANDARD
+├── Phase 2: Parallel Analysis (30-60 min, 4 agents)
+├── [Phase 2.5: Strategic Review - conditional, stricter triggers]
+├── Phase 3: Decision & Review (45-90 min)
+│   └── Full synthesis + adversarial review
+└── Phase 4: Execution (60-120 min)
+    └── Gates 4 & 5 always run
 
-Phase 2.5: STRATEGIC REVIEW (10-30 min) [CONDITIONAL]
-├─→ Complexity detection (heuristics + user confirmation)
-├─→ If complex: strategy-consultant performs architectural assessment
-├─→ Optional: Parallel exploration (if major refactoring detected)
-└─→ Quality Gate 2.5: Strategic review complete
-
-Phase 3: DECISION & REVIEW (45-90 min)
-├─→ decision-synthesizer: Synthesize 4-5 reports + user collaboration
-├─→ adversarial-reviewer: Expert review with exact file paths
-└─→ Quality Gate 3: User approves plan
-
-Phase 4: EXECUTION (60-120 min)
-├─→ executor: Implement, validate, sync, test, commit
-├─→ Quality Gate 4: Pre-sync validation
-└─→ Quality Gate 5: Post-execution verification
+EXPERIMENTAL MODE (10-30 min) [User-requested]
+├── Phase 1: Quick Refinement (5-10 min)
+├── Mode Selection: User explicitly requests EXPERIMENTAL
+├── [SKIP Phase 2]
+├── [SKIP Phase 2.5]
+├── Phase 3: Minimal Decision (5-10 min)
+│   └── Direct implementation plan with experimental tags
+└── Phase 4: Execution with rollback plan (5-15 min)
+    └── Gates 4 & 5 always run + experimental tagging
 ```
 
 ## Workflow
@@ -181,16 +184,315 @@ User must approve:
 
 **If Gate 1 fails**: Return to request-refiner for more refinement.
 
-**If Gate 1 passes**: Update session state and proceed to Phase 2.
+**If Gate 1 passes**: Update session state and proceed to Mode Selection.
 
 ```bash
 # Update session state
 jq -n \
-  --arg phase "2" \
+  --arg phase "1.5" \
   --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson agents_completed '["request-refiner"]' \
   '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
   > /tmp/skill-editor-session/session-state.json
+```
+
+---
+
+### Mode Selection (After Phase 1)
+
+**Objective**: Select workflow execution mode based on complexity detection and user preference.
+
+**Trigger**: After Quality Gate 1 passes (specification approved)
+
+#### Step 1: Run Three-Tier Detection
+
+```bash
+echo "=== Mode Selection ==="
+echo ""
+
+SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
+
+# Source detection function (see references/complexity-detection-criteria.md)
+# Inline detection for robustness
+
+# Extract metrics (POSIX-compatible - no grep -oP)
+FILES_CHANGED=$(grep -c "File:" "$SPEC_FILE" 2>/dev/null || echo 0)
+# [FIX: Adversarial Issue #4] Use POSIX-compatible grep instead of grep -oP
+LINES_CHANGED=$(grep -o 'Lines: [0-9]*' "$SPEC_FILE" 2>/dev/null | grep -o '[0-9]*' | awk '{sum+=$1} END {print sum+0}')
+[ -z "$LINES_CHANGED" ] && LINES_CHANGED=0
+SCOPE=$(grep -A10 "^## Scope" "$SPEC_FILE")
+
+# Initialize
+DETECTED_TIER="STANDARD"
+CONFIDENCE="low"
+REASON=""
+
+# === FAIL-SAFE DEFAULT ===
+if [ ! -f "$SPEC_FILE" ] || [ ! -s "$SPEC_FILE" ]; then
+  echo "WARNING: Mode detection encountered an error (spec file issue)."
+  echo "Defaulting to STANDARD mode for safety."
+  DETECTED_TIER="STANDARD"
+  CONFIDENCE="error"
+  REASON="Spec file unreadable, defaulting to STANDARD (safest option)"
+fi
+
+# === COMPLEX DETECTION (Phase 2.5 triggers) ===
+if grep -qi "Create new skill" "$SPEC_FILE" 2>/dev/null; then
+  DETECTED_TIER="COMPLEX"
+  CONFIDENCE="high"
+  REASON="New skill creation"
+elif [ "$FILES_CHANGED" -gt 4 ]; then
+  DETECTED_TIER="COMPLEX"
+  CONFIDENCE="high"
+  REASON="Multiple files affected (>4)"
+elif [ "$LINES_CHANGED" -gt 300 ]; then
+  DETECTED_TIER="COMPLEX"
+  CONFIDENCE="high"
+  REASON="Large change (>300 lines)"
+elif grep -qi "strategic review\|architectural assessment" "$SPEC_FILE" 2>/dev/null; then
+  DETECTED_TIER="COMPLEX"
+  CONFIDENCE="high"
+  REASON="User explicitly requested strategic review"
+elif grep -qi "refactor\|reorganize\|restructure\|migrate" "$SPEC_FILE" 2>/dev/null; then
+  if [ "$FILES_CHANGED" -gt 2 ] || [ "$LINES_CHANGED" -gt 150 ]; then
+    DETECTED_TIER="COMPLEX"
+    CONFIDENCE="high"
+    REASON="Refactoring with moderate+ scope"
+  fi
+fi
+
+# === SIMPLE DETECTION ===
+if [ "$CONFIDENCE" != "high" ]; then
+  if echo "$SCOPE" | grep -qi "documentation\|typo\|comment\|example"; then
+    if [ "$FILES_CHANGED" -le 1 ] && [ "$LINES_CHANGED" -le 50 ]; then
+      DETECTED_TIER="SIMPLE"
+      CONFIDENCE="high"
+      REASON="Documentation-only change"
+    fi
+  fi
+  if echo "$SCOPE" | grep -qi "fix bug\|fix typo\|fix error"; then
+    if [ "$FILES_CHANGED" -le 1 ] && [ "$LINES_CHANGED" -le 50 ]; then
+      DETECTED_TIER="SIMPLE"
+      CONFIDENCE="high"
+      REASON="Minor bug fix"
+    fi
+  fi
+fi
+
+# === STANDARD DETECTION (default) ===
+if [ "$CONFIDENCE" != "high" ]; then
+  if grep -qi "agent\|workflow\|phase\|quality gate" "$SPEC_FILE" 2>/dev/null; then
+    if [ "$FILES_CHANGED" -le 2 ] && [ "$LINES_CHANGED" -le 100 ]; then
+      DETECTED_TIER="STANDARD"
+      CONFIDENCE="medium"
+      REASON="Keywords detected but change is small"
+    else
+      DETECTED_TIER="STANDARD"
+      CONFIDENCE="medium"
+      REASON="Workflow keywords with moderate change size"
+    fi
+  fi
+fi
+
+# === WARNING ZONE (soft thresholds) ===
+if [ "$FILES_CHANGED" -ge 3 ] && [ "$FILES_CHANGED" -le 4 ]; then
+  if [ "$DETECTED_TIER" = "STANDARD" ]; then
+    CONFIDENCE="medium"
+    REASON="$REASON (near Phase 2.5 file threshold: $FILES_CHANGED files)"
+  fi
+fi
+if [ "$LINES_CHANGED" -ge 200 ] && [ "$LINES_CHANGED" -le 300 ]; then
+  if [ "$DETECTED_TIER" = "STANDARD" ]; then
+    CONFIDENCE="medium"
+    REASON="$REASON (near Phase 2.5 line threshold: $LINES_CHANGED lines)"
+  fi
+fi
+
+# === EXPERIMENTAL OVERRIDE (user keywords) ===
+if grep -qi "experimental\|quick\|try\|test this\|prototype" "$SPEC_FILE" 2>/dev/null; then
+  DETECTED_TIER="EXPERIMENTAL"
+  CONFIDENCE="high"
+  REASON="User requested experimental/quick mode"
+fi
+
+# === DEFAULT for unclear ===
+if [ "$CONFIDENCE" = "low" ]; then
+  if [ "$FILES_CHANGED" -ge 2 ] || [ "$LINES_CHANGED" -ge 100 ]; then
+    DETECTED_TIER="STANDARD"
+    CONFIDENCE="low"
+    REASON="Moderate size with unclear scope"
+  else
+    DETECTED_TIER="SIMPLE"
+    CONFIDENCE="medium"
+    REASON="Small change with unclear scope"
+  fi
+fi
+
+echo "Detected tier: $DETECTED_TIER (confidence: $CONFIDENCE)"
+echo "Reason: $REASON"
+echo ""
+```
+
+#### Step 2: Display Mode Selection Prompt
+
+```bash
+cat << EOF
+================================================================================
+SPECIFICATION APPROVED - SELECT WORKFLOW MODE
+================================================================================
+
+Detected complexity: $DETECTED_TIER (confidence: $CONFIDENCE)
+Reason: $REASON
+
+Select workflow mode:
+
+  [A] SIMPLE MODE          ~30 min    Skip analysis, direct implementation
+      Best for: typos, documentation, single-file fixes
+      Quality: Basic validation only (Gates 4, 5 always run)
+      Skips: Phase 2 (4 agents), Phase 2.5 (strategic review)
+
+  [B] STANDARD MODE        ~2-3 hrs   Full analysis and expert review
+      Best for: workflow changes, features, refactoring
+      Quality: 4-agent analysis + adversarial review
+      Runs: All phases (current default behavior)
+
+  [C] EXPERIMENTAL MODE    ~15 min    Minimal process, quick iteration
+      Best for: prototypes, testing ideas, will iterate
+      Quality: REDUCED - plan to iterate
+      WARNING: Creates experimental-tagged output
+      Skips: Phase 2, Phase 2.5, full adversarial review
+
+Recommended: [$DETECTED_TIER]
+
+Enter choice [A/B/C] (default based on detection, 60s timeout):
+EOF
+
+read -t 60 USER_CHOICE
+
+# Handle timeout
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "No selection made. Using recommended mode: $DETECTED_TIER"
+  case "$DETECTED_TIER" in
+    SIMPLE) USER_CHOICE="A" ;;
+    STANDARD) USER_CHOICE="B" ;;
+    COMPLEX) USER_CHOICE="B" ;;  # COMPLEX uses STANDARD mode
+    EXPERIMENTAL) USER_CHOICE="C" ;;
+    *) USER_CHOICE="B" ;;
+  esac
+fi
+
+# Normalize input
+USER_CHOICE=$(echo "$USER_CHOICE" | tr '[:lower:]' '[:upper:]')
+
+# Map selection to mode
+case "$USER_CHOICE" in
+  A) SELECTED_MODE="SIMPLE" ;;
+  B) SELECTED_MODE="STANDARD" ;;
+  C) SELECTED_MODE="EXPERIMENTAL" ;;
+  *) SELECTED_MODE="STANDARD" ;;  # Default
+esac
+```
+
+#### Step 3: User Override Confirmation
+
+```bash
+# Check for risky overrides
+USER_OVERRIDE=false
+if [ "$SELECTED_MODE" != "$DETECTED_TIER" ]; then
+  USER_OVERRIDE=true
+
+  # Additional confirmation for risky overrides
+  if [ "$DETECTED_TIER" = "STANDARD" ] || [ "$DETECTED_TIER" = "COMPLEX" ]; then
+    if [ "$SELECTED_MODE" = "SIMPLE" ] || [ "$SELECTED_MODE" = "EXPERIMENTAL" ]; then
+      echo ""
+      echo "WARNING: You selected $SELECTED_MODE but detection recommended $DETECTED_TIER."
+      echo "This change may be more complex than $SELECTED_MODE mode handles."
+      read -p "Confirm override? (yes/no): " CONFIRM
+      if [ "$CONFIRM" != "yes" ]; then
+        SELECTED_MODE="STANDARD"
+        USER_OVERRIDE=false
+        echo "Using recommended mode: $SELECTED_MODE"
+      fi
+    fi
+  fi
+fi
+
+# Experimental mode warning
+if [ "$SELECTED_MODE" = "EXPERIMENTAL" ]; then
+  echo ""
+  echo "=========================================="
+  echo "  EXPERIMENTAL MODE SELECTED"
+  echo "=========================================="
+  echo ""
+  echo "  WARNING: Reduced quality assurance"
+  echo "  - No Phase 2 analysis agents"
+  echo "  - Minimal decision synthesis"
+  echo "  - Output will be tagged as experimental"
+  echo "  - NOT production-ready without further review"
+  echo ""
+  read -p "Acknowledge and proceed? (yes/no): " ACK
+  if [ "$ACK" != "yes" ]; then
+    echo "Returning to mode selection..."
+    # Re-run mode selection
+  fi
+fi
+```
+
+#### Step 4: Record Mode Selection
+
+```bash
+# Record mode selection in session state
+jq -n \
+  --arg workflow_mode "$SELECTED_MODE" \
+  --arg detected_tier "$DETECTED_TIER" \
+  --arg confidence "$CONFIDENCE" \
+  --arg reason "$REASON" \
+  --argjson user_override "$USER_OVERRIDE" \
+  '{
+    workflow_mode: $workflow_mode,
+    detected_tier: $detected_tier,
+    confidence: $confidence,
+    reason: $reason,
+    user_override: $user_override,
+    timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
+  }' \
+  > /tmp/skill-editor-session/mode-selection.json
+
+# Update main session state
+jq --arg mode "$SELECTED_MODE" \
+   '. + {workflow_mode: $mode}' \
+   /tmp/skill-editor-session/session-state.json > /tmp/skill-editor-session/session-state.tmp.json && \
+   mv /tmp/skill-editor-session/session-state.tmp.json /tmp/skill-editor-session/session-state.json
+
+echo ""
+echo "[$SELECTED_MODE MODE] Mode selected. Proceeding..."
+echo ""
+```
+
+#### Step 5: Mode-Based Branching
+
+```bash
+case "$SELECTED_MODE" in
+  SIMPLE)
+    echo "[$SIMPLE MODE] Skipping Phase 2 (no analysis agents)"
+    echo "[$SIMPLE MODE] Skipping Phase 2.5 (no strategic review)"
+    echo "[$SIMPLE MODE] Proceeding to Phase 3 (lightweight synthesis)"
+    # Skip to Phase 3 Lightweight section
+    ;;
+  STANDARD)
+    echo "[STANDARD MODE] Running full workflow"
+    echo "[STANDARD MODE] Proceeding to Phase 2 (4 parallel agents)"
+    # Continue to Phase 2 (existing behavior)
+    ;;
+  EXPERIMENTAL)
+    echo "[EXPERIMENTAL MODE] Minimal workflow with experimental tagging"
+    echo "[EXPERIMENTAL MODE] Skipping Phase 2 (no analysis agents)"
+    echo "[EXPERIMENTAL MODE] Skipping Phase 2.5 (no strategic review)"
+    echo "[EXPERIMENTAL MODE] Proceeding to Phase 3 (minimal synthesis)"
+    # Skip to Phase 3 Minimal section
+    ;;
+esac
 ```
 
 ---
@@ -839,6 +1141,217 @@ echo "✓ Session state updated: Phase 2.5 complete"
 
 ---
 
+### Phase 3 Variants by Mode
+
+#### Phase 3: SIMPLE MODE (Lightweight Decision)
+
+**Duration**: 10-20 minutes
+**Trigger**: SELECTED_MODE = "SIMPLE"
+
+```bash
+echo "=== Phase 3: SIMPLE MODE - Lightweight Decision ==="
+echo ""
+
+SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
+PLAN_FILE="/tmp/skill-editor-session/implementation-plan.md"
+
+# Create minimal implementation plan from specification
+cat << 'PLAN_HEADER' > "$PLAN_FILE"
+# Implementation Plan (Simple Mode)
+
+**Mode**: SIMPLE
+**Quality Level**: Basic validation only (no expert analysis)
+
+## Note
+
+This plan was created in Simple Mode without Phase 2 expert analysis.
+For changes requiring deeper review, re-run with Standard Mode.
+
+PLAN_HEADER
+
+echo "## Objective" >> "$PLAN_FILE"
+grep -A5 "^## Objective" "$SPEC_FILE" >> "$PLAN_FILE"
+
+echo "" >> "$PLAN_FILE"
+echo "## Files to Modify" >> "$PLAN_FILE"
+grep -A20 "^## Scope" "$SPEC_FILE" | grep -E "^\s*-|File:|Edit:|Modify:" >> "$PLAN_FILE"
+
+echo "" >> "$PLAN_FILE"
+echo "## Validation Steps" >> "$PLAN_FILE"
+cat << 'VALIDATION' >> "$PLAN_FILE"
+
+1. Validate YAML frontmatter (Gate 4)
+2. Run sync-config.py --dry-run
+3. Test skill invocation (Gate 5)
+
+## Rollback Plan
+
+If anything fails:
+1. `git reset --hard HEAD`
+2. `./sync-config.py push`
+VALIDATION
+
+echo "[SIMPLE MODE] Lightweight implementation plan created."
+
+# [FIX: Adversarial Issue #3] File-based adversarial trigger instead of keyword matching
+# Check if target files include core workflow/agent files
+NEEDS_ADVERSARIAL=false
+
+# Extract target files from plan
+TARGET_FILES=$(grep -E "File:|Edit:|Modify:" "$PLAN_FILE" | grep -o 'claude-config/[^ ]*' || echo "")
+
+# Check for core workflow files
+if echo "$TARGET_FILES" | grep -qE "SKILL\.md|agents/.*\.md"; then
+  NEEDS_ADVERSARIAL=true
+  echo ""
+  echo "[SIMPLE MODE] Core workflow/agent files detected - running lightweight validation..."
+fi
+
+if [ "$NEEDS_ADVERSARIAL" = "true" ]; then
+  # Check file paths exist
+  while IFS= read -r FILE_PATH; do
+    if [ -n "$FILE_PATH" ]; then
+      FULL_PATH="/Users/davidangelesalbores/repos/claude/$FILE_PATH"
+      if [ ! -f "$FULL_PATH" ]; then
+        echo "WARNING: File does not exist: $FILE_PATH"
+      fi
+    fi
+  done < <(echo "$TARGET_FILES")
+
+  # Warn if touching SKILL.md workflow sections
+  if echo "$TARGET_FILES" | grep -q "SKILL\.md"; then
+    echo ""
+    echo "WARNING: Plan modifies SKILL.md (core workflow file)."
+    read -p "Continue with Simple Mode or upgrade? [simple/standard]: " UPGRADE
+    if [ "$UPGRADE" = "standard" ]; then
+      SELECTED_MODE="STANDARD"
+      echo "Upgrading to Standard Mode..."
+      # Jump to Phase 2
+    fi
+  fi
+else
+  echo "[SIMPLE MODE] No core workflow/agent files affected - skipping adversarial check"
+fi
+
+echo ""
+echo "[SIMPLE MODE] Phase 3 complete. Proceeding to Phase 4."
+```
+
+---
+
+#### Phase 3: EXPERIMENTAL MODE (Minimal Decision)
+
+**Duration**: 5-10 minutes
+**Trigger**: SELECTED_MODE = "EXPERIMENTAL"
+
+```bash
+echo "=== Phase 3: EXPERIMENTAL MODE - Minimal Decision ==="
+echo ""
+
+SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
+PLAN_FILE="/tmp/skill-editor-session/implementation-plan.md"
+
+# Create plan with experimental flags
+cat << 'PLAN_HEADER' > "$PLAN_FILE"
+# Implementation Plan (Experimental Mode)
+
+**Mode**: EXPERIMENTAL
+**Quality Level**: Minimal - prototype quality
+**experimental**: true
+
+## WARNING
+
+This is an EXPERIMENTAL implementation plan.
+- No Phase 2 expert analysis was performed
+- No strategic architectural review
+- Reduced quality assurance
+
+**RECOMMENDED**: Run Standard Mode before production use.
+
+PLAN_HEADER
+
+echo "## Objective" >> "$PLAN_FILE"
+grep -A5 "^## Objective" "$SPEC_FILE" >> "$PLAN_FILE"
+
+echo "" >> "$PLAN_FILE"
+echo "## Files to Modify" >> "$PLAN_FILE"
+grep -A20 "^## Scope" "$SPEC_FILE" | grep -E "^\s*-|File:|Edit:|Modify:" >> "$PLAN_FILE"
+
+echo "" >> "$PLAN_FILE"
+echo "## Validation Steps" >> "$PLAN_FILE"
+cat << 'VALIDATION' >> "$PLAN_FILE"
+
+1. Validate YAML frontmatter (Gate 4)
+2. Run sync-config.py --dry-run
+3. Basic smoke test
+
+## Rollback Plan (REQUIRED for experimental)
+
+1. `git reset --hard HEAD`
+2. `./sync-config.py push`
+
+Consider creating a branch for experimental work:
+```bash
+git checkout -b experimental/[feature-name]
+```
+
+---
+
+**EXPERIMENTAL OUTPUT**: This skill is NOT production-ready.
+Run `/skill-editor` with Standard Mode for full review before production use.
+VALIDATION
+
+echo "[EXPERIMENTAL] Minimal implementation plan created."
+
+# Optional adversarial review
+read -p "[EXPERIMENTAL] Run optional adversarial review? (adds ~15 min) [y/N]: " DO_REVIEW
+if [ "$DO_REVIEW" = "y" ]; then
+  echo "Launching adversarial-reviewer..."
+  # Launch full adversarial reviewer agent
+fi
+
+echo ""
+echo "[EXPERIMENTAL] Phase 3 complete. Proceeding to Phase 4."
+```
+
+---
+
+#### Phase 3 Mode Checkpoint
+
+Before launching synthesis, offer mode change option:
+
+```bash
+CURRENT_MODE=$(jq -r '.workflow_mode' /tmp/skill-editor-session/session-state.json 2>/dev/null || echo "STANDARD")
+
+echo "=== Phase 3 Mode Checkpoint ==="
+echo ""
+echo "Current workflow mode: $CURRENT_MODE"
+
+if [ "$CURRENT_MODE" = "SIMPLE" ] || [ "$CURRENT_MODE" = "EXPERIMENTAL" ]; then
+  echo "Phase 2 status: SKIPPED (no expert analysis performed)"
+  echo ""
+  echo "Options:"
+  echo "  (1) Continue with $CURRENT_MODE Mode"
+  echo "  (2) Switch to Standard Mode (will run Phase 2 now, adds ~1.5 hours)"
+  echo ""
+  read -p "Choice [1]: " CHECKPOINT_CHOICE
+
+  if [ "$CHECKPOINT_CHOICE" = "2" ]; then
+    echo "Switching to Standard Mode..."
+    jq '.workflow_mode = "STANDARD"' /tmp/skill-editor-session/session-state.json > /tmp/skill-editor-session/session-state.tmp.json
+    mv /tmp/skill-editor-session/session-state.tmp.json /tmp/skill-editor-session/session-state.json
+    CURRENT_MODE="STANDARD"
+    echo "[STANDARD MODE] Running Phase 2 (4 parallel agents)..."
+    # Jump to Phase 2 execution
+  fi
+fi
+
+echo ""
+echo "[$CURRENT_MODE MODE] Proceeding with Phase 3..."
+```
+
+---
+
 ### Phase 3: Decision & Review (Synthesis + Adversarial)
 
 **Objective**: Synthesize analyses, make decisions, create plan, get expert approval.
@@ -947,6 +1460,46 @@ For each file in implementation plan:
 - **Create**: Write new file
 - **Delete**: Remove file
 
+#### Experimental Mode Output Tagging
+
+If workflow_mode = "EXPERIMENTAL", add tags to output files:
+
+```bash
+CURRENT_MODE=$(jq -r '.workflow_mode' /tmp/skill-editor-session/session-state.json 2>/dev/null || echo "STANDARD")
+
+if [ "$CURRENT_MODE" = "EXPERIMENTAL" ]; then
+  echo "[EXPERIMENTAL] Adding experimental tags to output files..."
+
+  # For each skill file being created/modified
+  # [FIX: Adversarial Issue #4] Use POSIX-compatible grep instead of grep -oP
+  for SKILL_FILE in $(grep -o 'skills/[^/]*/SKILL\.md' /tmp/skill-editor-session/implementation-plan.md | sort -u); do
+    FULL_PATH="/Users/davidangelesalbores/repos/claude/claude-config/$SKILL_FILE"
+
+    if [ -f "$FULL_PATH" ]; then
+      # Check if experimental tag already exists in frontmatter
+      if ! head -20 "$FULL_PATH" | grep -q "experimental: true"; then
+        # [FIX: Adversarial Issue #1] BSD-compatible: Use temp file approach instead of sed -i with append
+        # Insert experimental: true after first line (which is ---)
+        { head -1 "$FULL_PATH"; echo "experimental: true"; tail -n +2 "$FULL_PATH"; } > "$FULL_PATH.tmp" && mv "$FULL_PATH.tmp" "$FULL_PATH"
+        echo "  Added experimental tag to: $SKILL_FILE"
+      fi
+
+      # Add warning comment after frontmatter if not present
+      if ! grep -q "EXPERIMENTAL SKILL" "$FULL_PATH"; then
+        # First check if file has valid frontmatter (starts with ---)
+        if head -1 "$FULL_PATH" | grep -q "^---"; then
+          # Find end of frontmatter (second ---) and add comment using awk
+          awk '/^---$/{c++} c==2{print; print ""; print "<!-- EXPERIMENTAL SKILL: Created via skill-editor experimental mode -->"; print "<!-- This skill has NOT been fully analyzed. Run Standard Mode before production use. -->"; c++; next}1' "$FULL_PATH" > "$FULL_PATH.tmp" && mv "$FULL_PATH.tmp" "$FULL_PATH"
+          echo "  Added experimental warning to: $SKILL_FILE"
+        else
+          echo "  WARNING: No frontmatter found in $SKILL_FILE, skipping warning insertion"
+        fi
+      fi
+    fi
+  done
+fi
+```
+
 #### Step 3: Quality Gate 4 - Pre-Sync Validation
 
 Validate before syncing to `~/.claude/`:
@@ -1035,6 +1588,19 @@ chmod +x /tmp/test-skill.sh
 #### Step 8: Commit Changes
 
 ```bash
+# Determine commit prefix based on mode
+CURRENT_MODE=$(jq -r '.workflow_mode' /tmp/skill-editor-session/session-state.json 2>/dev/null || echo "STANDARD")
+
+if [ "$CURRENT_MODE" = "EXPERIMENTAL" ]; then
+  COMMIT_PREFIX="experimental"
+  COMMIT_SUFFIX="
+
+[EXPERIMENTAL - requires full review before production use]"
+else
+  COMMIT_PREFIX="feat"
+  COMMIT_SUFFIX=""
+fi
+
 # Stage specific files (NEVER -A or .)
 git add claude-config/skills/{skill-name}/SKILL.md
 git add claude-config/skills/{skill-name}/examples/example.md  # if created
@@ -1042,8 +1608,8 @@ git add claude-config/agents/{agent-name}.json  # if modified
 git add planning/$(hostname)/*.md
 
 # Commit with HEREDOC (multi-line message)
-git commit -m "$(cat <<'EOF'
-feat(skill-name): [Brief description]
+git commit -m "$(cat <<EOF
+${COMMIT_PREFIX}(skill-name): [Brief description]
 
 [Detailed description from implementation plan]
 
@@ -1056,9 +1622,9 @@ Testing:
 - Tested invocation
 - No regressions
 
-See planning/$(hostname)/[date]-[title].md
+See planning/$(hostname)/[date]-[title].md${COMMIT_SUFFIX}
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
 )"
 

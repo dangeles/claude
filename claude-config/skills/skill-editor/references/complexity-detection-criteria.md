@@ -2,13 +2,18 @@
 
 ## Purpose
 
-Determine when to invoke Phase 2.5 (strategy-consultant agent) vs. skip directly to Phase 3.
+Determine workflow mode (Simple, Standard, Complex/Experimental) based on change characteristics.
 
-**Goal**: Avoid overhead for simple changes while ensuring strategic review for complex changes.
+**Primary goal**: Route changes to appropriate execution mode:
+- SIMPLE: Fast path for typos, docs, single-file fixes (~30 min)
+- STANDARD: Full workflow for features, workflow changes (~2-3 hours)
+- COMPLEX: Standard + Phase 2.5 strategic review for architectural changes
+- EXPERIMENTAL: User-requested fast iteration mode (bypass analysis)
 
 **Target metrics**:
-- False positive rate: <10% (simple changes incorrectly flagged as complex)
+- False positive rate: <5% (simple changes incorrectly flagged as complex)
 - False negative rate: <5% (complex changes incorrectly flagged as simple)
+- User override rate: <20% (indicates good auto-detection)
 
 ---
 
@@ -20,17 +25,22 @@ Determine when to invoke Phase 2.5 (strategy-consultant agent) vs. skip directly
    - Specification contains: "Create new skill"
    - Rationale: New skills are architectural additions requiring strategic assessment
 
-2. **Many files affected** (>3 files)
-   - File count exceeds 3
+2. **Many files affected** (>4 files)
+   - File count exceeds 4
    - Rationale: Multi-file changes likely have architectural implications
 
-3. **Large change** (>200 lines)
-   - Total lines changed exceeds 200
+3. **Large change** (>300 lines)
+   - Total lines changed exceeds 300
    - Rationale: Large changes carry higher risk of architectural issues
 
 4. **Explicit user request**
    - Specification contains: "strategic review" or "architectural assessment"
    - Rationale: User explicitly wants strategic perspective
+
+5. **Major refactoring keywords** [NEW]
+   - Specification contains: "refactor", "reorganize", "restructure", "migrate"
+   - AND: >2 files OR >150 lines
+   - Rationale: Refactoring changes often have architectural implications
 
 ---
 
@@ -45,6 +55,26 @@ Determine when to invoke Phase 2.5 (strategy-consultant agent) vs. skip directly
    - Scope mentions: "fix bug" or "fix typo" or "fix error"
    - AND: Single file, ≤50 lines
    - Rationale: Small fixes don't require strategic assessment
+
+---
+
+### Warning Zone (Soft Thresholds)
+
+Changes in the "warning zone" prompt user for Phase 2.5 decision:
+
+1. **Near file threshold**: 3-4 files affected
+   - Prompt: "Near Phase 2.5 threshold. Include strategic review?"
+   - Default: No (skip Phase 2.5)
+
+2. **Near line threshold**: 200-300 lines changed
+   - Prompt: "Near Phase 2.5 threshold. Include strategic review?"
+   - Default: No (skip Phase 2.5)
+
+3. **Refactoring keywords with moderate scope** [NEW]
+   - Contains: "refactor", "reorganize", "restructure"
+   - AND: 2-4 files, 100-300 lines
+   - Prompt: "Refactoring detected. Strategic review recommended."
+   - Default: Yes (run Phase 2.5)
 
 ---
 
@@ -65,86 +95,120 @@ Determine when to invoke Phase 2.5 (strategy-consultant agent) vs. skip directly
 ## Detection Function
 
 ```bash
-detect_complexity() {
+# Three-tier detection function (POSIX-compatible)
+detect_tier() {
   local SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
-  local COMPLEX=false
+  local TIER="STANDARD"
   local CONFIDENCE="low"
   local REASON=""
 
-  # Extract metrics from spec
+  # Fail-safe: Check spec file exists
+  if [ ! -f "$SPEC_FILE" ] || [ ! -s "$SPEC_FILE" ]; then
+    echo "STANDARD|error|Spec file unreadable, defaulting to STANDARD"
+    return
+  fi
+
+  # Extract metrics (POSIX-compatible - no grep -oP)
   FILES_CHANGED=$(grep -c "File:" "$SPEC_FILE" 2>/dev/null || echo 0)
-  LINES_CHANGED=$(grep -oP "Lines: \K[0-9]+" "$SPEC_FILE" 2>/dev/null | awk '{sum+=$1} END {print sum}')
+  # Use grep -o with POSIX patterns instead of grep -oP
+  LINES_CHANGED=$(grep -o 'Lines: [0-9]*' "$SPEC_FILE" 2>/dev/null | grep -o '[0-9]*' | awk '{sum+=$1} END {print sum+0}')
   [ -z "$LINES_CHANGED" ] && LINES_CHANGED=0
 
   SCOPE=$(grep -A10 "^## Scope" "$SPEC_FILE")
 
-  # High-confidence complex triggers
-  if grep -qi "Create new skill" "$SPEC_FILE"; then
-    COMPLEX=true
+  # === COMPLEX DETECTION (Phase 2.5 triggers) ===
+  if grep -qi "Create new skill" "$SPEC_FILE" 2>/dev/null; then
+    TIER="COMPLEX"
     CONFIDENCE="high"
     REASON="New skill creation"
-  elif [ "$FILES_CHANGED" -gt 3 ]; then
-    COMPLEX=true
+  elif [ "$FILES_CHANGED" -gt 4 ]; then
+    TIER="COMPLEX"
     CONFIDENCE="high"
-    REASON="Multiple files affected (>3)"
-  elif [ "$LINES_CHANGED" -gt 200 ]; then
-    COMPLEX=true
+    REASON="Multiple files affected (>4)"
+  elif [ "$LINES_CHANGED" -gt 300 ]; then
+    TIER="COMPLEX"
     CONFIDENCE="high"
-    REASON="Large change (>200 lines)"
-  elif grep -qi "strategic review\|architectural assessment" "$SPEC_FILE"; then
-    COMPLEX=true
+    REASON="Large change (>300 lines)"
+  elif grep -qi "strategic review\|architectural assessment" "$SPEC_FILE" 2>/dev/null; then
+    TIER="COMPLEX"
     CONFIDENCE="high"
     REASON="User explicitly requested strategic review"
+  elif grep -qi "refactor\|reorganize\|restructure\|migrate" "$SPEC_FILE" 2>/dev/null; then
+    if [ "$FILES_CHANGED" -gt 2 ] || [ "$LINES_CHANGED" -gt 150 ]; then
+      TIER="COMPLEX"
+      CONFIDENCE="high"
+      REASON="Refactoring with moderate+ scope"
+    fi
   fi
 
-  # High-confidence simple (override complex if both match)
+  # === SIMPLE DETECTION ===
   if [ "$CONFIDENCE" != "high" ]; then
     if echo "$SCOPE" | grep -qi "documentation\|typo\|comment\|example"; then
       if [ "$FILES_CHANGED" -le 1 ] && [ "$LINES_CHANGED" -le 50 ]; then
-        COMPLEX=false
+        TIER="SIMPLE"
         CONFIDENCE="high"
         REASON="Documentation-only change"
       fi
     fi
-
     if echo "$SCOPE" | grep -qi "fix bug\|fix typo\|fix error"; then
       if [ "$FILES_CHANGED" -le 1 ] && [ "$LINES_CHANGED" -le 50 ]; then
-        COMPLEX=false
+        TIER="SIMPLE"
         CONFIDENCE="high"
         REASON="Minor bug fix"
       fi
     fi
   fi
 
-  # Medium-confidence detection
+  # === STANDARD DETECTION (default) ===
   if [ "$CONFIDENCE" != "high" ]; then
-    if grep -qi "agent\|workflow\|phase\|quality gate\|multi-agent" "$SPEC_FILE"; then
+    if grep -qi "agent\|workflow\|phase\|quality gate" "$SPEC_FILE" 2>/dev/null; then
       if [ "$FILES_CHANGED" -le 2 ] && [ "$LINES_CHANGED" -le 100 ]; then
-        COMPLEX=false
+        TIER="STANDARD"
         CONFIDENCE="medium"
-        REASON="Keywords detected but change is small (user confirmation recommended)"
+        REASON="Keywords detected but change is small"
       else
-        COMPLEX=true
+        TIER="STANDARD"
         CONFIDENCE="medium"
-        REASON="Workflow/agent keywords with moderate change size"
+        REASON="Workflow keywords with moderate change size"
       fi
     fi
   fi
 
-  # Default for unclear cases
+  # === WARNING ZONE (soft thresholds) ===
+  if [ "$FILES_CHANGED" -ge 3 ] && [ "$FILES_CHANGED" -le 4 ]; then
+    if [ "$TIER" = "STANDARD" ]; then
+      CONFIDENCE="medium"
+      REASON="$REASON (near Phase 2.5 file threshold: $FILES_CHANGED files)"
+    fi
+  fi
+  if [ "$LINES_CHANGED" -ge 200 ] && [ "$LINES_CHANGED" -le 300 ]; then
+    if [ "$TIER" = "STANDARD" ]; then
+      CONFIDENCE="medium"
+      REASON="$REASON (near Phase 2.5 line threshold: $LINES_CHANGED lines)"
+    fi
+  fi
+
+  # === EXPERIMENTAL OVERRIDE (user keywords) ===
+  if grep -qi "experimental\|quick\|try\|test this\|prototype" "$SPEC_FILE" 2>/dev/null; then
+    TIER="EXPERIMENTAL"
+    CONFIDENCE="high"
+    REASON="User requested experimental/quick mode"
+  fi
+
+  # === DEFAULT for unclear ===
   if [ "$CONFIDENCE" = "low" ]; then
     if [ "$FILES_CHANGED" -ge 2 ] || [ "$LINES_CHANGED" -ge 100 ]; then
-      COMPLEX=true
+      TIER="STANDARD"
       CONFIDENCE="low"
-      REASON="Moderate size with unclear scope (user confirmation recommended)"
+      REASON="Moderate size with unclear scope"
     else
-      COMPLEX=false
+      TIER="SIMPLE"
       CONFIDENCE="medium"
       REASON="Small change with unclear scope"
     fi
   fi
 
-  echo "$COMPLEX|$CONFIDENCE|$REASON"
+  echo "$TIER|$CONFIDENCE|$REASON"
 }
 ```
 
@@ -307,6 +371,44 @@ Update skill-editor README with usage examples
 - CONFIDENCE=high
 - REASON="Documentation-only change"
 - Phase 2.5: SKIP
+
+---
+
+### Test Case 6: Experimental Override
+
+**Specification**: Contains "try this quick approach", 5 files, 400 lines
+**Expected**: TIER=EXPERIMENTAL, CONFIDENCE=high
+**Reason**: User requested experimental/quick mode
+
+---
+
+### Test Case 7: User Override
+
+**Specification**: 2 files, 80 lines, workflow keywords
+**Auto-detection**: STANDARD
+**User selection**: SIMPLE
+**Expected**: Confirmation prompt, proceed if user confirms
+
+---
+
+### Test Case 8: Warning Zone
+
+**Specification**: 4 files, 250 lines, "refactor" keyword
+**Expected**: TIER=STANDARD, CONFIDENCE=medium, warning zone prompt
+
+---
+
+### Test Case 9: Detection Failure
+
+**Specification**: Empty or malformed file
+**Expected**: TIER=STANDARD, CONFIDENCE=error (fail-safe default)
+
+---
+
+### Test Case 10: Refactoring Keywords
+
+**Specification**: "Refactor agent coordination", 3 files, 180 lines
+**Expected**: TIER=COMPLEX, CONFIDENCE=high (refactoring with scope)
 
 ---
 
