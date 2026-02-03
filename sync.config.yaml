@@ -28,6 +28,9 @@ sync_rules:
     - path: "skills/"
       description: "ALL skills (including plugin-provided)"
 
+    - path: "agents/"
+      description: "Custom agents for specialized workflows"
+
 # Exclusions (machine-specific/temporary)
 exclusions:
   - "settings.local.json"        # Machine-specific permissions
