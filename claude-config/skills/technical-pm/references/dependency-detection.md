@@ -134,6 +134,33 @@ technical-pm goal="..." --parallel    # Force all parallel where safe
 | editor | 5-15 min | No - needs near-final content |
 | archivist | 1-5 min | No - quick, sequential fine |
 
+### Parallel-Eligible Skills (Task Tool)
+
+For Task tool parallel execution, only these skills qualify:
+
+| Skill | Parallel Eligible | Template Location |
+|-------|-------------------|-------------------|
+| researcher | Yes | `task-templates.md#template-researcher` |
+| calculator | Yes | `task-templates.md#template-calculator` |
+| synthesizer | Conditional* | `task-templates.md#template-synthesizer` |
+| devils-advocate | No | - |
+| fact-checker | No | - |
+| editor | No | - |
+| archivist | No | - |
+
+*Synthesizer can run parallel only if synthesizing independent sources, not dependent on other parallel tasks in the same batch.
+
+**Why these three?**
+1. Long duration (>5 min) makes parallel overhead worthwhile
+2. Produce self-contained outputs (don't need interactive guidance)
+3. Can operate with embedded instructions (templates capture essential behavior)
+
+**Why NOT the others?**
+- devils-advocate, fact-checker, editor: Need content to review (natural dependency)
+- archivist: Too short (<5 min), parallel overhead exceeds benefit
+
+For parallel execution protocol, see `parallel-execution.md`.
+
 ## Natural Skill Dependencies
 
 Some skills have inherent dependencies based on their function:

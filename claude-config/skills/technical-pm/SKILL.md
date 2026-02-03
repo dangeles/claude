@@ -879,3 +879,139 @@ If workflow is interrupted (Ctrl+C):
 - User can resume with: "Resume my workflow" or abort with: "Abort workflow"
 
 See `references/workflow-state.md` for full protocol.
+
+---
+
+## Parallel Execution for Long-Running Tasks
+
+When independent long-running tasks can execute simultaneously, use the Task tool with embedded templates for 2-3x speedup.
+
+### Eligible Skills
+
+Only these skills are eligible for parallel Task execution:
+
+| Skill | Duration | Parallel? | Rationale |
+|-------|----------|-----------|-----------|
+| researcher | 30-60 min | Yes | Long-running, self-contained output |
+| calculator | 5-30 min | Yes | Long-running, self-contained output |
+| synthesizer | 15-30 min | Conditional | Only if inputs are independent |
+
+All other skills (devils-advocate, fact-checker, editor, archivist) remain sequential via Skill tool.
+
+### When to Parallelize
+
+**Use parallel execution when:**
+- 2+ eligible skills identified in goal
+- No data dependency between tasks
+- Combined duration > 30 minutes
+- Tasks operate on different topics/domains
+
+**Use sequential execution when:**
+- Tasks have explicit dependency ("based on", "using results")
+- Quality is more important than speed
+- User explicitly requests --sequential
+
+See `references/dependency-detection.md` for full detection algorithm.
+
+### Invocation Pattern
+
+```
+# Step 1: Dependency Detection
+Analyze goal -> classify task pairs as parallel/sequential/ask_user
+
+# Step 2: Setup (if parallel)
+Generate batch_id
+Create output directories: scratchpad/{skill}/{batch_id}/
+
+# Step 3: Launch Tasks
+Task(general-purpose, researcher_template with substituted variables)
+Task(general-purpose, calculator_template with substituted variables)
+
+# Step 4: Validate Outputs
+For each completed task:
+  - Check output exists
+  - Apply skill-specific quality checklist
+  - Verify template integrity sentinel
+
+# Step 5: Aggregate and Continue
+Combine outputs for synthesis or deliver directly
+```
+
+### Template References
+
+Each parallel task requires a comprehensive template embedding skill instructions:
+
+| Template | Location | Size |
+|----------|----------|------|
+| Researcher | `references/task-templates.md#template-researcher` | ~100 lines |
+| Calculator | `references/task-templates.md#template-calculator` | ~100 lines |
+| Synthesizer | `references/task-templates.md#template-synthesizer` | ~100 lines |
+
+Templates include:
+- Role personality (how the agent should behave)
+- Task instructions (step-by-step guidance)
+- Output requirements (format, location)
+- Quality checklist (validation criteria)
+- Integrity sentinel (truncation detection)
+
+### Quality Gates
+
+Before parallel execution proceeds to synthesis:
+
+**Pre-Launch Gate**:
+- [ ] Dependency detection confirms parallel-safe
+- [ ] Output paths unique (no collision)
+- [ ] Directories created
+
+**Task Completion Gate** (per task):
+- [ ] Output file exists at expected location
+- [ ] Meets minimum length requirements
+- [ ] Skill-specific quality criteria satisfied
+- [ ] Template integrity sentinel present
+
+**Batch Synthesis Gate**:
+- [ ] At least 50% of tasks passed (or user override)
+- [ ] No output conflicts detected
+
+See `references/parallel-execution.md` for detailed quality gate criteria.
+
+### Error Handling
+
+**Single task failure**: Present user options (retry, skip, review output)
+**Quality validation failure**: Present failed criteria, offer accept/retry/skip
+**All tasks fail**: Trigger catastrophic failure protocol, offer sequential fallback
+
+See `references/parallel-execution.md#error-handling` for full protocol.
+
+### Example
+
+User: "Research hepatocyte oxygenation AND calculate bioreactor capacity"
+
+```
+# Dependency detection
+- No explicit markers ("based on", "using")
+- Shared terms: 1 ("oxygenation")
+- Decision: PARALLEL
+
+# Execution
+Task(general-purpose, researcher_template)  # 45 min estimated
+Task(general-purpose, calculator_template)  # 20 min estimated
+# Total: ~45 min parallel vs 65 min sequential
+
+# Validation
+Researcher: PASS (1450 chars, 5 citations, has summary)
+Calculator: PASS (520 chars, numeric result with units)
+
+# Aggregation
+Combine outputs, check for contradictions, deliver summary
+```
+
+See `examples/parallel-execution-example.md` for complete walkthrough.
+
+### References
+
+For detailed protocols, see:
+- **Parallel execution**: `references/parallel-execution.md` - Full orchestrator protocol
+- **Task templates**: `references/task-templates.md` - Embedded skill templates
+- **Dependency detection**: `references/dependency-detection.md` - Parallel vs sequential logic
+- **Example**: `examples/parallel-execution-example.md` - Complete workflow walkthrough
