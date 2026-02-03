@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "scientific-skills@claude-scientific-skills": true
+  }
+}

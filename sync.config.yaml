@@ -1,0 +1,61 @@
+version: "1.0"
+
+# Source directory (Claude Code's user-wide config)
+source_dir: "~/.claude"
+
+# Target directory in repository
+target_dir: "./claude-config"
+
+# Project-specific configs
+project_configs:
+  enabled: true
+  search_paths:
+    - "~/repos/*"
+  target_dir: "./project-configs"
+  config_files:
+    - ".claude-project.json"
+    - ".claude/"
+
+# Files and directories to sync
+sync_rules:
+  always:
+    - path: "settings.json"
+      description: "Plugin enable/disable flags"
+
+    - path: "plugins/installed_plugins.json"
+      description: "Plugin versions for reproducibility"
+
+    - path: "skills/"
+      description: "ALL skills (including plugin-provided)"
+
+# Exclusions (machine-specific/temporary)
+exclusions:
+  - "settings.local.json"        # Machine-specific permissions
+  - "history.jsonl"              # Session history
+  - "debug/"                     # Debug logs
+  - "file-history/"              # File editing history
+  - "cache/"                     # Downloaded caches
+  - "plugins/cache/"             # Plugin binaries (will re-download)
+  - "projects/"                  # Project-specific session data
+  - "tasks/"                     # Task tracking
+  - "todos/"                     # Todo items
+  - "session-env/"               # Session environment
+  - "shell-snapshots/"           # Shell state
+  - "stats-cache.json"           # Usage statistics
+  - "statsig/"                   # Analytics
+  - "telemetry/"                 # Telemetry
+  - "paste-cache/"               # Clipboard cache
+  - "downloads/"                 # Downloads
+  - "plans/"                     # Claude's ephemeral plans (DO NOT SYNC)
+
+# Conflict resolution
+conflict_resolution:
+  default: "prompt"              # Interactive prompts (user preference)
+  show_diff: true
+  allow_abort: true
+
+# Backup settings
+backup:
+  enabled: true
+  location: "./claude-config/.backups"
+  max_backups: 5

@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "plugins": {
+    "superpowers@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/superpowers/4.1.1",
+        "version": "4.1.1",
+        "installedAt": "2026-01-21T16:45:02.765Z",
+        "lastUpdated": "2026-01-24T18:46:27.833Z",
+        "gitCommitSha": "a01a135fe185559ff9dc84dd70d6e9bb57d92bdf"
+      }
+    ],
+    "scientific-skills@claude-scientific-skills": [
+      {
+        "scope": "user",
+        "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-scientific-skills/scientific-skills/a31cf4dd97e0",
+        "version": "a31cf4dd97e0",
+        "installedAt": "2026-01-27T05:58:05.435Z",
+        "lastUpdated": "2026-01-27T05:58:05.435Z",
+        "gitCommitSha": "a31cf4dd97e0fd3e9d4802f9ebb5ce47ea30b8c0"
+      }
+    ]
+  }
+}
