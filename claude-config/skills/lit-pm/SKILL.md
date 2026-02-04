@@ -1,6 +1,20 @@
 ---
 name: lit-pm
 description: Use when coordinating comprehensive literature reviews requiring multi-stage pipeline (archival setup, scope refinement, parallel review discovery, outline synthesis, section writing, fact-checking, editorial polish). Orchestrates literature-researcher, lit-synthesizer, fact-checker, and editor skills with adaptive checkpoints based on complexity and stakes.
+
+handoff:
+  accepts_handoff: true
+  handoff_categories: [research, analysis]
+  handoff_description: "Comprehensive literature review with 9-stage pipeline (4-24 hours)"
+  handoff_trigger: "--handoff {payload_path}"
+  protocol_version: "2.0"
+  requires:
+    - context.original_prompt
+    - context.problem_type
+  optional_consumes:
+    - research_seeds.suggested_terms
+    - research_seeds.open_questions
+    - insights.uncertainties
 ---
 
 # lit-pm: Literature Pipeline Manager

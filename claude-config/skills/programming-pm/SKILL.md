@@ -1,6 +1,19 @@
 ---
 name: programming-pm
 description: Use when coordinating software development projects requiring multiple specialists (architect, developers, mathematician, statistician) with quality gates for archival setup, requirements, architecture, pre-mortem, code review, testing, and version control integration.
+
+handoff:
+  accepts_handoff: true
+  handoff_categories: [implementation, architecture]
+  handoff_description: "Software development with 7-phase pipeline (2-8 hours)"
+  handoff_trigger: "--handoff {payload_path}"
+  protocol_version: "2.0"
+  requires:
+    - context.original_prompt
+    - context.problem_type
+  optional_consumes:
+    - context.synthesis_summary
+    - insights.convergent
 ---
 
 # Programming Project Manager

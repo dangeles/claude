@@ -51,7 +51,7 @@ Enable rapid multi-perspective brainstorming through parallel agent execution, p
                      |
               +------v------+
               | Stage 4:    | Present synthesis
-              | OUTPUT      | Accept / Refine / Handoff to lit-pm
+              | OUTPUT      | Accept / Refine / Handoff to workflow
               +-------------+
 ```
 
@@ -180,6 +180,8 @@ Options:
 
 **State**: AWAITING_USER
 
+**Pre-requisite**: Run workflow discovery (see references/workflow-discovery.md)
+
 Present synthesis to user with options:
 
 ```
@@ -187,15 +189,42 @@ Present synthesis to user with options:
 
 [Executive summary]
 
-**Options:**
+**Core Options:**
 (A) Accept - Workflow complete
 (B) Refine - Provide feedback, return to Stage 3
-(C) Deep dive - Hand off to lit-pm for comprehensive literature review
+
+**Continue with another workflow:**
+{If handoff-eligible workflows found, display top 3-5 by relevance}
+
+Example output when workflows available:
+(C) [research] lit-pm - Comprehensive literature review (4-24 hours)
+(D) [implementation] programming-pm - Software implementation (2-8 hours)
+(E) [creative] pov-expansion - Cross-domain perspective analysis (2-3 hours)
+
+Example output when NO workflows found:
+---
+No handoff-eligible workflows detected.
+To enable handoffs, add `handoff:` metadata to skill SKILL.md files.
+See: references/workflow-discovery.md
+---
+
+Select an option:
 ```
 
 **On Accept**: State -> COMPLETED
 **On Refine**: State -> CONVERGING (with user feedback)
-**On Deep dive**: Generate handoff-payload.yaml, invoke lit-pm
+**On Handoff (C/D/E...)**:
+1. Validate selected workflow still available
+2. Generate handoff-payload.yaml (see references/handoff-schema.md)
+3. Invoke target skill with payload path
+4. State -> COMPLETED (on successful handoff)
+
+**Relevance Scoring**: Workflows are ranked by relevance to synthesis content:
+- Category match to problem_type: +3 points
+- High uncertainty signals + research category: +2 points
+- Implementation keywords + implementation category: +2 points
+- Low convergence + research category: +2 points
+- Project-scope workflows: +1 point priority bonus
 
 ## Session Directory Structure
 
@@ -211,7 +240,8 @@ Present synthesis to user with options:
 │   ├── innovator.md
 │   └── pragmatist.md
 ├── stage-3-synthesis.md            # Final synthesis
-└── handoff-payload.yaml            # (if lit-pm requested)
+├── available-workflows.yaml        # Discovered handoff targets (cached)
+└── handoff-payload.yaml            # (if handoff requested)
 ```
 
 ## State Machine
@@ -317,8 +347,15 @@ resource_limits:
 
 ## Dependencies
 
-- `lit-pm` - Optional handoff target for deep literature review
+- Any skill with `handoff:` metadata is a valid handoff target
+- Discovery algorithm documented in: `references/workflow-discovery.md`
+- Handoff schema documented in: `references/handoff-schema.md`
 - Adapts patterns from: `parallel-coordinator`, `synthesizer`
+
+**Known handoff-eligible skills** (as of implementation):
+- `lit-pm` - Comprehensive literature review [research]
+- `programming-pm` - Software implementation [implementation]
+- `pov-expansion` - Cross-domain perspectives [creative, analysis]
 
 ## Notes
 
@@ -335,7 +372,8 @@ resource_limits:
 - [persona-archetypes.md](references/persona-archetypes.md) - Archetype definitions
 - [convergence-algorithm.md](references/convergence-algorithm.md) - Weighting logic
 - [workflow-state-schema.md](references/workflow-state-schema.md) - Session state format
-- [handoff-schema.md](references/handoff-schema.md) - Lit-pm handoff format
+- [handoff-schema.md](references/handoff-schema.md) - Generic handoff payload format (v2.0)
+- [workflow-discovery.md](references/workflow-discovery.md) - Handoff target discovery algorithm
 
 ## Examples
 

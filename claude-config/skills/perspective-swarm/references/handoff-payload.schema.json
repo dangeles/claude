@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude.ai/skills/perspective-swarm/handoff-payload.schema.json",
+  "title": "Perspective Swarm Handoff Payload v2.0",
+  "description": "Schema for validating handoff payloads from perspective-swarm to other workflows",
+  "type": "object",
+  "required": ["handoff"],
+  "properties": {
+    "handoff": {
+      "type": "object",
+      "required": ["version", "timestamp", "source", "target", "context"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "const": "2.0",
+          "description": "Schema version"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO8601 timestamp of handoff creation"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO8601 timestamp when payload expires"
+        },
+        "source": {
+          "type": "object",
+          "required": ["skill", "workflow_id", "session_path"],
+          "properties": {
+            "skill": {
+              "type": "string",
+              "const": "perspective-swarm"
+            },
+            "workflow_id": {
+              "type": "string",
+              "pattern": "^swarm-session-[0-9]{8}-[0-9]{6}-[a-f0-9]{8}$",
+              "description": "Unique workflow identifier matching session directory format"
+            },
+            "session_path": {
+              "type": "string",
+              "description": "Absolute path to session directory"
+            }
+          }
+        },
+        "target": {
+          "type": "object",
+          "required": ["skill"],
+          "properties": {
+            "skill": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Target skill name"
+            },
+            "invocation": {
+              "type": "string",
+              "description": "How to invoke the target skill"
+            },
+            "category": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Primary category of the target skill (extensible - not restricted to fixed enum)"
+            }
+          }
+        },
+        "context": {
+          "type": "object",
+          "required": ["original_prompt", "problem_type"],
+          "properties": {
+            "original_prompt": {
+              "type": "string",
+              "minLength": 1,
+              "description": "User's original question"
+            },
+            "reframed_challenge": {
+              "type": "string",
+              "description": "Neutrally framed challenge"
+            },
+            "problem_type": {
+              "type": "string",
+              "enum": ["decision", "creative", "analytical", "strategic"]
+            },
+            "synthesis_summary": {
+              "type": "string",
+              "description": "Executive summary from Stage 3"
+            }
+          }
+        },
+        "insights": {
+          "type": "object",
+          "properties": {
+            "convergent": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["theme"],
+                "properties": {
+                  "theme": { "type": "string" },
+                  "confidence_score": { "type": "number", "minimum": 0, "maximum": 10 },
+                  "contributing_archetypes": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "key_evidence": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "divergent": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["archetype", "insight"],
+                "properties": {
+                  "archetype": { "type": "string" },
+                  "insight": { "type": "string" },
+                  "confidence": { "type": "integer", "minimum": 1, "maximum": 5 }
+                }
+              }
+            },
+            "uncertainties": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "blind_spots": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "research_seeds": {
+          "type": "object",
+          "properties": {
+            "suggested_terms": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["term"],
+                "properties": {
+                  "term": { "type": "string" },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "open_questions": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "perspectives_completed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "convergence_level": {
+              "type": "string",
+              "enum": ["high", "medium", "low", "none"]
+            },
+            "user_feedback": { "type": "string" },
+            "handoff_reason": { "type": "string" },
+            "handoff_chain": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1,
+              "description": "Track handoff history within session - built from session history, not discovery"
+            },
+            "payload_hash": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "payload_size_bytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

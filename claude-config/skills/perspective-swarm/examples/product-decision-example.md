@@ -204,3 +204,118 @@ Workflow state: COMPLETED
 3. **Conflict was informative**: Tension between Optimist and Critic highlighted real strategic trade-off
 4. **Blind spots aggregated well**: Combined view revealed overconfidence in estimates
 5. **Total time**: 22 minutes (within 30-minute target)
+
+---
+
+## Alternate Stage 4: User Review with Multiple Handoff Options
+
+This section demonstrates the generic handoff mechanism when the user chooses to continue with another workflow.
+
+### Synthesis Presented with Handoff Options
+
+```
+## Synthesis Complete
+
+European market expansion presents a significant growth opportunity with
+regulatory complexity as the primary risk factor. Five perspectives were
+analyzed, with strong convergence on market potential and divergent views
+on entry strategy.
+
+**Core Options:**
+(A) Accept - Workflow complete
+(B) Refine - Provide feedback, return to Stage 3
+
+**Continue with another workflow:**
+(C) [research] lit-pm - Comprehensive literature review (4-24 hours)
+    Relevance: HIGH (strategic problem + 3 uncertainties)
+(D) [creative] pov-expansion - Cross-domain perspective analysis (2-3 hours)
+    Relevance: MEDIUM (strategic problem)
+(E) [implementation] programming-pm - Software implementation (2-8 hours)
+    Relevance: LOW (no implementation signals)
+
+Select an option: C
+```
+
+### User Selects lit-pm (Option C)
+
+**Handoff payload generated**: `/tmp/swarm-session-20260204-183000-a1b2c3d4/handoff-payload.yaml`
+
+```yaml
+handoff:
+  version: "2.0"
+  timestamp: "2026-02-04T19:00:00Z"
+  expires_at: "2026-02-04T20:00:00Z"
+
+  source:
+    skill: perspective-swarm
+    workflow_id: swarm-session-20260204-183000-a1b2c3d4
+    session_path: /tmp/swarm-session-20260204-183000-a1b2c3d4/
+
+  target:
+    skill: lit-pm
+    invocation: "--handoff {payload_path}"
+    category: research
+
+  context:
+    original_prompt: "Should we expand into the European market?"
+    reframed_challenge: "Evaluate market expansion opportunity: European market entry for B2B SaaS product"
+    problem_type: strategic
+    synthesis_summary: |
+      European market expansion presents a significant growth opportunity with
+      regulatory complexity as the primary risk factor. Market data supports
+      demand, but implementation feasibility requires careful planning around
+      GDPR compliance and local market adaptation.
+
+  insights:
+    convergent:
+      - theme: "Growth opportunity in EU market"
+        confidence_score: 7.2
+        contributing_archetypes: [optimist, pragmatist]
+        key_evidence:
+          - "EU B2B SaaS market growing at 12% CAGR"
+          - "Low competition in specific vertical"
+
+    divergent:
+      - archetype: critic
+        insight: "GDPR compliance costs underestimated in most expansion plans"
+        confidence: 5
+      - archetype: innovator
+        insight: "Partnership model may be better than direct entry"
+        confidence: 3
+
+    uncertainties:
+      - "True cost of GDPR compliance for our data model"
+      - "Local competitor response timeline"
+      - "Currency fluctuation impact on pricing"
+
+    blind_spots:
+      - "May underweight execution complexity (Optimist)"
+      - "May miss partnership opportunities (Pragmatist)"
+      - "Limited quantitative data on our specific vertical (Analyst)"
+
+  research_seeds:
+    suggested_terms:
+      - term: "B2B SaaS GDPR compliance cost studies"
+        rationale: "Address critic's concern about underestimated compliance"
+      - term: "European market entry partnership vs direct"
+        rationale: "Explore innovator's partnership suggestion"
+      - term: "SaaS expansion case studies Europe 2024-2025"
+        rationale: "Find comparable examples for analyst validation"
+    open_questions:
+      - "What is the average GDPR compliance cost for similar SaaS products?"
+      - "What partnership models have succeeded for US B2B SaaS in EU?"
+      - "How long does typical EU market entry take for our category?"
+
+  meta:
+    perspectives_completed: 5
+    convergence_level: medium
+    user_feedback: "Particularly interested in GDPR compliance depth"
+    handoff_reason: "User selected deep literature research for regulatory clarity"
+    handoff_chain: ["perspective-swarm"]
+    payload_hash: "sha256:a1b2c3d4e5f6..."
+    payload_size_bytes: 3247
+```
+
+**Invocation**: `/lit-pm --handoff /tmp/swarm-session-20260204-183000-a1b2c3d4/handoff-payload.yaml`
+
+**State transition**: AWAITING_USER -> COMPLETED
