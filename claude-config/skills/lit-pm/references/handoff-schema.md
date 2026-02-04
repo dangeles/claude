@@ -184,6 +184,55 @@ stage_5_to_6b:
     content: string
 ```
 
+### Stage 6b -> Stage 6c: Fact-Check to Devil's Advocate Section Review
+
+```yaml
+stage_6b_to_6c:
+  section:
+    id: string
+    title: string
+    content: string  # markdown, fact-checked
+    thesis: string   # from outline, for strategic coherence check
+    word_count: integer
+  fact_check_results:
+    status: enum  # PASS | PASS_WITH_WARNINGS
+    revision_list:
+      p0_critical: list
+      p1_important: list
+      p2_nice_to_have: list
+  context:
+    research_question: string        # from Stage 1 scope
+    complexity_tier: string          # for adjusting challenge depth
+    other_sections_summary: list | null  # brief thesis of other sections for cross-reference
+```
+
+### Stage 6c -> Stage 7: Devil's Advocate Reviewed Sections to Synthesis
+
+```yaml
+stage_6c_to_7:
+  sections:
+    - id: string
+      title: string
+      content: string  # may have inline revisions from writer response
+      da_review_status: enum  # APPROVED | APPROVED_WITH_UNCERTAINTY
+      da_review_summary:
+        exchanges_completed: integer  # 1 or 2
+        strategic_challenges:
+          - challenge: string
+            challenge_category: enum  # thesis_coherence | evidence_sufficiency | methodology_context | logical_gap
+            resolution: string
+            resolved: boolean
+        tactical_challenges:
+          - challenge: string
+            resolution: string
+            resolved: boolean
+        uncertainty_notes: list | null  # if 2 exchanges without full resolution
+        unresolved_count: integer
+  synthesis_guidance:
+    sections_needing_attention: list  # sections with unresolved uncertainties
+    thesis_coherence_notes: string | null  # strategic-level feedback
+```
+
 ### Stage 6b -> Stage 7: Fact-Check Results to Synthesis
 
 ```yaml
@@ -211,6 +260,70 @@ stage_6b_to_7:
     gaps:
       - description: string
         severity: string
+```
+
+### Stage 7 -> Stage 7.5: Synthesis to Devil's Advocate Review (CONDITIONAL)
+
+```yaml
+stage_7_to_7_5:
+  trigger_evaluation:
+    triggered: boolean
+    reason: enum  # ADDITION_THRESHOLD | HIGH_STAKES | BOTH | NOT_TRIGGERED
+    thresholds:
+      addition_percentage_threshold: 20
+      complexity_tier_threshold: HIGH-STAKES
+    actual_values:
+      addition_percentage: float
+      complexity_tier: string
+    evaluation_timestamp: ISO8601
+  document:
+    introduction: string
+    sections:
+      - id: string
+        title: string
+        content: string
+        modified_by_synthesis: boolean
+        modifications: list | null
+    conclusion: string
+  synthesis_metadata:
+    cross_cutting_themes:
+      - theme: string
+        sections_involved: list
+        synthesis_added: string
+    structural_changes:
+      - type: enum  # reorder | merge | add | rewrite
+        description: string
+    content_additions:
+      input_word_count: integer
+      output_word_count: integer
+      addition_word_count: integer
+      addition_percentage: float
+```
+
+### Stage 7.5 -> Stage 8: DA Synthesis Review to Editorial Polish
+
+```yaml
+stage_7_5_to_8:
+  document:
+    introduction: string
+    sections: list
+    conclusion: string
+  da_synthesis_review:
+    status: enum  # APPROVED | APPROVED_WITH_UNCERTAINTY | SKIPPED
+    trigger_reason: string | null  # Why 7.5 ran (or "skipped" if not triggered)
+    exchanges_completed: integer
+    strategic_assessment:
+      thesis_coherence: enum  # STRONG | ADEQUATE | WEAK_DOCUMENTED
+      cross_cutting_themes: enum  # VALID | QUESTIONABLE_DOCUMENTED
+      argument_flow: enum  # LOGICAL | NEEDS_WORK_NOTED
+    strategic_challenges:
+      - issue: string
+        sections_involved: list
+        resolution: string
+        resolved: boolean
+    uncertainty_notes: list | null
+  revision_list_from_6b: object  # Pass through from Stage 6b
+  stage_7_5_executed: boolean    # Explicit flag for editor awareness
 ```
 
 ### Stage 7 -> Stage 8: Synthesis to Editorial Polish
@@ -277,7 +390,11 @@ stage_8_final:
 | 5 -> 6a | section.content, section.paper_count |
 | 6a -> 5/7 | status, checks |
 | 5 -> 6b | all sections with PASS status |
+| 6b -> 6c | section.content, section.thesis, fact_check_results |
+| 6c -> 7 | sections[].da_review_status, sections[].da_review_summary |
 | 6b -> 7 | revision_list |
+| 7 -> 7.5 | trigger_evaluation, document (if triggered) |
+| 7.5 -> 8 | da_synthesis_review.status, document, stage_7_5_executed |
 | 7 -> 8 | document, synthesis_notes |
 | 8 -> delivery | document.content, quality_summary |
 
