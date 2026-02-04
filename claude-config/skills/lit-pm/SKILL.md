@@ -52,6 +52,7 @@ Before Stage 1 begins, verify all required skills exist:
 - [ ] lit-synthesizer (Stages 4, 7: Introduction, synthesis)
 - [ ] fact-checker (Stages 6a, 6b: Validation)
 - [ ] editor (Stage 8: Editorial polish)
+- [ ] devils-advocate (Stages 6c, 7.5: Adversarial review)
 
 **On missing skill**: ABORT immediately with clear error:
 "ERROR: Required skill '{skill}' not found. lit-pm requires all dependencies. See references/stage-specifications.md for skill details."
@@ -123,6 +124,20 @@ Deep checks: cross-section consistency, citation accuracy (spot-check), quantita
 
 **Quality Gate**: Revision list generated for Stage 8.
 
+### Stage 6c: Devil's Advocate Section Review (ALWAYS-ON)
+**Owner**: devils-advocate
+**Checkpoint**: ACTIVE (always runs, not user approval)
+**Duration**: 30 min/section
+**Trigger**: All sections pass Stage 6a/6b
+
+Adversarial review of each section: challenges argument quality, tests assumptions, identifies logical gaps. Max 2 exchanges per section. Pass with uncertainty note on timeout.
+
+**Quality Gate**: All strategic challenges addressed OR 2 exchanges complete with uncertainty documented.
+
+**Scope Separation (vs Fact-Checker)**:
+- **devils-advocate CAN challenge**: Argument strength, assumption validity, logical coherence, thesis appropriateness, methodology context for claims
+- **devils-advocate CANNOT challenge**: Citation accuracy, whether papers exist, whether values match sources (fact-checker domain)
+
 ### Stage 7: Active Synthesis & Augmentation
 **Owner**: lit-synthesizer (senior author role)
 **Checkpoint**: HIGH-STAKES only
@@ -131,6 +146,16 @@ Deep checks: cross-section consistency, citation accuracy (spot-check), quantita
 Senior author reads all sections, identifies cross-cutting themes, restructures for narrative flow, writes conclusion. Authority to add subsections and rewrite transitions. Flags additions >20%.
 
 **Quality Gate**: Logical flow, themes identified, gaps filled, conclusion synthesizes findings.
+
+### Stage 7.5: Devil's Advocate Synthesis Review (CONDITIONAL)
+**Owner**: devils-advocate
+**Checkpoint**: CONDITIONAL (>=20% additions OR HIGH-STAKES)
+**Duration**: 60 min
+**Trigger**: (addition_percentage >= 20%) OR (complexity == HIGH-STAKES)
+
+Strategic-level adversarial review of synthesized document: thesis coherence across sections, cross-cutting theme validity, argument flow. Max 2 exchanges.
+
+**Quality Gate**: Document passes strategic review OR 2 exchanges complete with uncertainty documented.
 
 ### Stage 8: Editorial Polish
 **Owner**: editor
@@ -155,12 +180,18 @@ See `references/adaptive-orchestration.md` for full complexity detection logic.
 
 ### Checkpoint Plan Table
 
-| Complexity | Stage 1 | Stage 2 | Stage 3 | Stage 7 | Rationale |
-|------------|---------|---------|---------|---------|-----------|
-| Simple | CHECKPOINT | Auto | Auto | Auto | Scope approval sufficient |
-| Medium | CHECKPOINT | Auto | CHECKPOINT | Auto | Direction check before heavy lifting |
-| Complex | CHECKPOINT | Auto | CHECKPOINT | CHECKPOINT | Multiple approval points |
-| High-Stakes | CHECKPOINT | CHECKPOINT | CHECKPOINT | CHECKPOINT | Maximum oversight |
+| Complexity | Stage 1 | Stage 2 | Stage 3 | Stage 6c | Stage 7 | Stage 7.5 | Rationale |
+|------------|---------|---------|---------|----------|---------|-----------|-----------|
+| Simple | CHECKPOINT | Auto | Auto | ACTIVE | Auto | Conditional* | Scope approval sufficient |
+| Medium | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | Auto | Conditional* | Direction check before heavy lifting |
+| Complex | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | CHECKPOINT | Conditional* | Multiple approval points |
+| High-Stakes | CHECKPOINT | CHECKPOINT | CHECKPOINT | ACTIVE | CHECKPOINT | ACTIVE | Maximum oversight |
+
+**Checkpoint Types**:
+- **CHECKPOINT**: User approval required before proceeding
+- **Auto**: Runs automatically, no user interaction
+- **ACTIVE**: Always runs as quality gate (not user approval)
+- **Conditional***: Triggers if synthesis adds >=20% content
 
 ### User Override Options
 
@@ -184,6 +215,8 @@ After proposing checkpoint plan, user can:
 | 6a (Quick FC) | 15 min/section | Pass with warning |
 | 6b (Deep FC) | 120 min | Skip deep check |
 | 7 (Synthesis) | 5 hours | Escalate to user |
+| 6c (DA Section) | 30 min/section | Pass with uncertainty note |
+| 7.5 (DA Synthesis) | 60 min | Proceed to Stage 8 with warning |
 | 8 (Editorial) | 90 min | Deliver as-is |
 
 **Per-Agent Timeouts**:
@@ -288,6 +321,7 @@ See `references/quality-gates.md` for detailed per-stage gates.
 Even with `--full-auto`, these checks cannot be skipped:
 - Stage 2: minimum 4 reviews, minimum 1 convergence
 - Stage 3: minimum 2 sections, max 50% imbalance
+- Stage 6c: DA must execute, thesis must be identified for each section
 
 ---
 
