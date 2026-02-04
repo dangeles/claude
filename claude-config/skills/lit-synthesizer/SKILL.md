@@ -259,7 +259,19 @@ structural_changes_made:
 sections_added: 1
 sections_removed: 0
 sections_reordered: 2
+
+# NEW: Content addition metrics for Stage 7.5 trigger
+content_additions:
+  input_word_count: integer      # Sum of section word counts before synthesis
+  output_word_count: integer     # Final document word count
+  addition_word_count: integer   # output - input
+  addition_percentage: float     # (addition_word_count / input_word_count) * 100
 ```
+
+**Note on addition_percentage**: This field is REQUIRED for lit-pm Stage 7.5 conditional trigger. Calculate as:
+`addition_percentage = ((output_word_count - input_word_count) / input_word_count) * 100`
+
+If addition_percentage >= 20%, lit-pm triggers Stage 7.5 (devil's advocate synthesis review).
 
 ### Execution No-Parallel Rule
 
