@@ -104,12 +104,12 @@ classify_complexity:
 
 Based on complexity tier, lit-pm proposes this checkpoint plan:
 
-| Complexity | Stage 1 | Stage 2 | Stage 3 | Stage 6c | Stage 7 | Stage 7.5 | Rationale |
-|------------|---------|---------|---------|----------|---------|-----------|-----------|
-| Simple | CHECKPOINT | Auto | Auto | ACTIVE | Auto | Conditional | Scope approval sufficient |
-| Medium | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | Auto | Conditional | Direction check before heavy lifting |
-| Complex | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | CHECKPOINT | Conditional | Multiple approval points |
-| High-Stakes | CHECKPOINT | CHECKPOINT | CHECKPOINT | ACTIVE | CHECKPOINT | ACTIVE | Maximum oversight |
+| Complexity | Stage 0 | Stage 1 | Stage 2 | Stage 3 | Stage 6c | Stage 7 | Stage 7.5 | Rationale |
+|------------|---------|---------|---------|---------|----------|---------|-----------|-----------|
+| Simple | Auto | CHECKPOINT | Auto | Auto | ACTIVE | Auto | Conditional | Scope approval sufficient |
+| Medium | Auto | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | Auto | Conditional | Direction check before heavy lifting |
+| Complex | Auto | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | CHECKPOINT | Conditional | Multiple approval points |
+| High-Stakes | Auto | CHECKPOINT | CHECKPOINT | CHECKPOINT | ACTIVE | CHECKPOINT | ACTIVE | Maximum oversight |
 
 **Checkpoint Types**:
 - **CHECKPOINT**: User approval required before proceeding
@@ -117,10 +117,13 @@ Based on complexity tier, lit-pm proposes this checkpoint plan:
 - **ACTIVE**: Always runs as quality gate (not user approval gate)
 - **Conditional**: Triggers only when condition met (>=20% additions for 7.5)
 
+**Note**: Stage 0 (Archival Guidelines) always runs automatically and is never a checkpoint.
+
 ### Checkpoint Purposes
 
 | Stage | Checkpoint Purpose |
 |-------|-------------------|
+| 0 | (Auto) Initialize session, extract archival guidelines |
 | 1 | Validate research question and boundaries |
 | 2 | Confirm foundational reviews are correct |
 | 3 | Approve structure before section writing (expensive) |

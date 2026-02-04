@@ -1,6 +1,51 @@
 # POV-Expansion Example: B2B SaaS User Onboarding
 
-Complete walkthrough demonstrating the 11-stage POV-expansion workflow.
+Complete walkthrough demonstrating the 12-stage POV-expansion workflow (Stages 0-11).
+
+## Stage 0: Session Initialization
+
+**Agent**: pov-expansion-pm (automatic)
+
+**Process**:
+1. Session directory created: `/tmp/pov-session-20260203-143052-12345/`
+2. CLAUDE.md found at project root
+3. Archival guidelines extracted and written to `archival-guidelines-summary.md`
+
+**Output** (`archival-guidelines-summary.md`):
+```markdown
+# Archival Guidelines Summary
+
+**Generated**: 2026-02-03 14:30:52
+**Source**: /Users/example/project/CLAUDE.md
+**Session**: /tmp/pov-session-20260203-143052-12345/
+
+## 1. Directory Structure
+| Purpose | Path |
+|---------|------|
+| Cross-domain analyses | `docs/reports/` |
+
+## 2. File Naming Conventions
+| Document Type | Prefix | Example |
+|---------------|--------|---------|
+| Cross-domain analysis | `analysis-` | `analysis-saas-onboarding.md` |
+
+## 3. Document Structure Requirements
+POV expansion outputs must include:
+1. Title
+2. Executive Summary
+3. Table of Contents
+4. Body (numbered hierarchically)
+5. References
+
+## 4. Citation Format
+- Nature-style inline citations (superscript numbers)
+
+## 5. Git Rules
+- Commit after every edit to `docs/`
+- No version-numbered files
+```
+
+---
 
 ## Initial Problem Statement
 

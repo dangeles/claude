@@ -1,10 +1,98 @@
 # Inter-Agent Data Contracts
 
-This document defines the data contracts between POV-expansion pipeline stages.
+This document defines the data contracts between POV-expansion pipeline stages (Stages 0-11).
 
 ## Overview
 
 The POV-expansion workflow uses filesystem-based state management with structured YAML outputs. Each stage produces a handoff file that the next stage consumes.
+
+## Stage 0 → Stage 1: Session Initialization
+
+**Producer**: pov-expansion-pm (automatic)
+**Consumer**: requirements-analyst (Stage 1), all downstream agents
+**File**: `/tmp/pov-session-{YYYYMMDD-HHMMSS}-{PID}/archival-guidelines-summary.md`
+
+```yaml
+stage_0_output:
+  version: "1.0"
+  session:
+    session_dir: string       # Full path to session directory
+    created_at: ISO8601       # When session was created
+    archival_summary_path: string  # Path to guidelines summary
+  guidelines:
+    source: string            # Path to CLAUDE.md or "defaults"
+    found: boolean            # Whether CLAUDE.md was found
+    directory_structure:
+      reports: string         # e.g., "docs/reports/"
+      literature: string      # e.g., "docs/literature/<topic>/"
+    naming_conventions:
+      analysis: string        # e.g., "analysis-" for POV outputs
+      review: string          # e.g., "review-"
+      reference: string       # e.g., "reference-"
+    document_structure:       # Required sections for outputs
+      - "Title"
+      - "Executive Summary"
+      - "Table of Contents"
+      - "Numbered body sections"
+      - "Key Parameters Table"
+      - "Gaps/Limitations"
+      - "References"
+    citation_format: string   # e.g., "Nature-style inline"
+    git_rules:
+      commit_after_edit: boolean
+      no_version_numbers: boolean
+```
+
+### Archival Guidelines Summary Format (Stage 0 Output)
+
+```markdown
+# Archival Guidelines Summary
+
+**Generated**: {timestamp}
+**Source**: {CLAUDE.md path or "project defaults"}
+**Session**: {session_dir}
+
+---
+
+## 1. Directory Structure
+
+| Purpose | Path |
+|---------|------|
+| Cross-domain analyses | `docs/reports/` |
+| Literature reviews | `docs/literature/<topic>/` |
+
+## 2. File Naming Conventions
+
+| Document Type | Prefix | Example |
+|---------------|--------|---------|
+| Cross-domain analysis | `analysis-` | `analysis-topic-name.md` |
+
+## 3. Document Structure Requirements
+
+POV expansion outputs must include:
+1. Title
+2. Executive Summary (1-3 paragraphs)
+3. Table of Contents
+4. Body (numbered hierarchically: 1, 1.1, 1.2, etc.)
+5. Key Parameters Table (if quantitative values)
+6. Gaps/Limitations
+7. References (full citations with DOIs)
+
+## 4. Citation Format
+
+- **Style**: Nature-style inline citations
+- **In-text**: Superscript numbers (e.g., "as shown previously^1,2")
+- **In tables**: Bracketed numbers (e.g., "[1]")
+- **Bibliography format**: Author(s). Title. *Journal* **volume**, pages (year). DOI
+
+## 5. Git Rules
+
+- Commit after every edit to `docs/`
+- No version-numbered files (use git history)
+- Edit in place
+```
+
+---
 
 ## Stage 2 → Stage 3: Abstract Representation
 
@@ -205,13 +293,17 @@ Each stage produces a handoff file to enable resumability and debugging:
 
 ```yaml
 handoff:
-  stage: integer              # Stage number (1-11)
+  version: "1.1"
+  stage: integer              # Stage number (0-11)
   producer: string            # Agent name
   consumer: string            # Next agent name
   status: enum[complete, partial, failed]
   output_path: string         # Path to output file
   timestamp: ISO8601
   duration_seconds: integer
+  session:                    # Added in v1.1
+    session_dir: string       # Path to /tmp/pov-session-{...}/
+    archival_guidelines_path: string  # Path to archival-guidelines-summary.md
   key_findings:               # Brief summary for progress tracking
     - string
   open_questions:             # Issues for next stage
@@ -219,22 +311,47 @@ handoff:
   quality_score: integer      # 1-5 self-assessment
 ```
 
-**Location**: `/tmp/pov-session-{id}/handoffs/stage-{N}-handoff.yaml`
+**Location**: `/tmp/pov-session-{YYYYMMDD-HHMMSS}-{PID}/handoffs/stage-{N}-handoff.yaml`
+
+### Session Context Propagation
+
+All downstream agents receive the session context via handoff:
+
+**Agents that use archival guidelines**:
+- `pov-synthesizer`: Uses document structure, citation format for synthesis reports
+- `editor`: Uses naming conventions, formatting rules for final outputs
+- `strategist`: Uses document structure for strategic assessment
+
+**Handoff includes**:
+```yaml
+session_context:
+  archival_guidelines_path: "{session_dir}/archival-guidelines-summary.md"
+  output_directory: string    # Where final document should be written (e.g., docs/reports/)
+  naming_convention: object   # File prefix rules (e.g., analysis-)
+```
 
 ## Workflow State Schema
 
 **Producer**: pov-expansion-pm (maintained throughout)
-**File**: `/tmp/pov-session-{id}/workflow-state.yaml`
+**File**: `/tmp/pov-session-{YYYYMMDD-HHMMSS}-{PID}/workflow-state.yaml`
 
 ```yaml
 workflow_state:
   workflow_id: string         # e.g., "pov-20260203-154530"
   problem_statement: string
   started_at: ISO8601
-  current_stage: integer      # 1-11
+  current_stage: integer      # 0-11
   stages_completed: [integer]
 
+  session:                    # Added for session management
+    session_dir: string       # /tmp/pov-session-{...}/
+    archival_guidelines_path: string
+    guidelines_found: boolean
+    guidelines_source: string  # Path to CLAUDE.md or "defaults"
+    cleanup_on_complete: boolean  # Default true
+
   artifacts:
+    stage_0: string | null    # archival-guidelines-summary.md
     stage_1: string | null    # Path to output file
     stage_2: string | null
     stage_3: string | null
@@ -262,24 +379,29 @@ workflow_state:
       notes: string
 ```
 
+**Session Handling on Resume**:
+- If session directory exists: Reuse existing session
+- If session directory missing: Re-run Stage 0 to recreate (non-destructive)
+
 ## Progress Tracking Schema
 
 **Producer**: pov-expansion-pm
-**File**: `/tmp/pov-session-{id}/progress.md`
+**File**: `/tmp/pov-session-{YYYYMMDD-HHMMSS}-{PID}/progress.md`
 
 Format (Markdown):
 ```markdown
 # POV-Expansion Progress
 
-**Workflow ID**: pov-session-{id}
+**Workflow ID**: pov-session-{YYYYMMDD-HHMMSS}-{PID}
 **Problem**: [Brief problem statement]
 **Started**: {timestamp}
-**Current Stage**: {N} of 11
+**Current Stage**: {N} of 12 (Stages 0-11)
 
 ## Stage Progress
 
 | Stage | Status | Started | Completed | Duration |
 |-------|--------|---------|-----------|----------|
+| 0 | COMPLETE | {time} | {time} | {duration} |
 | 1 | COMPLETE | {time} | {time} | {duration} |
 | 2 | IN_PROGRESS | {time} | - | {elapsed} |
 ...
@@ -288,6 +410,7 @@ Format (Markdown):
 
 - {timestamp}: Stage 2 started
 - {timestamp}: Stage 1 completed (Quality Gate 1: PASS)
+- {timestamp}: Stage 0 completed (Session initialized)
 ...
 ```
 
@@ -320,6 +443,8 @@ verification_results:
 ## Data Flow Diagram
 
 ```
+Stage 0 (pov-expansion-pm) [AUTOMATIC]
+  ↓ [archival-guidelines-summary.md]
 Stage 1 (requirements-analyst)
   ↓ [stage-1-refinement.md]
 Stage 2 (pov-abstractor-classifier)
@@ -342,7 +467,18 @@ Stage 10 (devils-advocate)
   ↓ [stage-10-review.md]
 Stage 11 (editor)
   ↓ [stage-11-final.md] [DELIVERABLE]
+  ↓ [Session cleanup: rm -rf session_dir]
 ```
+
+## Session Management Summary
+
+| Event | Action |
+|-------|--------|
+| Workflow start | Create `/tmp/pov-session-{timestamp}-{pid}/` |
+| Stage 0 complete | Write `archival-guidelines-summary.md` |
+| Stage 11 complete | Delete session directory |
+| Workflow abort/failure | Preserve session directory, log path |
+| Resume workflow | Reuse session if exists, recreate if missing |
 
 ## Validation Rules
 

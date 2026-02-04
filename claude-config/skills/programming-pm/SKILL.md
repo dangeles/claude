@@ -1,11 +1,11 @@
 ---
 name: programming-pm
-description: Use when coordinating software development projects requiring multiple specialists (architect, developers, mathematician, statistician) with quality gates for requirements, architecture, pre-mortem, code review, testing, and version control integration.
+description: Use when coordinating software development projects requiring multiple specialists (architect, developers, mathematician, statistician) with quality gates for archival setup, requirements, architecture, pre-mortem, code review, testing, and version control integration.
 ---
 
 # Programming Project Manager
 
-A hub-and-spoke orchestrator for software development projects that coordinates specialist skills through a 6-phase workflow with quality gates.
+A hub-and-spoke orchestrator for software development projects that coordinates specialist skills through a 7-phase workflow (Phase 0-6) with quality gates.
 
 ## Overview
 
@@ -37,7 +37,7 @@ The programming-pm skill serves as the central coordinator for Python-focused so
 
 ## Pre-Flight Validation
 
-Before Phase 1 begins, verify all required skills exist.
+Before Phase 0 begins, verify all required skills exist.
 
 ### Required Skills (workflow cannot proceed without)
 
@@ -99,10 +99,17 @@ workflow:
   last_updated: ISO8601
 
 state:
-  current_phase: 1-6
+  current_phase: 0-6
   phases_completed: []
   quality_gates_passed: []
   retry_count: 0
+
+session:
+  session_dir: "/tmp/programming-pm-session-{timestamp}-{pid}/"
+  archival_guidelines_path: "{session_dir}/archival-guidelines-summary.md"
+  guidelines_found: boolean
+  guidelines_source: string  # Path to CLAUDE.md or "defaults"
+  cleanup_on_complete: boolean  # Default true
 
 team:
   composition: []
@@ -129,12 +136,94 @@ On session resume:
 
 ## Workflow Phases
 
+### Phase 0: Archival Guidelines Review
+
+**Owner**: programming-pm (automatic)
+**Checkpoint**: Never (always runs automatically)
+**Duration**: 2-5 minutes
+**Session Setup**: Creates `/tmp/programming-pm-session-{YYYYMMDD-HHMMSS}-{PID}/`
+
+Initialize workflow session and extract archival guidelines from project CLAUDE.md, focusing on code organization.
+
+**Process**:
+1. **Create session directory**: `/tmp/programming-pm-session-$(date +%Y%m%d-%H%M%S)-$$/`
+2. **Read project CLAUDE.md** (if exists in working directory or parent)
+3. **Extract archival guidelines relevant to programming**:
+   - Code directory structure (`src/`, `modules/`, `experiments/`)
+   - Git workflow (commit conventions, no destructive operations, stage specific files)
+   - Testing conventions (if present)
+   - Documentation conventions (README, inline comments, docstrings)
+   - Repository organization for code vs. documentation
+4. **Write archival summary** to session directory: `archival-guidelines-summary.md`
+5. **Store session path** in workflow state for downstream agents
+
+**Output**:
+```yaml
+session_setup:
+  session_dir: "/tmp/programming-pm-session-{timestamp}-{pid}/"
+  archival_summary_path: "{session_dir}/archival-guidelines-summary.md"
+  guidelines_found: boolean
+  guidelines_source: string  # Path to CLAUDE.md or "defaults"
+```
+
+**Archival Summary Format**:
+```markdown
+# Archival Guidelines Summary (Programming)
+Generated: {timestamp}
+Source: {CLAUDE.md path or "project defaults"}
+
+## Code Directory Structure
+- Source code: `src/`
+- Modules: `modules/<module>/`
+- Experiments: `experiments/`
+- Models: `models/<topic>/`
+- Scratchpad (not tracked): `scratchpad/`
+
+## Git Workflow
+- Commit after every edit to code files
+- Stage specific files (never `git add .` or `git add -A`)
+- No destructive operations (push --force, reset --hard, etc.)
+- Conventional commit messages
+- No version-numbered files
+
+## Testing Conventions
+- [As specified in CLAUDE.md, or defaults]
+- Test coverage requirements
+- Test file organization
+
+## Documentation Conventions
+- Docstrings required for public APIs
+- Type hints required
+- README updates when appropriate
+- Inline comments for complex logic
+
+## Code Style
+- [As specified in CLAUDE.md, or defaults]
+- Linting requirements
+- Formatting requirements
+```
+
+**Quality Gate**: Session directory created, archival summary written.
+
+**Failure Handling**:
+- CLAUDE.md not found: Use sensible defaults, log warning, continue
+- Session directory creation fails: ABORT (cannot proceed without session isolation)
+
+**Session Cleanup**:
+- On successful completion (Phase 6 complete): Delete session directory
+- On failure/abort: Retain session directory for debugging (log path to user)
+
+**Timeout**: 5 min (ABORT on timeout - cannot proceed without session)
+
+---
+
 ### Phase 1: Requirements and Scoping
 
 **Objective**: Define clear, measurable requirements with explicit scope boundaries.
+**Receives**: Session directory path and archival guidelines from Phase 0
 
 **Steps**:
-1. Invoke `requirements-analyst` with project goal
+1. Invoke `requirements-analyst` with project goal and session context
 2. Review requirements document for completeness
 3. Present requirements to user for approval
 
@@ -447,22 +536,24 @@ User: "Create a Monte Carlo simulation library for option pricing"
 
 # programming-pm executes:
 1. Pre-flight validation (check required skills)
-2. Invoke requirements-analyst -> requirements.md
-3. Quality Gate 1: Requirements approval
-4. Conduct pre-mortem (include statistician perspective)
-5. Quality Gate 2: Pre-mortem completion
-6. Invoke systems-architect -> architecture.md
-7. Quality Gate 3: Architecture approval
-8. Task decomposition:
+2. Phase 0: Create session directory, extract archival guidelines from CLAUDE.md
+3. Invoke requirements-analyst -> requirements.md
+4. Quality Gate 1: Requirements approval
+5. Conduct pre-mortem (include statistician perspective)
+6. Quality Gate 2: Pre-mortem completion
+7. Invoke systems-architect -> architecture.md
+8. Quality Gate 3: Architecture approval
+9. Task decomposition:
    - mathematician: numerical method selection
    - statistician: convergence criteria, variance reduction
    - senior-developer: core implementation
-9. Implementation with progress monitoring
-10. Quality Gate 4: Code review (automated + human)
-11. Quality Gate 5: Test pass
-12. Create PR with conventional commit
-13. Quality Gate 6: PR merge
-14. Post-merge verification prompt
+10. Implementation with progress monitoring
+11. Quality Gate 4: Code review (automated + human)
+12. Quality Gate 5: Test pass
+13. Create PR with conventional commit
+14. Quality Gate 6: PR merge
+15. Post-merge verification prompt
+16. Cleanup session directory (on success)
 ```
 
 ## Integration with Existing Skills

@@ -1,21 +1,22 @@
 ---
 name: lit-pm
-description: Use when coordinating comprehensive literature reviews requiring multi-stage pipeline (scope refinement, parallel review discovery, outline synthesis, section writing, fact-checking, editorial polish). Orchestrates literature-researcher, lit-synthesizer, fact-checker, and editor skills with adaptive checkpoints based on complexity and stakes.
+description: Use when coordinating comprehensive literature reviews requiring multi-stage pipeline (archival setup, scope refinement, parallel review discovery, outline synthesis, section writing, fact-checking, editorial polish). Orchestrates literature-researcher, lit-synthesizer, fact-checker, and editor skills with adaptive checkpoints based on complexity and stakes.
 ---
 
 # lit-pm: Literature Pipeline Manager
 
 ## Overview
 
-lit-pm is a Tier 1 orchestrator skill that coordinates an 8-stage literature review pipeline. It manages parallel review discovery, adaptive checkpoints, and handoffs between specialist skills to produce comprehensive, decision-useful literature reviews.
+lit-pm is a Tier 1 orchestrator skill that coordinates a 9-stage literature review pipeline. It manages parallel review discovery, adaptive checkpoints, and handoffs between specialist skills to produce comprehensive, decision-useful literature reviews.
 
 ### Three-Tier Architecture
 
 **Tier 1: Orchestrator (this skill)**
-- Coordinates 8-stage pipeline
+- Coordinates 9-stage pipeline (Stage 0-8)
 - Implements adaptive orchestration (complexity detection -> checkpoint plan)
 - Manages parallel execution with convergence tracking
 - Handles workflow state, handoffs, and quality gates
+- Manages session-based intermediate file storage
 
 **Tier 2: Specialized Literature Skills**
 - `literature-researcher`: Review discovery, section research (15-30 papers per section)
@@ -44,7 +45,7 @@ lit-pm is a Tier 1 orchestrator skill that coordinates an 8-stage literature rev
 
 ## Pre-Flight Validation
 
-Before Stage 1 begins, verify all required skills exist:
+Before Stage 0 begins, verify all required skills exist:
 
 **Required Skills**:
 - [ ] requirements-analyst (Stage 1: Scope refinement)
@@ -59,12 +60,92 @@ Before Stage 1 begins, verify all required skills exist:
 
 ---
 
-## The 8-Stage Pipeline
+## The 9-Stage Pipeline
+
+### Stage 0: Archival Guidelines Review
+**Owner**: lit-pm (automatic)
+**Checkpoint**: Never (always runs automatically)
+**Duration**: 2-5 minutes
+**Session Setup**: Creates `/tmp/lit-pm-session-{YYYYMMDD-HHMMSS}-{PID}/`
+
+Initialize workflow session and extract archival guidelines from project CLAUDE.md.
+
+**Process**:
+1. **Create session directory**: `/tmp/lit-pm-session-$(date +%Y%m%d-%H%M%S)-$$/`
+2. **Read project CLAUDE.md** (if exists in working directory or parent)
+3. **Extract archival guidelines**:
+   - Repository organization (directory structure)
+   - Naming conventions (review-, analysis-, reference-, etc.)
+   - Git rules (commit after edits, no version-numbered files)
+   - Document structure requirements
+   - PDF acquisition paths
+4. **Write archival summary** to session directory: `archival-guidelines-summary.md`
+5. **Store session path** in workflow state for downstream agents
+
+**Output**:
+```yaml
+session_setup:
+  session_dir: "/tmp/lit-pm-session-{timestamp}-{pid}/"
+  archival_summary_path: "{session_dir}/archival-guidelines-summary.md"
+  guidelines_found: boolean
+  guidelines_source: string  # Path to CLAUDE.md or "defaults"
+```
+
+**Archival Summary Format**:
+```markdown
+# Archival Guidelines Summary
+Generated: {timestamp}
+Source: {CLAUDE.md path or "project defaults"}
+
+## Directory Structure
+- Literature reviews: `docs/literature/<topic>/`
+- PDF storage: `docs/literature/<topic>/pdfs/`
+- Analysis documents: `docs/reports/` or `docs/literature/<topic>/`
+
+## File Naming Conventions
+| Type | Prefix | Example |
+|------|--------|---------|
+| Literature review | `review-` | `review-topic-name.md` |
+| Analysis | `analysis-` | `analysis-topic-name.md` |
+| Reference | `reference-` | `reference-topic-name.md` |
+| Paper notes | `<author>-<year>-` | `smith-2024-findings.md` |
+
+## Document Structure
+1. Title
+2. Metadata (version, date, sources)
+3. Executive Summary
+4. Table of Contents (3+ sections)
+5. Body (numbered hierarchically)
+6. Key Parameters Table
+7. Gaps/Limitations
+8. References
+9. Revision History
+
+## Git Rules
+- Commit after every edit to docs/ or modules/
+- No version-numbered files (use git history)
+- Edit in place
+
+## Citation Format
+- Nature-style inline citations (superscript numbers)
+- Full bibliography at end with DOIs
+```
+
+**Quality Gate**: Session directory created, archival summary written.
+
+**Failure Handling**:
+- CLAUDE.md not found: Use sensible defaults, log warning
+- Session directory creation fails: ABORT (cannot proceed without session isolation)
+
+**Session Cleanup**:
+- On successful completion (Stage 8 complete): Delete session directory
+- On failure/abort: Retain session directory for debugging (log path to user)
 
 ### Stage 1: Scope Refinement
 **Owner**: requirements-analyst
 **Checkpoint**: ALWAYS (required)
 **Duration**: 15-30 minutes
+**Receives**: Session directory path from Stage 0
 
 Clarify research question, define success criteria, set boundaries. Complexity detection determines checkpoint plan. User approves scope + checkpoint plan.
 
@@ -207,6 +288,7 @@ After proposing checkpoint plan, user can:
 
 | Stage | Timeout | Exceeded Action |
 |-------|---------|-----------------|
+| 0 (Archival) | 5 min | ABORT - cannot proceed without session |
 | 1 (Scope) | 45 min | Escalate to user |
 | 2 (Reviews) | 120 min total | Proceed with available reviews |
 | 3 (Outline) | 90 min | Escalate to user |
@@ -217,7 +299,7 @@ After proposing checkpoint plan, user can:
 | 7 (Synthesis) | 5 hours | Escalate to user |
 | 6c (DA Section) | 30 min/section | Pass with uncertainty note |
 | 7.5 (DA Synthesis) | 60 min | Proceed to Stage 8 with warning |
-| 8 (Editorial) | 90 min | Deliver as-is |
+| 8 (Editorial) | 90 min | Deliver as-is, cleanup session |
 
 **Per-Agent Timeouts**:
 - literature-researcher: 30 min per search strategy
@@ -286,16 +368,38 @@ See `references/handoff-schema.md` for YAML schema.
 
 ```yaml
 handoff:
-  version: "1.0"
-  stage: integer           # 1-8
+  version: "1.1"
+  stage: integer           # 0-8
   status: enum             # pending | in_progress | complete | failed
   producer: string         # skill that produced handoff
   consumer: string         # skill that receives handoff
   workflow_id: string      # unique identifier
   timestamp: ISO8601       # when created
+  session:                 # Added in v1.1
+    session_dir: string    # Path to /tmp/lit-pm-session-{...}/
+    archival_guidelines_path: string  # Path to archival-guidelines-summary.md
 ```
 
 Each stage has additional stage-specific fields documented in the schema.
+
+### Session Context Propagation
+
+All downstream agents receive the session context via handoff:
+
+**Agents that use archival guidelines**:
+- `literature-researcher`: Uses naming conventions for paper notes, PDF storage paths
+- `lit-synthesizer`: Uses document structure requirements, citation format
+- `editor`: Uses writing style, formatting rules
+- `fact-checker`: Uses citation format for validation
+
+**Handoff includes**:
+```yaml
+session_context:
+  archival_guidelines_path: "{session_dir}/archival-guidelines-summary.md"
+  output_directory: string   # Where final document should be written
+  pdf_storage_path: string   # Where to store downloaded PDFs
+  naming_convention: object  # File prefix rules
+```
 
 ---
 
@@ -341,9 +445,13 @@ See `references/error-handling.md` for full compensation matrix.
 ```yaml
 workflow_state:
   workflow_id: "lit-review-{topic}-{date}"
-  stage_current: integer
+  stage_current: integer          # 0-8
   stage_completed: [list]
   checkpoints_remaining: [list]
+  session:                        # Added for session management
+    session_dir: string           # /tmp/lit-pm-session-{...}/
+    archival_guidelines_path: string
+    cleanup_on_complete: boolean  # Default true
   artifacts:
     scope: "/path/to/scope.yaml"
     reviews: "/path/to/reviews.yaml"
@@ -353,6 +461,10 @@ workflow_state:
 ```
 
 Resume with: `lit-pm --resume workflow-id`
+
+**Session Handling on Resume**:
+- If session directory exists: Reuse existing session
+- If session directory missing: Re-run Stage 0 to recreate (non-destructive)
 
 ---
 

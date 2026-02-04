@@ -38,11 +38,47 @@ Before invoking `/pov-expansion`, verify:
 - [ ] Expected runtime: 2-3 hours (workflow cannot be rushed)
 - [ ] Dependencies available: requirements-analyst, fact-checker, devils-advocate, editor, strategist skills exist
 
-## The 11-Stage Pipeline
+## The 12-Stage Pipeline
+
+### Stage 0: Archival Guidelines Review
+**Owner**: pov-expansion-pm (automatic)
+**Duration**: 2-5 min
+**Checkpoint**: Never (always runs automatically)
+**Session Setup**: Creates `/tmp/pov-session-{YYYYMMDD-HHMMSS}-{PID}/`
+
+Initialize workflow session and extract archival guidelines from project CLAUDE.md.
+
+**Process**:
+1. **Create session directory**: `/tmp/pov-session-$(date +%Y%m%d-%H%M%S)-$$/`
+2. **Read project CLAUDE.md** (if exists in working directory or parent)
+3. **Extract archival guidelines**:
+   - Repository organization (directory structure for cross-domain analyses)
+   - Naming conventions (`analysis-` prefix for POV expansion outputs)
+   - Git rules (commit after edits, no version-numbered files)
+   - Document structure requirements (Executive Summary, Key Parameters Table)
+   - Citation format (Nature-style inline)
+4. **Write archival summary** to session directory: `archival-guidelines-summary.md`
+5. **Store session path** in workflow state for downstream agents
+
+**Output**:
+```yaml
+session_setup:
+  session_dir: "/tmp/pov-session-{timestamp}-{pid}/"
+  archival_summary_path: "{session_dir}/archival-guidelines-summary.md"
+  guidelines_found: boolean
+  guidelines_source: string  # Path to CLAUDE.md or "defaults"
+```
+
+**Quality Gate**: Session directory created, archival summary written.
+
+**Failure Handling**:
+- CLAUDE.md not found: Use sensible defaults, log warning
+- Session directory creation fails: ABORT (cannot proceed without session isolation)
 
 ### Stage 1: Problem Refinement
 **Owner**: requirements-analyst (reused)
 **Duration**: 15-30 min
+**Receives**: Session directory path from Stage 0
 **Quality Gate**: Specific problem statement with measurable criteria
 
 ### Stage 2: Problem Abstraction
@@ -99,6 +135,7 @@ Before invoking `/pov-expansion`, verify:
 
 | Stage | Timeout | Exceeded Action |
 |-------|---------|-----------------|
+| 0 (Archival) | 5 min | ABORT - cannot proceed without session |
 | 1 (Refinement) | 30 min | Escalate to user |
 | 2 (Abstraction) | 30 min | Escalate to user |
 | 3 (Classification) | 45 min | Proceed with HIGH confidence domains only |
@@ -110,12 +147,27 @@ Before invoking `/pov-expansion`, verify:
 | 8 (Synthesis) | 90 min | Escalate to user |
 | 9 (Strategic) | 40 min | Skip (optional) |
 | 10 (Review) | 40 min | Deliver without review (flag risk) |
-| 11 (Editorial) | 30 min | Deliver as-is |
+| 11 (Editorial) | 30 min | Deliver as-is, cleanup session |
 
 **Global Workflow Timeout**: 8 hours
 **On Global Timeout**: Save state, escalate to user
 
+**Session Cleanup**:
+- On successful completion (Stage 11 complete): Delete session directory
+- On failure/abort: Retain session directory for debugging (log path to user)
+
 ## Quality Gate Specifications
+
+### Gate 0: Session Initialization (Stage 0)
+
+| Check | Threshold | Automated? |
+|-------|-----------|------------|
+| Session directory created | exists and writable | Yes |
+| Archival summary written | file exists | Yes |
+| Session path stored in workflow state | path present | Yes |
+
+**Pass Threshold**: 3/3 checks pass
+**On Failure**: ABORT - cannot proceed without session isolation
 
 ### Gate 1: Problem Abstraction (Stage 2)
 
@@ -192,21 +244,22 @@ Before invoking `/pov-expansion`, verify:
 
 ## Session Directory Structure
 
-Location: `/tmp/pov-session-{workflow-id}/`
+Location: `/tmp/pov-session-{YYYYMMDD-HHMMSS}-{PID}/`
 
 ```
-/tmp/pov-session-{workflow-id}/
-├── workflow-state.yaml          # Workflow state for resume
-├── progress.md                  # Progress tracking
-├── stage-1-refinement.md        # Stage 1 output
-├── stage-2-abstraction.yaml     # Stage 2 output (structured)
-├── stage-3-domains.yaml         # Stage 3 output (structured)
-├── stage-4-perspectives/        # Parallel outputs
+/tmp/pov-session-{YYYYMMDD-HHMMSS}-{PID}/
+├── archival-guidelines-summary.md  # Stage 0 output
+├── workflow-state.yaml             # Workflow state for resume
+├── progress.md                     # Progress tracking
+├── stage-1-refinement.md           # Stage 1 output
+├── stage-2-abstraction.yaml        # Stage 2 output (structured)
+├── stage-3-domains.yaml            # Stage 3 output (structured)
+├── stage-4-perspectives/           # Parallel outputs
 │   ├── near-field-1.md
 │   ├── near-field-2.md
 │   ├── mid-field.md
 │   └── far-field.md
-├── stage-5-verification/        # Parallel outputs
+├── stage-5-verification/           # Parallel outputs
 │   ├── verification-1.md
 │   └── verification-2.md
 ├── stage-6-convergence.md
@@ -214,8 +267,8 @@ Location: `/tmp/pov-session-{workflow-id}/`
 ├── stage-8-synthesis.md
 ├── stage-9-strategic.md
 ├── stage-10-review.md
-├── stage-11-final.md            # Final deliverable
-└── failure-log.md               # Failure tracking
+├── stage-11-final.md               # Final deliverable
+└── failure-log.md                  # Failure tracking
 ```
 
 ## Workflow State Schema
@@ -225,18 +278,31 @@ workflow_state:
   workflow_id: string
   problem_statement: string
   started_at: ISO8601
-  current_stage: integer  # 1-11
+  current_stage: integer  # 0-11
   stages_completed: [integer]
 
+  session:                              # Added for session management
+    session_dir: string                 # /tmp/pov-session-{...}/
+    archival_guidelines_path: string    # Path to archival-guidelines-summary.md
+    guidelines_found: boolean           # Whether CLAUDE.md was found
+    guidelines_source: string           # Path to CLAUDE.md or "defaults"
+    cleanup_on_complete: boolean        # Default true
+
   artifacts:
+    stage_0: path | null                # archival-guidelines-summary.md
     stage_1: path | null
     stage_2: path | null
     # ... etc
+    stage_11: path | null
 
   status: enum[in_progress, paused, completed, failed]
   last_checkpoint: ISO8601
   error_log: [string]
 ```
+
+**Session Handling on Resume**:
+- If session directory exists: Reuse existing session
+- If session directory missing: Re-run Stage 0 to recreate (non-destructive)
 
 ## Error Handling Protocols
 

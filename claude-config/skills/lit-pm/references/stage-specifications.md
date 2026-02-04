@@ -1,6 +1,163 @@
 # Stage Specifications
 
-Reference document for detailed 8-stage pipeline process specifications.
+Reference document for detailed 9-stage pipeline process specifications (Stage 0-8).
+
+---
+
+## Stage 0: Archival Guidelines Review
+
+**Owner**: lit-pm (automatic)
+**Checkpoint**: Never (always runs automatically)
+**Duration**: 2-5 minutes
+**Timeout**: 5 minutes
+
+### Purpose
+
+Initialize workflow session and extract project-specific archival guidelines to ensure all downstream agents follow consistent naming conventions, directory structures, and formatting standards.
+
+### Input
+- Project working directory
+- Optional: Explicit CLAUDE.md path
+
+### Process
+
+1. **Create session directory**:
+   ```bash
+   SESSION_DIR="/tmp/lit-pm-session-$(date +%Y%m%d-%H%M%S)-$$"
+   mkdir -p "$SESSION_DIR"
+   ```
+
+2. **Locate project CLAUDE.md**:
+   - Check working directory for `CLAUDE.md`
+   - Check parent directories (up to 3 levels)
+   - If not found: Use sensible defaults
+
+3. **Extract archival guidelines** from CLAUDE.md:
+   - Repository organization section
+   - Naming conventions table
+   - Version control rules
+   - Document structure requirements
+   - Citation format
+   - PDF acquisition paths
+
+4. **Write archival summary** to `{SESSION_DIR}/archival-guidelines-summary.md`
+
+5. **Store session info** in workflow state
+
+### Output
+
+```yaml
+stage_0_output:
+  session:
+    session_dir: string       # Full path to session directory
+    created_at: ISO8601       # When session was created
+    archival_summary_path: string  # Path to guidelines summary
+  guidelines:
+    source: string            # Path to CLAUDE.md or "defaults"
+    found: boolean            # Whether CLAUDE.md was found
+    directory_structure:
+      literature: string      # e.g., "docs/literature/<topic>/"
+      pdf_storage: string     # e.g., "docs/literature/<topic>/pdfs/"
+      reports: string         # e.g., "docs/reports/"
+    naming_conventions:
+      review: string          # e.g., "review-"
+      analysis: string        # e.g., "analysis-"
+      reference: string       # e.g., "reference-"
+      paper_notes: string     # e.g., "<author>-<year>-"
+    document_structure: list  # Required sections
+    citation_format: string   # e.g., "Nature-style inline"
+    git_rules:
+      commit_after_edit: boolean
+      no_version_numbers: boolean
+```
+
+### Archival Summary Template
+
+The generated `archival-guidelines-summary.md` follows this format:
+
+```markdown
+# Archival Guidelines Summary
+
+**Generated**: {timestamp}
+**Source**: {CLAUDE.md path or "project defaults"}
+**Session**: {session_dir}
+
+---
+
+## 1. Directory Structure
+
+| Purpose | Path |
+|---------|------|
+| Literature reviews | `docs/literature/<topic>/` |
+| PDF storage | `docs/literature/<topic>/pdfs/` |
+| Reports/Analysis | `docs/reports/` |
+| Paper notes | `docs/literature/<topic>/` |
+
+## 2. File Naming Conventions
+
+| Document Type | Prefix | Example |
+|---------------|--------|---------|
+| Literature review | `review-` | `review-topic-name.md` |
+| Analysis | `analysis-` | `analysis-topic-name.md` |
+| Reference | `reference-` | `reference-topic-name.md` |
+| Paper notes | `<author>-<year>-` | `smith-2024-findings.md` |
+
+## 3. Document Structure Requirements
+
+All literature documents must include:
+1. Title
+2. Metadata (version, date, sources)
+3. Executive Summary (1-3 paragraphs)
+4. Table of Contents (for 3+ sections)
+5. Body (numbered hierarchically: 1, 1.1, 1.2, etc.)
+6. Key Parameters Table (quantitative values with sources)
+7. Gaps/Limitations
+8. References (full citations with DOIs)
+9. Revision History
+
+## 4. Citation Format
+
+- **Style**: Nature-style inline citations
+- **In-text**: Superscript numbers (e.g., "as shown previously¹,²")
+- **In tables**: Bracketed numbers (e.g., "[1]")
+- **Bibliography format**: Author(s). Title. *Journal* **volume**, pages (year). DOI
+
+## 5. Git Rules
+
+- Commit after every edit to `docs/` or `modules/`
+- No version-numbered files (use git history)
+- Edit in place
+
+## 6. Special Restrictions
+
+- NEVER download patent documents (PDFs, applications, or patent-related files)
+```
+
+### Quality Gate Checklist
+
+- [ ] Session directory created and writable
+- [ ] Archival summary file written successfully
+- [ ] Session path stored in workflow state
+
+### Failure Handling
+
+| Condition | Action |
+|-----------|--------|
+| Session directory creation fails | ABORT - cannot proceed without session isolation |
+| CLAUDE.md not found | Use defaults, log warning, continue |
+| Parsing error in CLAUDE.md | Use partial extraction + defaults, log warning |
+| Timeout (>5 min) | ABORT - unexpected blocking |
+
+### Session Cleanup
+
+**On successful completion (Stage 8)**:
+```bash
+rm -rf "$SESSION_DIR"
+```
+
+**On failure/abort**:
+- Retain session directory for debugging
+- Log session path to user: "Session preserved at: {SESSION_DIR}"
 
 ---
 
@@ -465,6 +622,7 @@ Revision list goes to Stage 8 (editor incorporates during polish).
 
 | Stage | Owner | Checkpoint | Duration | Timeout |
 |-------|-------|------------|----------|---------|
+| 0: Archival | lit-pm | Never | 2-5 min | 5 min |
 | 1: Scope | requirements-analyst | ALWAYS | 15-30 min | 45 min |
 | 2: Reviews | lit-pm + researchers | High-Stakes | 45-90 min | 120 min |
 | 3: Outline | lit-pm + researchers | Medium+ | 30-60 min | 90 min |
@@ -474,3 +632,13 @@ Revision list goes to Stage 8 (editor incorporates during polish).
 | 6b: Deep FC | fact-checker | Never | 45-90 min | 120 min |
 | 7: Synthesis | lit-synthesizer | High-Stakes | 2-4 hr | 5 hr |
 | 8: Polish | editor | Never | 30-60 min | 90 min |
+
+## Session Management Summary
+
+| Event | Action |
+|-------|--------|
+| Workflow start | Create `/tmp/lit-pm-session-{timestamp}-{pid}/` |
+| Stage 0 complete | Write `archival-guidelines-summary.md` |
+| All stages complete | Delete session directory |
+| Workflow abort/failure | Preserve session directory, log path |
+| Resume workflow | Reuse session if exists, recreate if missing |

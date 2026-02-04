@@ -23,12 +23,17 @@ All handoffs include these base fields.
 ```yaml
 handoff:
   # Metadata
-  version: "1.0"
-  from_phase: int  # 1-6
-  to_phase: int    # 1-6
+  version: "1.1"
+  from_phase: int  # 0-6
+  to_phase: int    # 0-6
   producer: string  # skill name that created this
   consumer: string  # skill name that will receive this
   timestamp: ISO8601
+
+  # Session context (from Phase 0)
+  session:
+    session_dir: string  # Path to /tmp/programming-pm-session-{...}/
+    archival_guidelines_path: string  # Path to archival-guidelines-summary.md
 
   # Deliverable reference
   deliverable:
@@ -49,6 +54,61 @@ handoff:
     confidence: "high" | "medium" | "low"
     notes: string  # Explanation of status/confidence
 ```
+
+---
+
+## Phase 0 -> Phase 1: Archival Setup -> Requirements
+
+**Producer**: programming-pm (Phase 0)
+**Consumer**: requirements-analyst (Phase 1)
+
+```yaml
+session_handoff:
+  <<: *base_handoff
+
+  session:
+    session_dir: "/tmp/programming-pm-session-{timestamp}-{pid}/"
+    archival_guidelines_path: "{session_dir}/archival-guidelines-summary.md"
+    guidelines_found: boolean
+    guidelines_source: string  # Path to CLAUDE.md or "defaults"
+
+  archival_guidelines:
+    code_directories:
+      - name: "src/"
+        purpose: "Source code"
+      - name: "modules/"
+        purpose: "Modular components"
+      - name: "experiments/"
+        purpose: "Experimental code"
+      - name: "models/"
+        purpose: "Mathematical/ML models"
+    git_workflow:
+      commit_after_edit: boolean
+      stage_specific_files: boolean
+      no_destructive_ops: boolean
+      conventional_commits: boolean
+    testing_conventions:
+      coverage_target: float  # If specified in CLAUDE.md
+      test_directory: string
+    documentation_conventions:
+      docstrings_required: boolean
+      type_hints_required: boolean
+      readme_updates: boolean
+    code_style:
+      linter: string  # e.g., "ruff"
+      formatter: string  # If specified
+```
+
+**Session Context Propagation**:
+
+All downstream agents receive session context via handoffs:
+- `requirements-analyst`: Uses session dir for intermediate files
+- `systems-architect`: Uses archival guidelines for component naming
+- `senior-developer`: Uses git workflow, code style, testing conventions
+- `junior-developer`: Same as senior-developer (enforced by review)
+- `mathematician`: Uses code directories for model output location
+- `statistician`: Uses code directories for analysis output location
+- `copilot`: Uses archival guidelines for code review criteria
 
 ---
 
@@ -407,15 +467,18 @@ def validate_handoff(handoff_path: Path, schema: dict) -> list[str]:
 ## Handoff File Naming
 
 ```
-/tmp/programming-pm-{workflow-id}/
-  ├── phase1-requirements-handoff.yaml
-  ├── phase2-premortem-handoff.yaml
-  ├── phase3-architecture-handoff.yaml
-  ├── phase4-math-handoff-TASK-001.yaml
-  ├── phase4-stats-handoff-TASK-002.yaml
-  ├── phase4-code-handoff-TASK-001.yaml
-  ├── phase5-review-handoff-TASK-001.yaml
-  └── phase6-merge-handoff.yaml
+/tmp/programming-pm-session-{timestamp}-{pid}/   # Session directory (Phase 0)
+  ├── archival-guidelines-summary.md             # Phase 0 output
+  └── handoffs/
+      ├── phase0-session-handoff.yaml
+      ├── phase1-requirements-handoff.yaml
+      ├── phase2-premortem-handoff.yaml
+      ├── phase3-architecture-handoff.yaml
+      ├── phase4-math-handoff-TASK-001.yaml
+      ├── phase4-stats-handoff-TASK-002.yaml
+      ├── phase4-code-handoff-TASK-001.yaml
+      ├── phase5-review-handoff-TASK-001.yaml
+      └── phase6-merge-handoff.yaml
 ```
 
 ---
@@ -424,16 +487,26 @@ def validate_handoff(handoff_path: Path, schema: dict) -> list[str]:
 
 Handoff schema version is included in each handoff.
 
-Current version: **1.0**
+Current version: **1.1**
 
 ### Version History
 
 | Version | Changes |
 |---------|---------|
 | 1.0 | Initial schema |
+| 1.1 | Added Phase 0 (Archival Setup), session context in all handoffs, phase range 0-6 |
 
 ### Compatibility
 
 - Minor version changes (1.x) are backwards compatible
 - Major version changes (x.0) may break compatibility
 - programming-pm checks version compatibility at validation
+
+### Session Cleanup
+
+On successful Phase 6 completion, programming-pm deletes the session directory:
+```bash
+rm -rf /tmp/programming-pm-session-{timestamp}-{pid}/
+```
+
+On workflow failure or abort, the session directory is retained for debugging. The path is logged to the user for inspection.

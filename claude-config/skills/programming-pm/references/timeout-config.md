@@ -14,10 +14,11 @@ Timeouts prevent stuck workflows and enable proactive intervention. The programm
 
 ## Per-Phase Timeouts
 
-Default timeouts for each workflow phase.
+Default timeouts for each workflow phase (Phase 0-6).
 
 | Phase | Default Timeout | Warning Threshold | Exceeded Action |
 |-------|-----------------|-------------------|-----------------|
+| Phase 0: Archival Setup | 5 min | 3 min | ABORT - cannot proceed |
 | Phase 1: Requirements | 45 min | 30 min | Escalate to user |
 | Phase 2: Pre-mortem | 30 min | 20 min | Proceed with available risks |
 | Phase 3: Architecture | 90 min | 60 min | Escalate to user |
@@ -26,6 +27,13 @@ Default timeouts for each workflow phase.
 | Phase 6: VCS Integration | 15 min | 10 min | Manual intervention |
 
 ### Phase-Specific Notes
+
+**Phase 0 (Archival Setup)**:
+- Critical phase - workflow cannot proceed without session directory
+- ABORT on timeout (no recovery possible)
+- If CLAUDE.md not found, use defaults and continue (not a timeout)
+- Session directory creation failure is the only timeout trigger
+- Creates `/tmp/programming-pm-session-{timestamp}-{pid}/` for session isolation
 
 **Phase 1 (Requirements)**:
 - Complex projects may need longer
