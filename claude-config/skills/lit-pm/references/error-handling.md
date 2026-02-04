@@ -17,7 +17,9 @@ When a stage fails or needs to be rolled back, use these compensation actions:
 | 5 | Write sections | Archive failed section, reassign to different agent | Fails validation 3x |
 | 6a | Validate section | Return to writer with specific issues | Validation fails |
 | 6b | Comprehensive check | Flag issues for manual review | Deep check timeout |
+| 6c | DA reviews section | Archive review state, pass with uncertainty | Timeout exceeded, agent crash, persistent disagreement |
 | 7 | Synthesize document | Archive synthesis, return to sections with feedback | Cross-section inconsistency detected |
+| 7.5 | DA reviews synthesis | Archive review, proceed to Stage 8 with warning | Timeout exceeded, trigger evaluation failed |
 | 8 | Polish document | Re-run editor on specific sections | Major issues found |
 
 ### Compensation Protocol
@@ -37,6 +39,58 @@ compensation_record:
   action_taken: string
   state_archived: string  # path to archived state
   user_notified: boolean
+```
+
+### Compensation Protocol for Stage 6c
+
+```yaml
+compensation_6c:
+  triggers:
+    - timeout_exceeded  # >30 min per section
+    - agent_crash
+    - persistent_disagreement_3x  # 3 sections fail consecutively
+
+  actions:
+    on_timeout:
+      - log: "Stage 6c timeout for section {id}"
+      - archive: current challenge state
+      - proceed: with uncertainty_note
+      - notify: user if HIGH-STAKES
+
+    on_agent_crash:
+      - log: "Stage 6c agent failure"
+      - retry: once
+      - if_retry_fails: proceed with uncertainty_note
+
+    on_persistent_disagreement:
+      - log: "Stage 6c: 2 sections have unresolved disagreement"
+      - escalate: user decision required
+      - options:
+        - proceed_with_uncertainty
+        - extend_timeout
+        - abort_workflow
+```
+
+### Compensation Protocol for Stage 7.5
+
+```yaml
+compensation_7_5:
+  triggers:
+    - timeout_exceeded  # >60 min
+    - agent_crash
+    - trigger_condition_ambiguous  # cannot calculate addition_percentage
+
+  actions:
+    on_timeout:
+      - log: "Stage 7.5 timeout"
+      - proceed: to Stage 8 with warning
+      - note: "Synthesis review incomplete"
+
+    on_trigger_ambiguous:
+      - log: "Cannot determine addition_percentage"
+      - fallback: use complexity_tier to decide
+      - if_high_stakes: run Stage 7.5
+      - else: skip Stage 7.5 with warning
 ```
 
 ---
@@ -59,6 +113,35 @@ circuit_breaker:
       - validation_fails_3x
       - timeout_exceeded
       - agent_crash
+```
+
+### Stage 6c Circuit Breaker
+
+```yaml
+circuit_breaker:
+  stage_6c:
+    failure_threshold: 2        # Open after 2 section timeouts
+    timeout_seconds: 1800       # 30 min per section
+    half_open_after: 600        # Try again after 10 min cooldown
+    action_when_open: escalate_to_user
+
+    failure_definition:
+      - timeout_exceeded
+      - agent_crash
+      - thesis_identification_failed
+
+    on_threshold_reached:
+      message: |
+        Devil's advocate review timed out for {N} consecutive sections.
+
+        Options:
+        1. **Extend timeout** - Allow 45 min/section for remaining
+        2. **Skip Stage 6c** - Proceed directly to synthesis without adversarial review
+        3. **Manual review** - Pause for user to review sections themselves
+        4. **Abort** - Stop workflow for investigation
+
+      default_action: "extend_by_50%"
+      auto_proceed_after: 300  # 5 minutes
 ```
 
 ### Stage 2 Circuit Breaker
@@ -223,6 +306,42 @@ resume_options:
   - option: "Skip to synthesis with completed sections only"
     action: proceed_with_partial
     warning: "Not recommended - may have gaps"
+```
+
+### Stage 6c Interrupt Handling
+
+```yaml
+on_interrupt_stage_6c:
+  parallel_section_reviews:
+    collect_states:
+      - COMPLETE: Section DA review finished
+      - IN_PROGRESS: DA review started, challenge document exists
+      - NOT_STARTED: Section queued for DA review
+
+    resume_options:
+      - option: "Resume DA review from section {N}"
+        action: resume_section_da_from_checkpoint
+      - option: "Skip remaining DA reviews, proceed to synthesis"
+        action: proceed_with_partial_da
+        warning: "Not recommended - may have unreviewed sections"
+```
+
+### Stage 7.5 Interrupt Handling
+
+```yaml
+on_interrupt_stage_7_5:
+  single_document_review:
+    collect_state:
+      exchanges_completed: integer
+      current_challenges: list
+      partial_resolution: object
+
+    resume_options:
+      - option: "Continue synthesis DA review (exchange {N}/2)"
+        action: resume_synthesis_da
+      - option: "Skip synthesis DA, proceed to editor"
+        action: skip_to_editor
+        warning: "Synthesis review incomplete"
 ```
 
 ---
