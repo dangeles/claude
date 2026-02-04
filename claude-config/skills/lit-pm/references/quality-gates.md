@@ -120,6 +120,34 @@ TODO|FIXME|\[CITE\]|\[INSERT\]|\[TBD\]|\[PLACEHOLDER\]|XXX
 - **P1 (Important)**: Should fix
 - **P2 (Nice-to-have)**: Editor handles
 
+### Stage 6c: Devil's Advocate Section Review
+
+| Check | Type | Threshold | Automated | Blocking |
+|-------|------|-----------|-----------|----------|
+| DA review executed | Presence | True | Yes | Yes |
+| Thesis identified | Presence | Not empty | No | Yes |
+| Strategic challenges addressed | Semantic | All resolved OR documented | No | Yes |
+| Exchange count | Range | 1-2 | Yes | Yes |
+| Uncertainty documented (if 2 exchanges) | Presence | Required if unresolved | No | Yes |
+
+**Pass Conditions**:
+- All strategic challenges resolved, OR
+- 2 exchanges complete with uncertainty_notes documenting unresolved items
+
+**Output Schema**:
+```yaml
+stage_6c_gate_result:
+  section_id: string
+  status: enum  # PASS | PASS_WITH_UNCERTAINTY
+  thesis_identified: string
+  exchanges_completed: integer
+  challenges:
+    strategic_count: integer
+    tactical_count: integer
+    resolved_count: integer
+  uncertainty_notes: list | null
+```
+
 ### Stage 7: Synthesis
 
 | Check | Type | Threshold | Automated | Blocking |
@@ -130,6 +158,35 @@ TODO|FIXME|\[CITE\]|\[INSERT\]|\[TBD\]|\[PLACEHOLDER\]|XXX
 | Conclusion synthesizes findings | Semantic | All sections referenced | No | Yes |
 | Major additions flagged | Presence | If >20% new | Yes | Yes |
 | User approval (if checkpoint) | User action | Approved | Yes | Yes |
+
+### Stage 7.5: Devil's Advocate Synthesis Review
+
+| Check | Type | Threshold | Automated | Blocking |
+|-------|------|-----------|-----------|----------|
+| DA synthesis review executed | Presence | True (if triggered) | Yes | Yes |
+| Document thesis identified | Presence | Not empty | No | Yes |
+| Cross-section coherence evaluated | Semantic | All sections covered | No | Yes |
+| Strategic challenges addressed | Semantic | All resolved OR documented | No | Yes |
+| Exchange count | Range | 1-2 | Yes | Yes |
+| Uncertainty documented (if 2 exchanges) | Presence | Required if unresolved | No | Yes |
+
+**Pass Conditions**:
+- All strategic (thesis coherence, cross-cutting theme) challenges resolved, OR
+- 2 exchanges complete with strategic_uncertainty_notes documenting issues
+
+**Output Schema**:
+```yaml
+stage_7_5_gate_result:
+  status: enum  # PASS | PASS_WITH_UNCERTAINTY | SKIPPED
+  trigger_reason: string | null  # Why 7.5 ran (or why skipped)
+  document_thesis: string
+  exchanges_completed: integer
+  strategic_assessment:
+    thesis_coherence: enum  # STRONG | ADEQUATE | WEAK_DOCUMENTED
+    cross_cutting_themes: enum  # VALID | QUESTIONABLE_DOCUMENTED
+    argument_flow: enum  # LOGICAL | NEEDS_WORK_NOTED
+  uncertainty_notes: list | null
+```
 
 ### Stage 8: Editorial Polish
 
@@ -167,6 +224,11 @@ quality_floor:
   stage_6a:
     no_placeholders: true
     on_failure: "HALT: Section contains placeholder text. Found: {placeholders}"
+
+  stage_6c:
+    minimum_da_engagement: true  # DA must actually run
+    thesis_must_be_identified: true  # Cannot pass without identifying thesis
+    on_failure: "HALT: Devil's advocate could not identify thesis for section {id}. Manual intervention required."
 ```
 
 Quality floor violations ALWAYS escalate to user, regardless of checkpoint plan or automation settings.
@@ -292,6 +354,42 @@ escape_hatch:
         decision: enum  # accept | adjust | reassign | remove
         timestamp: ISO8601
         issues_waived: list
+```
+
+### Escape Hatch: Devil's Advocate Stages
+
+```yaml
+escape_hatch_da:
+  trigger_conditions:
+    stage_6c:
+      - >50% of sections have unresolved strategic challenges after 2 exchanges
+      - Any section has thesis identified as "fundamentally weak"
+
+    stage_7_5:
+      - Document thesis coherence marked "WEAK" after 2 exchanges
+      - Cross-cutting themes marked "INVALID" after 2 exchanges
+
+  escalation_protocol:
+    notify_user: |
+      Devil's advocate review has identified significant issues that could not
+      be resolved within the standard 2-exchange protocol.
+
+      Issue summary:
+      {list_of_unresolved_challenges}
+
+      Options:
+      1. Accept document with uncertainty notes (proceed to editor)
+      2. Return to section writing with specific guidance (re-write weak sections)
+      3. Return to outline stage (restructure document)
+      4. Abort workflow (if issues are fundamental)
+
+    record_decision:
+      field: workflow_state.da_escape_decisions[]
+      value:
+        stage: string
+        decision: enum  # accept | rewrite | restructure | abort
+        timestamp: ISO8601
+        issues_acknowledged: list
 ```
 
 ---
