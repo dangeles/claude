@@ -62,7 +62,7 @@ Total: 1254 lines
 
 ## Related Commits
 
-- [Will be added after commit]: Create lit-synthesizer skill for specialized literature synthesis
+- ea566fc: feat(lit-synthesizer): Add specialized synthesis skill for literature reviews
 
 ## Next Steps
 
