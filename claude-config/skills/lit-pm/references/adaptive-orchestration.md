@@ -104,12 +104,18 @@ classify_complexity:
 
 Based on complexity tier, lit-pm proposes this checkpoint plan:
 
-| Complexity | Stage 1 | Stage 2 | Stage 3 | Stage 7 | Rationale |
-|------------|---------|---------|---------|---------|-----------|
-| Simple | CHECKPOINT | Auto | Auto | Auto | Scope approval sufficient |
-| Medium | CHECKPOINT | Auto | CHECKPOINT | Auto | Direction check before heavy lifting |
-| Complex | CHECKPOINT | Auto | CHECKPOINT | CHECKPOINT | Multiple approval points |
-| High-Stakes | CHECKPOINT | CHECKPOINT | CHECKPOINT | CHECKPOINT | Maximum oversight |
+| Complexity | Stage 1 | Stage 2 | Stage 3 | Stage 6c | Stage 7 | Stage 7.5 | Rationale |
+|------------|---------|---------|---------|----------|---------|-----------|-----------|
+| Simple | CHECKPOINT | Auto | Auto | ACTIVE | Auto | Conditional | Scope approval sufficient |
+| Medium | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | Auto | Conditional | Direction check before heavy lifting |
+| Complex | CHECKPOINT | Auto | CHECKPOINT | ACTIVE | CHECKPOINT | Conditional | Multiple approval points |
+| High-Stakes | CHECKPOINT | CHECKPOINT | CHECKPOINT | ACTIVE | CHECKPOINT | ACTIVE | Maximum oversight |
+
+**Checkpoint Types**:
+- **CHECKPOINT**: User approval required before proceeding
+- **Auto**: Runs automatically, no user interaction
+- **ACTIVE**: Always runs as quality gate (not user approval gate)
+- **Conditional**: Triggers only when condition met (>=20% additions for 7.5)
 
 ### Checkpoint Purposes
 
@@ -118,7 +124,9 @@ Based on complexity tier, lit-pm proposes this checkpoint plan:
 | 1 | Validate research question and boundaries |
 | 2 | Confirm foundational reviews are correct |
 | 3 | Approve structure before section writing (expensive) |
+| 6c | Challenge argument quality, test assumptions per section |
 | 7 | Review synthesis before final polish |
+| 7.5 | Strategic coherence review when synthesis adds significant content |
 
 ---
 
@@ -168,18 +176,26 @@ checkpoint_state:
     stage_1: true
     stage_2: boolean
     stage_3: boolean
+    stage_6c: "ACTIVE"  # Always runs, distinct from checkpoint
     stage_7: boolean
+    stage_7_5:          # Conditional, not boolean
+      mode: enum  # AUTO | CONDITIONAL | ACTIVE
+      trigger_condition: ">=20% OR HIGH-STAKES"
   user_override:
     action: enum  # accept | add | remove | full_auto
     modifications:
-      - stage: integer
+      - stage: integer | string  # Allow "6c" and "7.5"
         change: enum  # added | removed
     timestamp: ISO8601
   plan_final:
     stage_1: true
     stage_2: boolean
     stage_3: boolean
+    stage_6c: "ACTIVE"
     stage_7: boolean
+    stage_7_5:
+      mode: enum
+      trigger_condition: string
 ```
 
 ---
@@ -232,6 +248,21 @@ Would you like to:
 - Cannot remove checkpoints mid-pipeline (only add)
 - Cannot adapt after Stage 7 begins
 - Maximum 2 adaptations per workflow (prevent thrashing)
+
+### Mid-Pipeline Adaptation: Devil's Advocate Triggers
+
+```yaml
+adaptation_triggers_da:
+  stage_6c:
+    trigger: >40% of sections have PASS_WITH_UNCERTAINTY status
+    significance: "Arguments weaker than expected, consider adding Stage 7 checkpoint"
+    adaptation_offer: "Would you like to add a checkpoint at Stage 7 to review before synthesis?"
+
+  stage_7_5:
+    trigger: Strategic thesis coherence marked "WEAK"
+    significance: "Document may need restructuring"
+    adaptation_offer: "Synthesis review found thesis coherence issues. Options: proceed with warnings, return to outline, abort"
+```
 
 ---
 
