@@ -114,25 +114,158 @@ echo "✓ Git working directory is clean"
 pwd
 # Should be repo root: /Users/davidangelesalbores/repos/claude
 
-# Create session directory for output files
-mkdir -p /tmp/skill-editor-session
-echo "Session directory: /tmp/skill-editor-session"
+# Add trap for graceful interrupt handling
+trap 'echo ""; echo "Session paused. Resume with: /skill-editor"; jq ".status = \"paused\"" "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.tmp.json" && mv "${SESSION_DIR}/session-state.tmp.json" "${SESSION_DIR}/session-state.json"; exit 130' INT TERM
 
-# Create/restore session state
-SESSION_FILE="/tmp/skill-editor-session/session-state.json"
+# Session management commands
+if [ "$1" = "--list-sessions" ]; then
+  echo "=== All Sessions ==="
+  ls -d /tmp/skill-editor-session/session-* 2>/dev/null | while read SESSION_PATH; do
+    SESSION_ID=$(basename "$SESSION_PATH")
+    if [ -f "${SESSION_PATH}/session-state.json" ]; then
+      PHASE=$(jq -r .phase "${SESSION_PATH}/session-state.json" 2>/dev/null || echo "unknown")
+      STATUS=$(jq -r .status "${SESSION_PATH}/session-state.json" 2>/dev/null || echo "unknown")
+      TIMESTAMP=$(jq -r .timestamp "${SESSION_PATH}/session-state.json" 2>/dev/null || echo "unknown")
+      echo "  ${SESSION_ID}"
+      echo "    Status: ${STATUS} | Phase: ${PHASE} | ${TIMESTAMP}"
+    fi
+  done
+  exit 0
+fi
 
-if [ -f "$SESSION_FILE" ]; then
-  echo "Found existing session from $(jq -r .timestamp $SESSION_FILE)"
-  echo "Phase: $(jq -r .phase $SESSION_FILE)"
-  read -p "Resume from previous session? (y/n): " RESUME
-  if [ "$RESUME" = "y" ]; then
-    echo "Resuming from Phase $(jq -r .phase $SESSION_FILE)"
+if [ "$1" = "--cleanup" ]; then
+  echo "Scanning for completed sessions..."
+  COMPLETED_SESSIONS=($(ls -d /tmp/skill-editor-session/session-* 2>/dev/null | while read SESSION_PATH; do
+    STATUS=$(jq -r .status "${SESSION_PATH}/session-state.json" 2>/dev/null)
+    if [ "$STATUS" = "completed" ]; then
+      echo "$SESSION_PATH"
+    fi
+  done))
+
+  if [ ${#COMPLETED_SESSIONS[@]} -eq 0 ]; then
+    echo "No completed sessions found"
+    exit 0
+  fi
+
+  echo "Found ${#COMPLETED_SESSIONS[@]} completed session(s):"
+  for SESSION_PATH in "${COMPLETED_SESSIONS[@]}"; do
+    SESSION_ID=$(basename "$SESSION_PATH")
+    TIMESTAMP=$(jq -r .completed_at "${SESSION_PATH}/session-state.json" 2>/dev/null || echo "unknown")
+    echo "  ${SESSION_ID} - Completed: ${TIMESTAMP}"
+  done
+
+  read -p "Remove these completed sessions? (yes/no): " CONFIRM
+  if [ "$CONFIRM" = "yes" ]; then
+    for SESSION_PATH in "${COMPLETED_SESSIONS[@]}"; do
+      rm -rf "$SESSION_PATH"
+    done
+    echo "✅ ${#COMPLETED_SESSIONS[@]} completed session(s) removed"
+  fi
+  exit 0
+fi
+
+# Resume protocol with multi-session support
+SESSIONS=($(ls -d /tmp/skill-editor-session/session-* 2>/dev/null | sort -r))
+
+if [ ${#SESSIONS[@]} -gt 0 ]; then
+  echo "Found ${#SESSIONS[@]} existing session(s):"
+  echo ""
+  echo "Active/Paused Sessions:"
+  for SESSION_PATH in "${SESSIONS[@]}"; do
+    SESSION_ID=$(basename "$SESSION_PATH")
+    if [ -f "${SESSION_PATH}/session-state.json" ]; then
+      TIMESTAMP=$(jq -r .timestamp "${SESSION_PATH}/session-state.json")
+      PHASE=$(jq -r .phase "${SESSION_PATH}/session-state.json")
+      STATUS=$(jq -r .status "${SESSION_PATH}/session-state.json")
+
+      # Only show non-completed sessions by default
+      if [ "$STATUS" != "completed" ]; then
+        echo "  ${SESSION_ID}"
+        echo "    Status: ${STATUS} | Phase: ${PHASE} | ${TIMESTAMP}"
+      fi
+    fi
+  done
+  echo ""
+  echo "Options:"
+  echo "  - Enter session ID to resume"
+  echo "  - Enter 'list-all' to see completed sessions"
+  echo "  - Enter 'n' to start new session"
+  read -p "Choice: " RESUME_CHOICE
+
+  if [ "$RESUME_CHOICE" = "list-all" ]; then
+    echo ""
+    echo "All Sessions (including completed):"
+    for SESSION_PATH in "${SESSIONS[@]}"; do
+      SESSION_ID=$(basename "$SESSION_PATH")
+      if [ -f "${SESSION_PATH}/session-state.json" ]; then
+        TIMESTAMP=$(jq -r .timestamp "${SESSION_PATH}/session-state.json")
+        PHASE=$(jq -r .phase "${SESSION_PATH}/session-state.json")
+        STATUS=$(jq -r .status "${SESSION_PATH}/session-state.json")
+        echo "  ${SESSION_ID} - ${STATUS} - Phase ${PHASE} - ${TIMESTAMP}"
+      fi
+    done
+    echo ""
+    read -p "Resume a session? Enter session ID or 'n' for new: " RESUME_CHOICE
+  fi
+
+  if [ "$RESUME_CHOICE" != "n" ]; then
+    SESSION_ID="$RESUME_CHOICE"
+    SESSION_DIR="/tmp/skill-editor-session/${SESSION_ID}"
+    echo "Resuming ${SESSION_ID}"
   else
-    rm "$SESSION_FILE"
-    echo "Starting fresh session"
+    # Create new session
+    SESSION_ID="session-$(date -u +%Y%m%d-%H%M%S)-$$"
+    SESSION_DIR="/tmp/skill-editor-session/${SESSION_ID}"
   fi
 else
+  # Check for legacy session format
+  LEGACY_STATE="/tmp/skill-editor-session/session-state.json"
+  if [ -f "$LEGACY_STATE" ]; then
+    echo "Detected legacy session format"
+    LEGACY_TIMESTAMP=$(jq -r .timestamp "$LEGACY_STATE")
+    LEGACY_SESSION_ID="session-legacy-$(echo $LEGACY_TIMESTAMP | tr -d ':TZ-')"
+
+    read -p "Migrate to new format as ${LEGACY_SESSION_ID}? (y/n): " MIGRATE
+    if [ "$MIGRATE" = "y" ]; then
+      mkdir -p "/tmp/skill-editor-session/${LEGACY_SESSION_ID}"
+      mv /tmp/skill-editor-session/*.{json,md} "/tmp/skill-editor-session/${LEGACY_SESSION_ID}/" 2>/dev/null
+      SESSION_ID="$LEGACY_SESSION_ID"
+      SESSION_DIR="/tmp/skill-editor-session/${SESSION_ID}"
+      echo "Migration complete. Resuming as ${SESSION_ID}"
+    else
+      # Create new session
+      SESSION_ID="session-$(date -u +%Y%m%d-%H%M%S)-$$"
+      SESSION_DIR="/tmp/skill-editor-session/${SESSION_ID}"
+    fi
+  else
+    # Create new session
+    SESSION_ID="session-$(date -u +%Y%m%d-%H%M%S)-$$"
+    SESSION_DIR="/tmp/skill-editor-session/${SESSION_ID}"
+  fi
+fi
+
+# Create session directory and initialize state if new session
+mkdir -p "${SESSION_DIR}"
+echo "Session directory: ${SESSION_DIR}"
+echo "Session ID: ${SESSION_ID}"
+
+if [ ! -f "${SESSION_DIR}/session-state.json" ]; then
+  # Initialize session state with lifecycle status
+  jq -n \
+    --arg phase "0" \
+    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg session_id "$SESSION_ID" \
+    --arg status "in_progress" \
+    '{
+      phase: $phase,
+      timestamp: $timestamp,
+      session_id: $session_id,
+      status: $status,
+      agents_completed: []
+    }' > "${SESSION_DIR}/session-state.json"
   echo "Starting new session"
+else
+  echo "Resuming from Phase $(jq -r .phase ${SESSION_DIR}/session-state.json)"
 fi
 ```
 
@@ -140,11 +273,11 @@ If checks fail: Ask user to resolve before proceeding.
 
 ### If User Cancels (Ctrl+C)
 
-Session state is preserved in `/tmp/skill-editor-session/session-state.json`.
+Session state is preserved in `${SESSION_DIR}/session-state.json`.
 
 On next invocation:
 1. Offer to resume from last phase
-2. If declined, clean up session: `rm /tmp/skill-editor-session/session-state.json`
+2. If declined, session remains in /tmp/skill-editor-session/{session-id}
 3. Re-sync if needed: `./sync-config.py push`
 
 ### Phase 1: Refinement (Interactive)
@@ -167,7 +300,7 @@ On next invocation:
 4. Agent establishes clear boundaries and success criteria
 5. Agent presents refined specification to user
 
-**Output File**: `/tmp/skill-editor-session/refined-specification.md` containing:
+**Output File**: `${SESSION_DIR}/refined-specification.md` containing:
 - Objective (one sentence)
 - Scope (IN/OUT lists)
 - Success criteria (measurable)
@@ -193,7 +326,7 @@ jq -n \
   --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson agents_completed '["request-refiner"]' \
   '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
-  > /tmp/skill-editor-session/session-state.json
+  > ${SESSION_DIR}/session-state.json
 ```
 
 ---
@@ -210,7 +343,7 @@ jq -n \
 echo "=== Mode Selection ==="
 echo ""
 
-SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
+SPEC_FILE="${SESSION_DIR}/refined-specification.md"
 
 # Source detection function (see references/complexity-detection-criteria.md)
 # Inline detection for robustness
@@ -457,13 +590,13 @@ jq -n \
     user_override: $user_override,
     timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
   }' \
-  > /tmp/skill-editor-session/mode-selection.json
+  > ${SESSION_DIR}/mode-selection.json
 
 # Update main session state
 jq --arg mode "$SELECTED_MODE" \
    '. + {workflow_mode: $mode}' \
-   /tmp/skill-editor-session/session-state.json > /tmp/skill-editor-session/session-state.tmp.json && \
-   mv /tmp/skill-editor-session/session-state.tmp.json /tmp/skill-editor-session/session-state.json
+   ${SESSION_DIR}/session-state.json > ${SESSION_DIR}/session-state.tmp.json && \
+   mv ${SESSION_DIR}/session-state.tmp.json ${SESSION_DIR}/session-state.json
 
 echo ""
 echo "[$SELECTED_MODE MODE] Mode selected. Proceeding..."
@@ -564,14 +697,14 @@ Task 4: external-researcher
 **Note**: Task tool calls do not currently support explicit timeout parameters. Monitor agent progress and manually intervene if agents run longer than 10 minutes.
 
 **Output Files** (must be created before proceeding to Phase 3):
-- `/tmp/skill-editor-session/best-practices-review.md`
-- `/tmp/skill-editor-session/external-research.md`
-- `/tmp/skill-editor-session/edge-cases.md`
-- `/tmp/skill-editor-session/knowledge-engineering-analysis.md` [NEW]
+- `${SESSION_DIR}/best-practices-review.md`
+- `${SESSION_DIR}/external-research.md`
+- `${SESSION_DIR}/edge-cases.md`
+- `${SESSION_DIR}/knowledge-engineering-analysis.md` [NEW]
 
 **Verification**: Before Phase 3, verify all output files exist:
 ```bash
-ls -lh /tmp/skill-editor-session/*.md
+ls -lh ${SESSION_DIR}/*.md
 # Should show all 4 files with content
 ```
 
@@ -621,7 +754,7 @@ jq -n \
   --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson agents_completed '["request-refiner", "best-practices-reviewer", "external-researcher", "edge-case-simulator", "knowledge-engineer"]' \
   '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
-  > /tmp/skill-editor-session/session-state.json
+  > ${SESSION_DIR}/session-state.json
 ```
 
 ---
@@ -646,7 +779,7 @@ jq -n \
 # Run complexity detection function
 # See /Users/davidangelesalbores/repos/claude/claude-config/skills/skill-editor/references/complexity-detection-criteria.md
 
-SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
+SPEC_FILE="${SESSION_DIR}/refined-specification.md"
 COMPLEX=false
 CONFIDENCE="low"
 REASON=""
@@ -771,7 +904,7 @@ jq -n \
     proceed_to_phase_2_5: $proceed,
     timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
   }' \
-  > /tmp/skill-editor-session/complexity-detection.json
+  > ${SESSION_DIR}/complexity-detection.json
 
 # Branch logic
 if [ "$PROCEED_TO_STRATEGY_CONSULTANT" = "false" ]; then
@@ -823,15 +956,15 @@ if [ "$PROCEED_TO_STRATEGY_CONSULTANT" = "true" ]; then
     echo "⚠ WARNING: Strategy consultant timed out after 30 minutes"
 
     # Check for partial report
-    if [ -f "/tmp/skill-editor-session/strategic-review.md" ]; then
-      WORD_COUNT=$(wc -w < /tmp/skill-editor-session/strategic-review.md)
+    if [ -f "${SESSION_DIR}/strategic-review.md" ]; then
+      WORD_COUNT=$(wc -w < ${SESSION_DIR}/strategic-review.md)
       if [ $WORD_COUNT -gt 50 ]; then
         echo "Partial report found (${WORD_COUNT} words)"
-        echo "" >> /tmp/skill-editor-session/strategic-review.md
-        echo "## INCOMPLETE REPORT" >> /tmp/skill-editor-session/strategic-review.md
-        echo "Note: Strategic review timed out. This is a partial analysis." >> /tmp/skill-editor-session/strategic-review.md
+        echo "" >> ${SESSION_DIR}/strategic-review.md
+        echo "## INCOMPLETE REPORT" >> ${SESSION_DIR}/strategic-review.md
+        echo "Note: Strategic review timed out. This is a partial analysis." >> ${SESSION_DIR}/strategic-review.md
       else
-        rm /tmp/skill-editor-session/strategic-review.md
+        rm ${SESSION_DIR}/strategic-review.md
       fi
     fi
 
@@ -845,7 +978,7 @@ Choice: " TIMEOUT_CHOICE
     case $TIMEOUT_CHOICE in
       A)
         echo "Proceeding without strategic review"
-        rm -f /tmp/skill-editor-session/strategic-review.md
+        rm -f ${SESSION_DIR}/strategic-review.md
         ;;
       B)
         echo "Retrying with 60-minute timeout..."
@@ -876,7 +1009,7 @@ fi
 if [ "$PROCEED_TO_STRATEGY_CONSULTANT" = "true" ]; then
   echo "=== Validating Strategic Review Quality ==="
 
-  REVIEW_FILE="/tmp/skill-editor-session/strategic-review.md"
+  REVIEW_FILE="${SESSION_DIR}/strategic-review.md"
 
   if [ ! -f "$REVIEW_FILE" ]; then
     echo "⚠ No strategic review produced (agent may have failed)"
@@ -968,7 +1101,7 @@ fi
 ```bash
 echo "=== Checking for Major Refactoring Opportunity ==="
 
-REVIEW_FILE="/tmp/skill-editor-session/strategic-review.md"
+REVIEW_FILE="${SESSION_DIR}/strategic-review.md"
 
 if [ ! -f "$REVIEW_FILE" ]; then
   echo "No strategic review file (Phase 2.5 was skipped or failed)"
@@ -1003,7 +1136,7 @@ else
       jq -n '{
         parallel_exploration: true,
         trigger_after_phase: 3
-      }' > /tmp/skill-editor-session/parallel-exploration-flag.json
+      }' > ${SESSION_DIR}/parallel-exploration-flag.json
 
     elif grep -qi "User decision:.*Proceed with current plan" "$REVIEW_FILE"; then
       echo "User selected: Proceed with current plan (Option A)"
@@ -1011,7 +1144,7 @@ else
 
     elif grep -qi "User decision:.*Abort" "$REVIEW_FILE"; then
       echo "User selected: Abort workflow (Option C)"
-      echo "Stopping workflow. Session data preserved in /tmp/skill-editor-session/"
+      echo "Stopping workflow. Session data preserved in ${SESSION_DIR}"
       exit 1
     fi
   else
@@ -1036,7 +1169,7 @@ echo ""
 GATE_PASS=true
 
 # Check 1: Complexity detection completed
-if [ ! -f "/tmp/skill-editor-session/complexity-detection.json" ]; then
+if [ ! -f "${SESSION_DIR}/complexity-detection.json" ]; then
   echo "✗ Complexity detection not completed"
   GATE_PASS=false
 else
@@ -1044,11 +1177,11 @@ else
 fi
 
 # Check 2: If complex, strategic review exists
-PROCEED=$(jq -r '.proceed_to_phase_2_5' /tmp/skill-editor-session/complexity-detection.json 2>/dev/null || echo "false")
+PROCEED=$(jq -r '.proceed_to_phase_2_5' ${SESSION_DIR}/complexity-detection.json 2>/dev/null || echo "false")
 
 if [ "$PROCEED" = "true" ]; then
-  if [ -f "/tmp/skill-editor-session/strategic-review.md" ]; then
-    WORD_COUNT=$(wc -w < /tmp/skill-editor-session/strategic-review.md)
+  if [ -f "${SESSION_DIR}/strategic-review.md" ]; then
+    WORD_COUNT=$(wc -w < ${SESSION_DIR}/strategic-review.md)
     if [ $WORD_COUNT -gt 100 ]; then
       echo "✓ Strategic review exists and is substantive ($WORD_COUNT words)"
     else
@@ -1070,10 +1203,10 @@ else
 fi
 
 # Check 3: If major refactoring, user decision recorded
-if [ -f "/tmp/skill-editor-session/strategic-review.md" ]; then
-  if grep -qi "MAJOR REFACTORING DETECTED" /tmp/skill-editor-session/strategic-review.md; then
-    if grep -qi "User decision:" /tmp/skill-editor-session/strategic-review.md; then
-      DECISION=$(grep -i "User decision:" /tmp/skill-editor-session/strategic-review.md | head -1 | cut -d: -f2 | xargs)
+if [ -f "${SESSION_DIR}/strategic-review.md" ]; then
+  if grep -qi "MAJOR REFACTORING DETECTED" ${SESSION_DIR}/strategic-review.md; then
+    if grep -qi "User decision:" ${SESSION_DIR}/strategic-review.md; then
+      DECISION=$(grep -i "User decision:" ${SESSION_DIR}/strategic-review.md | head -1 | cut -d: -f2 | xargs)
       echo "✓ Major refactoring decision recorded: $DECISION"
     else
       echo "✗ Major refactoring detected but no user decision recorded"
@@ -1131,7 +1264,7 @@ jq -n \
     timestamp: $timestamp,
     agents_completed: $agents_completed
   }' \
-  > /tmp/skill-editor-session/session-state.json
+  > ${SESSION_DIR}/session-state.json
 
 echo ""
 echo "✓ Session state updated: Phase 2.5 complete"
@@ -1152,8 +1285,8 @@ echo "✓ Session state updated: Phase 2.5 complete"
 echo "=== Phase 3: SIMPLE MODE - Lightweight Decision ==="
 echo ""
 
-SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
-PLAN_FILE="/tmp/skill-editor-session/implementation-plan.md"
+SPEC_FILE="${SESSION_DIR}/refined-specification.md"
+PLAN_FILE="${SESSION_DIR}/implementation-plan.md"
 
 # Create minimal implementation plan from specification
 cat << 'PLAN_HEADER' > "$PLAN_FILE"
@@ -1248,8 +1381,8 @@ echo "[SIMPLE MODE] Phase 3 complete. Proceeding to Phase 4."
 echo "=== Phase 3: EXPERIMENTAL MODE - Minimal Decision ==="
 echo ""
 
-SPEC_FILE="/tmp/skill-editor-session/refined-specification.md"
-PLAN_FILE="/tmp/skill-editor-session/implementation-plan.md"
+SPEC_FILE="${SESSION_DIR}/refined-specification.md"
+PLAN_FILE="${SESSION_DIR}/implementation-plan.md"
 
 # Create plan with experimental flags
 cat << 'PLAN_HEADER' > "$PLAN_FILE"
@@ -1321,7 +1454,7 @@ echo "[EXPERIMENTAL] Phase 3 complete. Proceeding to Phase 4."
 Before launching synthesis, offer mode change option:
 
 ```bash
-CURRENT_MODE=$(jq -r '.workflow_mode' /tmp/skill-editor-session/session-state.json 2>/dev/null || echo "STANDARD")
+CURRENT_MODE=$(jq -r '.workflow_mode' ${SESSION_DIR}/session-state.json 2>/dev/null || echo "STANDARD")
 
 echo "=== Phase 3 Mode Checkpoint ==="
 echo ""
@@ -1338,8 +1471,8 @@ if [ "$CURRENT_MODE" = "SIMPLE" ] || [ "$CURRENT_MODE" = "EXPERIMENTAL" ]; then
 
   if [ "$CHECKPOINT_CHOICE" = "2" ]; then
     echo "Switching to Standard Mode..."
-    jq '.workflow_mode = "STANDARD"' /tmp/skill-editor-session/session-state.json > /tmp/skill-editor-session/session-state.tmp.json
-    mv /tmp/skill-editor-session/session-state.tmp.json /tmp/skill-editor-session/session-state.json
+    jq '.workflow_mode = "STANDARD"' ${SESSION_DIR}/session-state.json > ${SESSION_DIR}/session-state.tmp.json
+    mv ${SESSION_DIR}/session-state.tmp.json ${SESSION_DIR}/session-state.json
     CURRENT_MODE="STANDARD"
     echo "[STANDARD MODE] Running Phase 2 (4 parallel agents)..."
     # Jump to Phase 2 execution
@@ -1378,7 +1511,7 @@ echo "[$CURRENT_MODE MODE] Proceeding with Phase 3..."
    - Validation steps
    - Rollback plan
 
-**Output File**: `/tmp/skill-editor-session/implementation-plan.md`
+**Output File**: `${SESSION_DIR}/implementation-plan.md`
 
 #### Part B: Adversarial Review
 
@@ -1396,7 +1529,7 @@ echo "[$CURRENT_MODE MODE] Proceeding with Phase 3..."
 6. Check alignment with original specification
 7. Provide go/no-go decision
 
-**Output File**: `/tmp/skill-editor-session/adversarial-review.md` containing:
+**Output File**: `${SESSION_DIR}/adversarial-review.md` containing:
 - Architecture assessment
 - Failure mode analysis
 - Integration risk assessment
@@ -1428,7 +1561,7 @@ jq -n \
   --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson agents_completed '["request-refiner", "best-practices-reviewer", "external-researcher", "edge-case-simulator", "decision-synthesizer", "adversarial-reviewer"]' \
   '{phase: $phase, timestamp: $timestamp, agents_completed: $agents_completed}' \
-  > /tmp/skill-editor-session/session-state.json
+  > ${SESSION_DIR}/session-state.json
 ```
 
 ---
@@ -1465,14 +1598,14 @@ For each file in implementation plan:
 If workflow_mode = "EXPERIMENTAL", add tags to output files:
 
 ```bash
-CURRENT_MODE=$(jq -r '.workflow_mode' /tmp/skill-editor-session/session-state.json 2>/dev/null || echo "STANDARD")
+CURRENT_MODE=$(jq -r '.workflow_mode' ${SESSION_DIR}/session-state.json 2>/dev/null || echo "STANDARD")
 
 if [ "$CURRENT_MODE" = "EXPERIMENTAL" ]; then
   echo "[EXPERIMENTAL] Adding experimental tags to output files..."
 
   # For each skill file being created/modified
   # [FIX: Adversarial Issue #4] Use POSIX-compatible grep instead of grep -oP
-  for SKILL_FILE in $(grep -o 'skills/[^/]*/SKILL\.md' /tmp/skill-editor-session/implementation-plan.md | sort -u); do
+  for SKILL_FILE in $(grep -o 'skills/[^/]*/SKILL\.md' ${SESSION_DIR}/implementation-plan.md | sort -u); do
     FULL_PATH="/Users/davidangelesalbores/repos/claude/claude-config/$SKILL_FILE"
 
     if [ -f "$FULL_PATH" ]; then
@@ -1589,7 +1722,7 @@ chmod +x /tmp/test-skill.sh
 
 ```bash
 # Determine commit prefix based on mode
-CURRENT_MODE=$(jq -r '.workflow_mode' /tmp/skill-editor-session/session-state.json 2>/dev/null || echo "STANDARD")
+CURRENT_MODE=$(jq -r '.workflow_mode' ${SESSION_DIR}/session-state.json 2>/dev/null || echo "STANDARD")
 
 if [ "$CURRENT_MODE" = "EXPERIMENTAL" ]; then
   COMMIT_PREFIX="experimental"
@@ -1630,6 +1763,27 @@ EOF
 
 # Verify commit
 git log -1 --stat
+
+# Mark session as completed
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "✅ Skill-editor workflow completed successfully"
+
+  # Mark session as completed
+  jq '.status = "completed" | .phase = "4" | .completed_at = (now | strftime("%Y-%m-%dT%H:%M:%SZ"))' \
+    "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.tmp.json" && \
+    mv "${SESSION_DIR}/session-state.tmp.json" "${SESSION_DIR}/session-state.json"
+
+  echo "Session ${SESSION_ID} marked as completed"
+  echo "Session artifacts preserved in: ${SESSION_DIR}"
+else
+  # Mark as failed if git commit fails
+  jq '.status = "failed" | .error = "Git commit failed"' \
+    "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.tmp.json" && \
+    mv "${SESSION_DIR}/session-state.tmp.json" "${SESSION_DIR}/session-state.json"
+
+  echo "❌ Session ${SESSION_ID} marked as failed"
+fi
 ```
 
 **Git Safety Checklist**:
@@ -1649,6 +1803,7 @@ Generate completion report with:
 - Commit SHA
 - Planning journal entry path
 - Success criteria verification
+- Session completion status
 
 ---
 
