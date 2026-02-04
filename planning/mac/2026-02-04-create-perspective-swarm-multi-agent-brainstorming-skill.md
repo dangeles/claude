@@ -82,7 +82,7 @@ All files created successfully:
 
 ## Related Commits
 
-- [pending]: feat(skills): Create perspective-swarm multi-agent brainstorming skill
+- 3d503c9: feat(skills): Create perspective-swarm multi-agent brainstorming skill
 
 ## Next Steps
 
