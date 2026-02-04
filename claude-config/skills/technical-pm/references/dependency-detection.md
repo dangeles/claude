@@ -132,7 +132,7 @@ technical-pm goal="..." --parallel    # Force all parallel where safe
 | devils-advocate | 5-15 min | No - needs draft to review |
 | fact-checker | 5-15 min | No - needs content to check |
 | editor | 5-15 min | No - needs near-final content |
-| archivist | 1-5 min | No - quick, sequential fine |
+| archive-workflow | 15-60 min | Conditional - depends on project scope |
 
 ### Parallel-Eligible Skills (Task Tool)
 
@@ -146,7 +146,7 @@ For Task tool parallel execution, only these skills qualify:
 | devils-advocate | No | - |
 | fact-checker | No | - |
 | editor | No | - |
-| archivist | No | - |
+| archive-workflow | Conditional | `task-templates.md#template-archive-workflow` |
 
 *Synthesizer can run parallel only if synthesizing independent sources, not dependent on other parallel tasks in the same batch.
 
@@ -157,7 +157,7 @@ For Task tool parallel execution, only these skills qualify:
 
 **Why NOT the others?**
 - devils-advocate, fact-checker, editor: Need content to review (natural dependency)
-- archivist: Too short (<5 min), parallel overhead exceeds benefit
+- archive-workflow: Multi-agent coordination skill, typically run after other work complete
 
 For parallel execution protocol, see `parallel-execution.md`.
 
@@ -240,8 +240,8 @@ After parallel tasks complete, before synthesis:
 
 **Analysis**:
 - No explicit markers
-- Task A: Archive document (archivist, ~2 min)
-- Task B: Update ToC (archivist, ~2 min)
+- Task A: Organize project structure (archive-workflow, ~30 min)
+- Task B: Update documentation (editor, ~15 min)
 - Both < 5 minutes
 - Decision: **SEQUENTIAL** (parallel overhead exceeds benefit)
 

@@ -61,7 +61,7 @@ Apply these standards from CLAUDE.md:
 4. **Edit for clarity**: Cut unnecessary words, clarify ambiguity
 5. **Add transitions**: Ensure sections connect smoothly
 6. **Final read**: Would a busy skeptical reader understand this?
-7. **Hand off for archival**: Pass to Archivist for filing and indexing
+7. **Hand off for organization**: Pass to archive-workflow for project organization (if needed)
 
 ## Edit Annotation Format
 
@@ -134,7 +134,7 @@ When suggesting changes (for author review):
 
 | Condition | Hand off to |
 |-----------|-------------|
-| Editing complete | **Archivist** (for filing and indexing) |
+| Editing complete | **archive-workflow** (for project organization) |
 | Technical concerns | **Writer** (original author) |
 | Citation issues noticed | **Fact-Checker** |
 | Need structural reorganization | **Synthesizer** (for major restructuring) |

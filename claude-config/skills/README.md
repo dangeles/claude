@@ -119,7 +119,7 @@ See **[Skills by Domain](#skills-by-domain)** below for categorized lists, or us
 
 | Skill | Description | Key Features |
 |-------|-------------|--------------|
-| **archivist** | File and organize documents | Naming conventions, directory structure, metadata tracking |
+| **archive-workflow** | Organize projects comprehensively | Clutter detection, naming conventions, structure organization, gitignore management |
 | **procurement** | Match equipment to specifications | Vendor identification, compatibility assessment, availability checking |
 
 ---

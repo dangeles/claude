@@ -1,6 +1,45 @@
 # Skills Changelog
 All notable changes to the Claude skills ecosystem.
 
+## [2.1.0] - 2026-02-04
+
+### Summary
+Added comprehensive project organization skill (archive-workflow) with 1 PM orchestrator and 5 specialist agents. Replaced the single-purpose archivist skill with a full-featured multi-agent workflow.
+
+### Added - New Skills (1)
+
+#### archive-workflow (v1.0)
+- **Purpose**: Comprehensive project organization with clutter detection, naming conventions, structure organization, and gitignore management
+- **Architecture**: 1 PM (library-pm) + 5 specialist agents (clutter-analyst, nomenclature-enforcer, structure-organizer, expandability-reviewer, decision-integrator)
+- **Features**:
+  - 4-wave workflow with quality gates between each wave
+  - Project type detection (code/research/data/mixed)
+  - Pre-flight validation (git status, permissions, disk space)
+  - Conflict resolution rules (7 rules for handling analyst disagreements)
+  - Rollback procedures (pre-commit and post-commit)
+  - Editor skill integration for documentation
+- **Use cases**: Organizing new projects, cleaning up existing projects, enforcing naming conventions, managing gitignore
+- **References**: 8 reference documents (naming conventions, structure templates, gitignore patterns, clutter detection rules)
+- **Examples**: 3 worked examples (code project, research project, mixed project)
+
+### Removed
+
+#### archivist (REPLACED by archive-workflow)
+- **Reason**: Limited to document filing for specific project type; archive-workflow provides comprehensive project organization across all project types
+- **Migration**: Use `/archive-workflow` instead of `/archivist`
+- **Preserved**: Naming conventions and directory standards absorbed into archive-workflow references
+
+### Changed
+
+#### Updated References (7 files)
+- editor/SKILL.md: Handoff to archive-workflow instead of Archivist
+- research-pipeline/SKILL.md: Updated handoff documentation
+- technical-pm/SKILL.md: Updated agent assignment guide
+- technical-pm/references/coordination-patterns.md: Updated literature pipeline flow
+- technical-pm/references/parallel-execution.md: Updated skill list
+- technical-pm/references/dependency-detection.md: Updated estimation heuristics
+- skills/README.md: Updated skill catalog
+
 ## [2.0.0] - 2026-01-29
 
 ### Summary

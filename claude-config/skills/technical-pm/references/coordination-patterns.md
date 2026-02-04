@@ -9,7 +9,7 @@
 
 ### Pattern 1: Literature Pipeline (Standard Research)
 
-**Flow**: Researcher → Devil's Advocate → Fact-Checker → Editor → Archivist
+**Flow**: Researcher → Devil's Advocate → Fact-Checker → Editor → archive-workflow
 
 **Use when**: Producing literature review, analysis document, synthesis report
 
@@ -18,7 +18,7 @@
 2. **Devil's Advocate** challenges assumptions, identifies gaps (1-2 iterations)
 3. **Fact-Checker** verifies citations, checks quoted values
 4. **Editor** polishes prose, enforces CLAUDE.md style
-5. **Archivist** adds to INDEX.md, ensures proper naming/location
+5. **archive-workflow** organizes project structure, ensures proper naming/location
 
 **Parallel opportunities**: None (sequential by design for quality)
 
@@ -350,7 +350,7 @@ Agent working >30 min without progress update
 | Calculator | Synthesizer | Model results | Key conclusions, parameter sensitivities | 3-4 hours synthesis |
 | Synthesizer | Devil's Advocate | Synthesis document | Assumption validity, gap identification | 1-2 hours review |
 | Devil's Advocate | Editor | Reviewed document | Prose clarity, CLAUDE.md style | 30-60 min per 1000 words |
-| Editor | Archivist | Polished document | File naming, INDEX.md update | 15-30 min |
+| Editor | archive-workflow | Polished document | Project organization, naming conventions | 15-30 min |
 
 ---
 

@@ -16,7 +16,7 @@ Only these skills are eligible for parallel Task execution:
 | calculator | 5-30 min | Long-running, produces self-contained output |
 | synthesizer | 15-30 min | Can run parallel IF inputs are independent |
 
-All other skills (devils-advocate, fact-checker, editor, archivist) remain sequential via Skill tool.
+All other skills (devils-advocate, fact-checker, editor, archive-workflow) remain sequential via Skill tool.
 
 ### Decision Criteria
 

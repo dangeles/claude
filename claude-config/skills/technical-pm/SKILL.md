@@ -385,7 +385,7 @@ See `assets/crisis-response-template.md` for standardized incident notification 
 | Back-of-envelope or detailed calcs | Calculator |
 | Review draft adversarially | Devil's Advocate |
 | Polish prose, enforce style | Editor |
-| File and index | Archivist |
+| Organize project structure | archive-workflow |
 | Verify citations | Fact-Checker |
 | Check cross-document consistency | Consistency Auditor |
 | Strategic assessment | Strategist |
@@ -896,7 +896,7 @@ Only these skills are eligible for parallel Task execution:
 | calculator | 5-30 min | Yes | Long-running, self-contained output |
 | synthesizer | 15-30 min | Conditional | Only if inputs are independent |
 
-All other skills (devils-advocate, fact-checker, editor, archivist) remain sequential via Skill tool.
+All other skills (devils-advocate, fact-checker, editor, archive-workflow) remain sequential via Skill tool.
 
 ### When to Parallelize
 

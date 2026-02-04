@@ -418,14 +418,14 @@ Use technical-pm instead of research-pipeline when:
 - Non-research skills needed in the workflow
 - Complex dependency management required
 
-### Handoff to Archivist
+### Handoff to archive-workflow
 
-After pipeline completion, user may want to invoke archivist separately:
+After pipeline completion, user may want to invoke archive-workflow separately for project organization:
 ```
-Skill(archivist, document="{final output path}")
+Skill(archive-workflow, project="{project root}")
 ```
 
-Pipeline does NOT automatically invoke archivist to give user control over filing decisions.
+Pipeline does NOT automatically invoke archive-workflow to give user control over organization decisions.
 
 ## Example Invocations
 
@@ -492,7 +492,7 @@ Pipeline does NOT automatically invoke archivist to give user control over filin
 | Condition | Hand off to |
 |-----------|-------------|
 | Pipeline complete | **User** (with completion report) |
-| Pipeline complete, archival needed | **Archivist** (manual invocation) |
+| Pipeline complete, organization needed | **archive-workflow** (manual invocation) |
 | Stage failure, needs diagnosis | **User** (with error context) |
 | Custom workflow needed | **technical-pm** (for flexible orchestration) |
 | Parallel research streams | **technical-pm** with Task tool |
