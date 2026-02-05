@@ -59,10 +59,10 @@ check_yaml_field() {
 
     if command -v yq &> /dev/null; then
         if [ -n "$expected_value" ]; then
-            result=$(yq "$field" "$file" 2>/dev/null || echo "null")
+            result=$(yq eval "$field" "$file" 2>/dev/null || echo "null")
             [ "$result" = "$expected_value" ]
         else
-            result=$(yq "$field" "$file" 2>/dev/null || echo "null")
+            result=$(yq eval "$field" "$file" 2>/dev/null || echo "null")
             [ "$result" != "null" ] && [ "$result" != "" ]
         fi
     else
@@ -76,7 +76,7 @@ count_yaml_array() {
     local field="$2"
 
     if command -v yq &> /dev/null; then
-        yq "$field | length" "$file" 2>/dev/null || echo "0"
+        yq eval "$field | length" "$file" 2>/dev/null || echo "0"
     else
         # Fallback: count lines indented under field
         grep -A 100 "$field" "$file" | grep -c "^  - " || echo "0"
@@ -183,8 +183,8 @@ validate_gate_2() {
         mitigated_count=0
 
         for i in $(seq 0 $((risk_count - 1))); do
-            score=$(yq ".handoff.risk_summary[$i].score" "$HANDOFF_PATH" 2>/dev/null || echo "0")
-            disposition=$(yq ".handoff.risk_summary[$i].disposition" "$HANDOFF_PATH" 2>/dev/null || echo "")
+            score=$(yq eval ".handoff.risk_summary[$i].score" "$HANDOFF_PATH" 2>/dev/null || echo "0")
+            disposition=$(yq eval ".handoff.risk_summary[$i].disposition" "$HANDOFF_PATH" 2>/dev/null || echo "")
 
             if [ "$score" -ge 15 ]; then
                 critical_count=$((critical_count + 1))
@@ -390,7 +390,7 @@ validate_gate_5() {
     if check_yaml_field "$HANDOFF_PATH" "handoff.manual_review"; then
         if command -v yq &> /dev/null; then
             for aspect in code_quality documentation testing architecture; do
-                status=$(yq ".handoff.manual_review.$aspect" "$HANDOFF_PATH" 2>/dev/null || echo "")
+                status=$(yq eval ".handoff.manual_review.$aspect" "$HANDOFF_PATH" 2>/dev/null || echo "")
                 if [ "$status" = "pass" ]; then
                     echo -e "${GREEN}  ✓ Manual review: $aspect passed${NC}"
                 else
