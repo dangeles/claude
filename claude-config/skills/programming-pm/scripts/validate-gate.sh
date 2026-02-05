@@ -58,6 +58,11 @@ check_yaml_field() {
     local expected_value="${3:-}"
 
     if command -v yq &> /dev/null; then
+        # Add dot prefix if not present (Go yq requires it)
+        if [[ "$field" != .* ]]; then
+            field=".$field"
+        fi
+
         if [ -n "$expected_value" ]; then
             result=$(yq eval "$field" "$file" 2>/dev/null || echo "null")
             [ "$result" = "$expected_value" ]
@@ -76,6 +81,10 @@ count_yaml_array() {
     local field="$2"
 
     if command -v yq &> /dev/null; then
+        # Add dot prefix if not present (Go yq requires it)
+        if [[ "$field" != .* ]]; then
+            field=".$field"
+        fi
         yq eval "$field | length" "$file" 2>/dev/null || echo "0"
     else
         # Fallback: count lines indented under field

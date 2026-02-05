@@ -78,7 +78,7 @@ echo ""
 # Test 5: Quality Gate Validation (requires yq)
 echo -e "${BLUE}Test 5: Quality Gate Validation${NC}"
 if command -v yq &> /dev/null; then
-  if bash "$SKILL_DIR/scripts/validate-gate.sh" 1 \
+  if PATH="$HOME/.local/bin:$PATH" bash "$SKILL_DIR/scripts/validate-gate.sh" 1 \
      "$SCRIPT_DIR/fixtures/valid-requirements-handoff.yaml" > /dev/null 2>&1; then
     echo -e "${GREEN}✅ PASSED${NC}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
