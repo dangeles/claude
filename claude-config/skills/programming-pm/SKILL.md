@@ -1,6 +1,6 @@
 ---
 name: programming-pm
-description: Use when coordinating software development projects requiring multiple specialists (architect, developers, mathematician, statistician) with quality gates for archival setup, requirements, architecture, pre-mortem, code review, testing, and version control integration.
+description: Use when coordinating software development projects requiring multiple specialists (architect, developers, mathematician, statistician, notebook-writer) with quality gates for archival setup, requirements, architecture, pre-mortem, code review, testing, and version control integration.
 
 handoff:
   accepts_handoff: true
@@ -22,7 +22,7 @@ A hub-and-spoke orchestrator for software development projects that coordinates 
 
 ## Overview
 
-The programming-pm skill serves as the central coordinator for Python-focused software development projects. It manages a flexible team of specialists (senior-developer, junior-developer, mathematician, statistician) and integrates with existing skills (requirements-analyst, systems-architect, copilot) to deliver production-quality software.
+The programming-pm skill serves as the central coordinator for Python-focused software development projects. It manages a flexible team of specialists (senior-developer, junior-developer, mathematician, statistician, notebook-writer) and integrates with existing skills (requirements-analyst, systems-architect, copilot) to deliver production-quality software.
 
 **Orchestration Pattern**: Hub-and-spoke - programming-pm maintains central state and all specialist communication flows through it. Specialists do not communicate directly with each other.
 
@@ -66,6 +66,9 @@ Before Phase 0 begins, verify all required skills exist.
   - If missing: senior-developer handles algorithm design
 - [ ] statistician
   - If missing: senior-developer handles statistical work, flag as unvalidated
+- [ ] notebook-writer
+  - If missing: senior-developer creates notebooks without specialized formatting/reproducibility standards
+  - If timeout: senior-developer takes over notebook task with best-effort formatting
 
 ### Pre-Flight Check Execution
 
@@ -79,9 +82,9 @@ for skill in requirements-analyst systems-architect copilot; do
   fi
 done
 
-# Check optional skills
-for skill in edge-case-analyst mathematician statistician; do
-  if [ ! -f ~/.claude/skills/$skill/SKILL.md ]; then
+# Check optional skills (handles both SKILL.md and skill.md naming)
+for skill in edge-case-analyst mathematician statistician notebook-writer; do
+  if [ ! -f ~/.claude/skills/$skill/SKILL.md ] && [ ! -f ~/.claude/skills/$skill/skill.md ]; then
     echo "WARN: Optional skill missing: $skill (workflow will proceed with limitations)"
   fi
 done
@@ -92,7 +95,7 @@ done
 
 ## Tools
 
-- **Skill**: Invoke specialist skills (senior-developer, mathematician, statistician, etc.)
+- **Skill**: Invoke specialist skills (senior-developer, mathematician, statistician, notebook-writer, etc.)
 - **Task**: For parallel execution of independent implementation tasks
 - **Read**: Read existing codebase, analyze patterns, review deliverables
 - **Write**: Create deliverable documents, state files, planning artifacts
@@ -605,6 +608,8 @@ if command -v yq &> /dev/null; then
       SPECIALIST="mathematician"
     elif echo "$COMPONENT_DESC" | grep -qiE "statistic|hypothesis|regression|bayesian"; then
       SPECIALIST="statistician"
+    elif echo "$COMPONENT_DESC" | grep -qiE "notebook|jupyter|ipynb|jupytext|interactive.analysis|parameter.sweep|analysis.report|visualization.notebook|reproducible.analysis|data.exploration"; then
+      SPECIALIST="notebook-writer"
     elif echo "$COMPONENT_DESC" | grep -qiE "simple|utility|helper|wrapper"; then
       SPECIALIST="junior-developer"
     fi
@@ -621,6 +626,7 @@ fi
 **Specialist assignment logic**:
 - **Algorithm design** → `mathematician`
 - **Statistical methods** → `statistician`
+- **Notebook/Jupyter creation** → `notebook-writer`
 - **Complex implementation** → `senior-developer`
 - **Routine implementation** → `junior-developer` (supervised by senior)
 
@@ -721,7 +727,7 @@ else
     grep -q "^$TASK_ID|" "$SESSION_DIR/running-agents.txt" && continue
 
     # Skip if not implementation specialist
-    [ "$SPECIALIST" != "senior-developer" ] && [ "$SPECIALIST" != "junior-developer" ] && continue
+    [ "$SPECIALIST" != "senior-developer" ] && [ "$SPECIALIST" != "junior-developer" ] && [ "$SPECIALIST" != "notebook-writer" ] && continue
 
     echo "  Launching $SPECIALIST for $TASK_ID ($COMPONENT)..."
 
@@ -945,8 +951,9 @@ fi
 **Steps**:
 1. Run automated checks (linting, type checking, tests)
 2. Invoke `copilot` for code review support
-3. Have `senior-developer` review all code (especially junior-developer outputs)
-4. Address feedback and re-run checks
+3. If deliverables include notebooks: invoke `notebook-writer` to verify reproducibility standards, Jupytext format compliance, environment documentation, and session info
+4. Have `senior-developer` review all code (especially junior-developer outputs)
+5. Address feedback and re-run checks
 
 **Quality Gate 4: Code Review Approval**:
 - Type: Human judgment (senior-developer review)
@@ -1407,6 +1414,12 @@ See `references/team-composition.md` for detailed guidance.
 - Keywords in requirements: "statistics", "Monte Carlo", "MCMC", "uncertainty", "confidence interval", "power analysis", "bootstrap"
 - Project types: Data analysis, simulation validation, ML evaluation
 
+**Include notebook-writer when**:
+- Keywords in requirements: "notebook", "jupyter", "ipynb", "Jupytext", "interactive analysis", "parameter sweep", "analysis report", "reproducible analysis", "data exploration", "visualization notebook"
+- Project types: Data analysis with interactive output, scientific computation with parameter sweeps, analysis reporting, exploratory data analysis
+
+**CAUTION**: Do NOT include based on standalone "interactive" or "visualization" -- these are too broad. Require a notebook-specific compound keyword.
+
 **Include junior-developer when**:
 - Tasks can be decomposed into well-scoped units
 - Project has >3 independent implementation tasks
@@ -1498,3 +1511,4 @@ This skill coordinates new skills:
 - `junior-developer` - Phase 4 routine implementation (supervised)
 - `mathematician` - Phase 4 algorithm design (when needed)
 - `statistician` - Phase 4 statistical validation (when needed)
+- `notebook-writer` - Phase 4 notebook creation and Phase 5 notebook review (when needed)

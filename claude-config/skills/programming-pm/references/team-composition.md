@@ -78,6 +78,25 @@ Include these specialists based on project characteristics.
 - Non-statistical numerical methods
 - Algorithm design (use mathematician)
 
+### notebook-writer
+
+**Include when** (keywords):
+- "notebook", "jupyter", "ipynb", "Jupytext"
+- "interactive analysis", "parameter sweep"
+- "analysis report", "reproducible analysis"
+- "data exploration", "visualization notebook"
+
+**Example triggers**:
+- "Create a Jupyter notebook for parameter sweep analysis"
+- "Build reproducible analysis notebooks for the experiment data"
+- "Generate interactive data exploration notebooks"
+
+**Do NOT include when**:
+- Project output is Python scripts, not notebooks
+- "Visualization" or "interactive" appears without notebook context
+- Simple data processing without exploratory analysis
+- Production code (use senior-developer)
+
 ---
 
 ## Team Selection Decision Tree
@@ -101,6 +120,10 @@ START
   │     ├── NO → Continue
   │     └── YES → Include statistician
   │
+  ├── Does project involve Jupyter notebooks or interactive analysis?
+  │     ├── NO → Continue
+  │     └── YES → Include notebook-writer
+  │
   └── Final team composition determined
 ```
 
@@ -119,32 +142,33 @@ Responsibility assignment for common deliverables.
 
 ### Project Deliverables
 
-| Deliverable | programming-pm | senior-developer | junior-developer | mathematician | statistician |
-|-------------|----------------|------------------|------------------|---------------|--------------|
-| Requirements approval | A | C | - | C | C |
-| Pre-mortem facilitation | R/A | C | I | C | C |
-| Architecture design | C | C | - | C | C |
-| Algorithm specification | C | C | - | R/A | C |
-| Statistical specification | C | C | - | C | R/A |
-| Implementation (complex) | I | R/A | C | C | C |
-| Implementation (routine) | I | A | R | - | - |
-| Code review (junior) | - | R/A | I | - | - |
-| Code review (senior) | I | I | - | C | C |
-| Unit tests | I | A | R | - | - |
-| Integration tests | A | R | C | C | C |
-| PR creation | I | R | - | - | - |
-| PR merge decision | A | R | - | - | - |
+| Deliverable | programming-pm | senior-developer | junior-developer | mathematician | statistician | notebook-writer |
+|-------------|----------------|------------------|------------------|---------------|--------------|-----------------|
+| Requirements approval | A | C | - | C | C | - |
+| Pre-mortem facilitation | R/A | C | I | C | C | - |
+| Architecture design | C | C | - | C | C | - |
+| Algorithm specification | C | C | - | R/A | C | - |
+| Statistical specification | C | C | - | C | R/A | - |
+| Implementation (complex) | I | R/A | C | C | C | - |
+| Implementation (routine) | I | A | R | - | - | - |
+| Notebook creation | I | C | - | - | - | R/A |
+| Code review (junior) | - | R/A | I | - | - | - |
+| Code review (senior) | I | I | - | C | C | C |
+| Unit tests | I | A | R | - | - | - |
+| Integration tests | A | R | C | C | C | - |
+| PR creation | I | R | - | - | - | - |
+| PR merge decision | A | R | - | - | - | - |
 
 ### Phase Involvement
 
-| Phase | programming-pm | senior-developer | junior-developer | mathematician | statistician |
-|-------|----------------|------------------|------------------|---------------|--------------|
-| 1. Requirements | A | C | I | C | C |
-| 2. Pre-mortem | R/A | C | I | C | C |
-| 3. Architecture | C | C | I | C | C |
-| 4. Implementation | I | R/A | R | R | R |
-| 5. Code Review | A | R | I | C | C |
-| 6. VCS Integration | A | R | I | - | - |
+| Phase | programming-pm | senior-developer | junior-developer | mathematician | statistician | notebook-writer |
+|-------|----------------|------------------|------------------|---------------|--------------|-----------------|
+| 1. Requirements | A | C | I | C | C | - |
+| 2. Pre-mortem | R/A | C | I | C | C | - |
+| 3. Architecture | C | C | I | C | C | - |
+| 4. Implementation | I | R/A | R | R | R | R |
+| 5. Code Review | A | R | I | C | C | C |
+| 6. VCS Integration | A | R | I | - | - | - |
 
 ---
 
@@ -259,6 +283,27 @@ senior-developer ──→ Task Decomposition ──→ junior-developer
                                Integration
 ```
 
+### notebook-writer + senior-developer
+
+```
+senior-developer --> Implementation Code --> notebook-writer
+                          |                       |
+                          |                       v
+                          |              Notebook (Jupytext .md)
+                          |                       |
+                          |                       v
+                          |              Validation (nbformat)
+                          |                       |
+                          +---- Integration <-----+
+```
+
+**Execution order**: senior-developer FIRST when notebooks depend on implementation code. Parallel when notebooks are standalone analysis.
+
+**Interface contract**:
+- Architecture handoff MUST specify the API that notebooks will consume
+- notebook-writer receives senior-developer's code handoff before creating dependent notebooks
+- notebook-writer adapts to senior-developer's actual API (not the other way around)
+
 ---
 
 ## Anti-Patterns to Avoid
@@ -343,6 +388,19 @@ senior-developer ──→ Task Decomposition ──→ junior-developer
 
 ---
 
+### Example 5: Data Analysis with Interactive Notebooks
+
+**Project**: Exploratory data analysis with parameter sweeps and visualization notebooks
+
+**Team**:
+- programming-pm (orchestration)
+- senior-developer (data processing pipeline)
+- notebook-writer (analysis notebooks)
+
+**Rationale**: Notebook creation and formatting expertise needed for reproducible analysis deliverables. senior-developer builds the data processing modules; notebook-writer creates Jupytext notebooks that import and use those modules for interactive exploration.
+
+---
+
 ## Pre-Flight Validation
 
 Before starting a project, programming-pm validates team composition:
@@ -354,8 +412,8 @@ for skill in requirements-analyst systems-architect senior-developer copilot; do
 done
 
 # Check optional specialists exist (warn if missing)
-for skill in mathematician statistician junior-developer; do
-  [ -f ~/.claude/skills/$skill/SKILL.md ] || echo "WARN: $skill not available"
+for skill in mathematician statistician junior-developer notebook-writer; do
+  [ -f ~/.claude/skills/$skill/SKILL.md ] || [ -f ~/.claude/skills/$skill/skill.md ] || echo "WARN: $skill not available"
 done
 ```
 

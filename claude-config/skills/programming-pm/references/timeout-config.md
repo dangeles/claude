@@ -78,6 +78,7 @@ Default timeouts for specialist tasks.
 | senior-developer | 120 min/task | 90 min | Break task smaller |
 | junior-developer | 90 min/task | 60 min | Senior-developer intervention |
 | copilot | 30 min | 20 min | Skip assistance, manual review |
+| notebook-writer | 60 min | 45 min | Substitute with senior-developer |
 
 ### Specialist-Specific Notes
 
@@ -100,6 +101,12 @@ Default timeouts for specialist tasks.
 - Expected to complete faster with supervision
 - Timeout triggers senior-developer takeover
 - Document for retrospective (was task too complex?)
+
+**notebook-writer**:
+- If timing out, notebook structure may be too complex for automated creation
+- Substitution: senior-developer creates basic notebook structure without specialized formatting, reproducibility standards, or Jupytext configuration
+- Flag output as "notebook quality unverified"
+- Document for follow-up: notebook-writer can review and enhance post-deadline
 
 ---
 
