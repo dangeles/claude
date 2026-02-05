@@ -59,10 +59,10 @@ check_yaml_field() {
 
     if command -v yq &> /dev/null; then
         if [ -n "$expected_value" ]; then
-            result=$(yq eval "$field" "$file" 2>/dev/null || echo "null")
+            result=$(yq "$field" "$file" 2>/dev/null || echo "null")
             [ "$result" = "$expected_value" ]
         else
-            result=$(yq eval "$field" "$file" 2>/dev/null || echo "null")
+            result=$(yq "$field" "$file" 2>/dev/null || echo "null")
             [ "$result" != "null" ] && [ "$result" != "" ]
         fi
     else
@@ -76,7 +76,7 @@ count_yaml_array() {
     local field="$2"
 
     if command -v yq &> /dev/null; then
-        yq eval "$field | length" "$file" 2>/dev/null || echo "0"
+        yq "$field | length" "$file" 2>/dev/null || echo "0"
     else
         # Fallback: count lines indented under field
         grep -A 100 "$field" "$file" | grep -c "^  - " || echo "0"
@@ -91,7 +91,7 @@ validate_gate_1() {
 
     # Check 1: Problem statement exists and is specific
     if check_yaml_field "$HANDOFF_PATH" "handoff.requirements.problem_statement"; then
-        problem_statement=$(yq eval '.handoff.requirements.problem_statement' "$HANDOFF_PATH" 2>/dev/null || echo "")
+        problem_statement=$(yq '.handoff.requirements.problem_statement' "$HANDOFF_PATH" 2>/dev/null || echo "")
 
         # Check for vague terms
         if echo "$problem_statement" | grep -qiE '\b(better|faster|improve|enhance)\b' && ! echo "$problem_statement" | grep -qE '[0-9]+'; then
@@ -183,8 +183,8 @@ validate_gate_2() {
         mitigated_count=0
 
         for i in $(seq 0 $((risk_count - 1))); do
-            score=$(yq eval ".handoff.risk_summary[$i].score" "$HANDOFF_PATH" 2>/dev/null || echo "0")
-            disposition=$(yq eval ".handoff.risk_summary[$i].disposition" "$HANDOFF_PATH" 2>/dev/null || echo "")
+            score=$(yq ".handoff.risk_summary[$i].score" "$HANDOFF_PATH" 2>/dev/null || echo "0")
+            disposition=$(yq ".handoff.risk_summary[$i].disposition" "$HANDOFF_PATH" 2>/dev/null || echo "")
 
             if [ "$score" -ge 15 ]; then
                 critical_count=$((critical_count + 1))
@@ -305,7 +305,7 @@ validate_gate_4() {
     # Check 2: Outputs meet minimum length criteria (>100 words)
     if command -v yq &> /dev/null && [ -f "$HANDOFF_PATH" ]; then
         if check_yaml_field "$HANDOFF_PATH" "handoff.summary"; then
-            summary=$(yq eval '.handoff.summary' "$HANDOFF_PATH" 2>/dev/null || echo "")
+            summary=$(yq '.handoff.summary' "$HANDOFF_PATH" 2>/dev/null || echo "")
             word_count=$(echo "$summary" | wc -w | tr -d ' ')
 
             if [ "$word_count" -ge 100 ]; then
@@ -319,7 +319,7 @@ validate_gate_4() {
 
     # Check 3: No critical blocking issues
     if check_yaml_field "$HANDOFF_PATH" "handoff.quality.status"; then
-        status=$(yq eval '.handoff.quality.status' "$HANDOFF_PATH" 2>/dev/null || echo "")
+        status=$(yq '.handoff.quality.status' "$HANDOFF_PATH" 2>/dev/null || echo "")
         if [ "$status" = "complete" ] || [ "$status" = "partial" ]; then
             echo -e "${GREEN}  ✓ Quality status acceptable ($status)${NC}"
         else
@@ -373,7 +373,7 @@ validate_gate_5() {
 
         # Check coverage
         if command -v yq &> /dev/null; then
-            coverage=$(yq eval '.handoff.automated_checks.coverage' "$HANDOFF_PATH" 2>/dev/null || echo "0")
+            coverage=$(yq '.handoff.automated_checks.coverage' "$HANDOFF_PATH" 2>/dev/null || echo "0")
             if awk "BEGIN {exit !($coverage >= 80)}"; then
                 echo -e "${GREEN}  ✓ Coverage meets threshold (${coverage}%)${NC}"
             else
@@ -390,7 +390,7 @@ validate_gate_5() {
     if check_yaml_field "$HANDOFF_PATH" "handoff.manual_review"; then
         if command -v yq &> /dev/null; then
             for aspect in code_quality documentation testing architecture; do
-                status=$(yq eval ".handoff.manual_review.$aspect" "$HANDOFF_PATH" 2>/dev/null || echo "")
+                status=$(yq ".handoff.manual_review.$aspect" "$HANDOFF_PATH" 2>/dev/null || echo "")
                 if [ "$status" = "pass" ]; then
                     echo -e "${GREEN}  ✓ Manual review: $aspect passed${NC}"
                 else
