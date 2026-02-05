@@ -1,0 +1,61 @@
+handoff:
+  # Metadata
+  version: "1.1"
+  from_phase: 0
+  to_phase: 1
+  producer: "programming-pm"
+  consumer: "requirements-analyst"
+  timestamp: "2025-02-05T10:00:00Z"
+
+  # Session context
+  session:
+    session_dir: "/tmp/programming-pm-session-20250205-100000-12345/"
+    archival_guidelines_path: "/tmp/programming-pm-session-20250205-100000-12345/archival-guidelines-summary.md"
+    guidelines_found: true
+    guidelines_source: "/Users/user/project/CLAUDE.md"
+
+  # Deliverable reference
+  deliverable:
+    location: "/tmp/programming-pm-session-20250205-100000-12345/archival-guidelines-summary.md"
+    type: "documentation"
+    checksum: "sha256:abc123"
+
+  # Context for consumer
+  context:
+    task_id: "PHASE-0"
+    description: "Extract archival guidelines from CLAUDE.md"
+    focus_areas:
+      - "Code directory structure"
+      - "Git workflow conventions"
+    known_gaps: []
+
+  # Quality assessment
+  quality:
+    status: "complete"
+    confidence: "high"
+    notes: "Archival guidelines successfully extracted from CLAUDE.md"
+
+  # Archival guidelines
+  archival_guidelines:
+    code_directories:
+      - name: "src/"
+        purpose: "Source code"
+      - name: "modules/"
+        purpose: "Modular components"
+      - name: "experiments/"
+        purpose: "Experimental code"
+    git_workflow:
+      commit_after_edit: true
+      stage_specific_files: true
+      no_destructive_ops: true
+      conventional_commits: true
+    testing_conventions:
+      coverage_target: 80.0
+      test_directory: "tests/"
+    documentation_conventions:
+      docstrings_required: true
+      type_hints_required: true
+      readme_updates: true
+    code_style:
+      linter: "ruff"
+      formatter: "black"

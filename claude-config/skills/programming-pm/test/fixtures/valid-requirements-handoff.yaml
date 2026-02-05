@@ -1,0 +1,70 @@
+handoff:
+  # Metadata
+  version: "1.1"
+  from_phase: 1
+  to_phase: 2
+  producer: "requirements-analyst"
+  consumer: "programming-pm"
+  timestamp: "2025-02-05T10:15:00Z"
+
+  # Session context
+  session:
+    session_dir: "/tmp/programming-pm-session-20250205-100000-12345/"
+    archival_guidelines_path: "/tmp/programming-pm-session-20250205-100000-12345/archival-guidelines-summary.md"
+
+  # Deliverable reference
+  deliverable:
+    location: "/tmp/programming-pm-session-20250205-100000-12345/requirements.md"
+    type: "specification"
+
+  # Context for consumer
+  context:
+    task_id: "PHASE-1"
+    description: "Requirements analysis for data pipeline project"
+    focus_areas:
+      - "Performance requirements"
+      - "Data volume constraints"
+    known_gaps:
+      - "Exact API rate limits TBD"
+
+  # Quality assessment
+  quality:
+    status: "complete"
+    confidence: "high"
+    notes: "Requirements approved by user"
+
+  # Requirements
+  requirements:
+    problem_statement: "Build ETL pipeline to process 10M records/day from API to data warehouse"
+    success_criteria:
+      - "Process 10M records/day with <2 hour latency"
+      - "Data quality checks with 99.9% accuracy"
+      - "Automated error handling and retry logic"
+    scope:
+      in_scope:
+        - "API data extraction"
+        - "Data transformation and validation"
+        - "Warehouse loading"
+      out_of_scope:
+        - "API authentication setup"
+        - "Data warehouse provisioning"
+        - "Monitoring dashboard"
+    constraints:
+      - "Must use Python 3.11+"
+      - "Budget: $500/month cloud costs"
+    dependencies:
+      - "API access credentials"
+      - "Data warehouse connection"
+
+  # Stakeholders
+  stakeholders:
+    primary: "Data Engineering Team"
+    consulted:
+      - "Product Manager"
+      - "Data Analyst"
+
+  # Approval
+  approval:
+    approved_by: "user"
+    approved_date: "2025-02-05T10:14:00Z"
+    conditions: []

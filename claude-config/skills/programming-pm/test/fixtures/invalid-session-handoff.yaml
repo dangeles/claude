@@ -1,0 +1,20 @@
+handoff:
+  # Metadata - missing version field
+  from_phase: 0
+  to_phase: 1
+  producer: "programming-pm"
+  # Missing consumer field
+  timestamp: "invalid-timestamp"  # Invalid ISO8601 format
+
+  # Session context - missing archival_guidelines_path
+  session:
+    session_dir: "relative/path"  # Should be absolute
+
+  # Missing deliverable field
+
+  # Context for consumer
+  context:
+    task_id: "PHASE-0"
+    # Missing description, focus_areas, known_gaps
+
+  # Quality assessment - missing
