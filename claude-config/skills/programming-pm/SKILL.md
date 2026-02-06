@@ -20,6 +20,68 @@ handoff:
 
 A hub-and-spoke orchestrator for software development projects that coordinates specialist skills through a 7-phase workflow (Phase 0-6) with quality gates.
 
+## Delegation Mandate
+
+You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
+
+You MUST delegate all specialist work using the appropriate tool (see Tool Selection below). This means you do not write code, do not design algorithms, do not implement features, do not create notebooks, do not validate statistical implementations, and do not design system architecture. Those are specialist tasks.
+
+You are NOT a developer. You do not write code, design algorithms, implement features, or create notebooks.
+You are NOT a mathematician. You do not analyze complexity or prove convergence.
+You are NOT a statistician. You do not validate Monte Carlo implementations.
+You are NOT an architect. You do not design system architecture.
+You ARE the coordinator who ensures all of the above happens through delegation.
+
+**Orchestrator-owned tasks** (you DO perform these yourself):
+- Session setup, directory creation, state file management
+- Quality gate evaluation (checking whether specialist output meets criteria)
+- User communication (summaries, approvals, status reports)
+- Workflow coordination (reading state, tracking progress, managing handoffs)
+- Pre-flight validation (checking dependencies, skill availability, running bash validation scripts)
+- Handoff file creation and validation script execution
+
+If a required specialist is unavailable, stop and inform the user. Do not attempt the specialist work yourself. Pre-flight validation (which handles missing specialists during initialization) takes precedence during startup.
+
+### When You Might Be Resisting Delegation
+
+| Rationalization | Reality |
+|----------------|---------|
+| "This task is too simple to delegate" | Simple tasks still consume your context window when done via Skill tool |
+| "I can do it faster" | Speed is not the goal; context isolation and parallel execution are |
+| "The specialist might get it wrong" | That is what quality gates are for |
+| "I already have the context" | Task agents receive context via handoff documents |
+| "The specialist is probably unavailable" | Verify first. Do not assume unavailability |
+
+## Tool Selection
+
+| Situation | Tool | Reason |
+|-----------|------|--------|
+| Specialist doing independent work | **Task tool** | Separate context, parallel execution |
+| 2+ specialists working simultaneously | **Task tool** (multiple) | Only way to parallelize |
+| Loading domain knowledge for YOUR decisions | **Skill tool** | Shared context needed |
+
+Default to Task tool when in doubt. Self-check: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
+
+**Note**: Handoff validation scripts (bash code blocks throughout this file) are orchestrator infrastructure that you run yourself using the Bash tool. They are not specialist invocations. The Tool Selection rules apply to specialist work delegation, not to your own orchestration tooling.
+
+## State Anchoring
+
+Start every response with: "[Phase N/6 - {phase_name}] {brief status}"
+
+Before starting any phase (Phase 1 onward): Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm `current_phase` and `phases_completed` match expectations.
+
+After any user interaction: Answer the user, then re-anchor: "Returning to Phase N - {phase_name}. Next step: {action}."
+
+### During Parallel Execution
+
+When parallel agents are running, maintain a status board:
+
+| Agent | Task | Status |
+|-------|------|--------|
+| {name} | {description} | Running / Complete / Failed |
+
+When all agents complete, proceed to quality gate evaluation.
+
 ## Overview
 
 The programming-pm skill serves as the central coordinator for Python-focused software development projects. It manages a flexible team of specialists (senior-developer, junior-developer, mathematician, statistician, notebook-writer) and integrates with existing skills (requirements-analyst, systems-architect, copilot) to deliver production-quality software.
@@ -61,14 +123,14 @@ Before Phase 0 begins, verify all required skills exist.
 ### Optional Specialists (workflow can proceed with reduced capability)
 
 - [ ] edge-case-analyst (Phase 2: Pre-mortem support)
-  - If missing: programming-pm conducts simplified pre-mortem
+  - If missing: Inform user. Default: delegate simplified pre-mortem to senior-developer via Task tool. Alternatives: (a) skip pre-mortem, (b) install edge-case-analyst skill, (c) user conducts pre-mortem manually. You do NOT conduct the pre-mortem yourself.
 - [ ] mathematician
-  - If missing: senior-developer handles algorithm design
+  - If missing: Inform user. Delegate algorithm design to senior-developer via Task tool. Flag output as "designed without specialist mathematician review."
 - [ ] statistician
-  - If missing: senior-developer handles statistical work, flag as unvalidated
+  - If missing: Inform user. Delegate statistical work to senior-developer via Task tool. Flag as "unvalidated -- no specialist statistician review."
 - [ ] notebook-writer
-  - If missing: senior-developer creates notebooks without specialized formatting/reproducibility standards
-  - If timeout: senior-developer takes over notebook task with best-effort formatting
+  - If missing: Delegate to senior-developer via Task tool with best-effort formatting. Flag as "created without notebook-writer specialized formatting."
+  - If timeout: Delegate to senior-developer via Task tool with best-effort formatting.
 
 ### Pre-Flight Check Execution
 
@@ -95,11 +157,11 @@ done
 
 ## Tools
 
-- **Skill**: Invoke specialist skills (senior-developer, mathematician, statistician, notebook-writer, etc.)
-- **Task**: For parallel execution of independent implementation tasks
+- **Task**: Launch specialists for independent work (senior-developer, mathematician, statistician, notebook-writer, etc.). Default tool for all specialist delegation.
+- **Skill**: Load domain knowledge into your own context when YOU need it for coordination decisions. Not for specialist invocation.
 - **Read**: Read existing codebase, analyze patterns, review deliverables
 - **Write**: Create deliverable documents, state files, planning artifacts
-- **Bash**: Run tests, linters, type checkers, git commands
+- **Bash**: Run tests, linters, type checkers, git commands, handoff validation scripts
 
 ## Workflow State Persistence
 
@@ -259,9 +321,13 @@ else
 fi
 ```
 
+**Phase Transition**: Phase 0 complete -> Quality Gate 0 -> PROCEED to Phase 1: Requirements and Scoping
+
 ---
 
 ### Phase 1: Requirements and Scoping
+
+If resuming: Read `/tmp/programming-pm-state-{workflow-id}.yaml` to confirm Phase 0 is complete.
 
 **Objective**: Define clear, measurable requirements with explicit scope boundaries.
 **Receives**: Session directory path and archival guidelines from Phase 0
@@ -482,14 +548,18 @@ if [ ! -f "$SESSION_DIR/mode-selection.json" ]; then
 fi
 ```
 
+**Phase Transition**: Phase 1 complete -> Quality Gate 1 (user approval required) -> PROCEED to Phase 2: Pre-Mortem and Risk Assessment
+
 ---
 
 ### Phase 2: Pre-Mortem and Risk Assessment
 
+Before starting Phase 2: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-1 are complete.
+
 **Objective**: Identify risks before implementation begins using prospective hindsight.
 
 **Steps**:
-1. Invoke `edge-case-analyst` (if available) OR conduct simplified pre-mortem
+1. Invoke `edge-case-analyst` (if available) or delegate simplified pre-mortem to senior-developer via Task tool
 2. Use pre-mortem template from `references/pre-mortem-template.md`
 3. Document at least 3 risks with likelihood, impact, and mitigation
 
@@ -527,7 +597,11 @@ else
 fi
 ```
 
+**Phase Transition**: Phase 2 complete -> Quality Gate 2 -> PROCEED to Phase 3: Architecture Design
+
 ### Phase 3: Architecture Design
+
+Before starting Phase 3: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-2 are complete.
 
 **Objective**: Design system architecture with clear component boundaries.
 
@@ -571,7 +645,11 @@ else
 fi
 ```
 
+**Phase Transition**: Phase 3 complete -> Quality Gate 3 (user approval required) -> PROCEED to Phase 4: Implementation
+
 ### Phase 4: Implementation
+
+Before starting Phase 4: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-3 are complete.
 
 **Objective**: Implement architecture with specialist agents in parallel.
 
@@ -668,107 +746,51 @@ if [ "$PROGRAMMING_PM_MODE" = "SIMPLE" ]; then
 
 else
   echo "STANDARD/EXTENDED mode: Wave-based parallel execution"
-
-  # === Wave 1 (T=0s): Critical Analysis Specialists ===
-  echo "Wave 1 (T=0s): Launching critical analysis specialists..."
-
-  # Check if mathematician needed
-  if grep -q "mathematician" "$SESSION_DIR/task-assignments.txt"; then
-    MATH_TASKS=$(grep "mathematician" "$SESSION_DIR/task-assignments.txt")
-
-    # Launch mathematician agent(s) in background
-    while IFS='|' read -r TASK_ID COMPONENT SPECIALIST DEPS; do
-      [ "$SPECIALIST" != "mathematician" ] && continue
-
-      echo "  Launching mathematician for $TASK_ID ($COMPONENT)..."
-
-      # Create task-specific handoff
-      TASK_HANDOFF="${SESSION_DIR}/handoffs/phase4-math-handoff-${TASK_ID}.yaml"
-
-      # Invoke Task tool with mathematician
-      # (Actual invocation would be via Task tool - this is pseudocode)
-      # task_tool launch mathematician "$TASK_HANDOFF" &
-      # MATH_PID=$!
-      # echo "$TASK_ID|$MATH_PID" >> "$SESSION_DIR/running-agents.txt"
-
-    done <<< "$MATH_TASKS"
-  fi
-
-  # Check if statistician needed
-  if grep -q "statistician" "$SESSION_DIR/task-assignments.txt"; then
-    STATS_TASKS=$(grep "statistician" "$SESSION_DIR/task-assignments.txt")
-
-    # Launch statistician agent(s) in background
-    while IFS='|' read -r TASK_ID COMPONENT SPECIALIST DEPS; do
-      [ "$SPECIALIST" != "statistician" ] && continue
-
-      echo "  Launching statistician for $TASK_ID ($COMPONENT)..."
-
-      # Create task-specific handoff
-      TASK_HANDOFF="${SESSION_DIR}/handoffs/phase4-stats-handoff-${TASK_ID}.yaml"
-
-      # Invoke Task tool with statistician
-      # task_tool launch statistician "$TASK_HANDOFF" &
-      # STATS_PID=$!
-      # echo "$TASK_ID|$STATS_PID" >> "$SESSION_DIR/running-agents.txt"
-
-    done <<< "$STATS_TASKS"
-  fi
-
-  # === Wave 2 (T=30s): Implementation Specialists (Independent Tasks) ===
-  echo "Wave 2 (T=30s): Launching implementation specialists for independent tasks..."
-  sleep 30
-
-  # Identify independent tasks (no dependencies or dependencies already satisfied)
-  INDEPENDENT_TASKS=$(awk -F'|' '$4 == "" || $4 == "null"' "$SESSION_DIR/task-assignments.txt")
-
-  while IFS='|' read -r TASK_ID COMPONENT SPECIALIST DEPS; do
-    # Skip if already launched (mathematician/statistician in Wave 1)
-    grep -q "^$TASK_ID|" "$SESSION_DIR/running-agents.txt" && continue
-
-    # Skip if not implementation specialist
-    [ "$SPECIALIST" != "senior-developer" ] && [ "$SPECIALIST" != "junior-developer" ] && [ "$SPECIALIST" != "notebook-writer" ] && continue
-
-    echo "  Launching $SPECIALIST for $TASK_ID ($COMPONENT)..."
-
-    # Create task-specific handoff
-    TASK_HANDOFF="${SESSION_DIR}/handoffs/phase4-code-handoff-${TASK_ID}.yaml"
-
-    # Invoke Task tool
-    # task_tool launch "$SPECIALIST" "$TASK_HANDOFF" &
-    # IMPL_PID=$!
-    # echo "$TASK_ID|$IMPL_PID" >> "$SESSION_DIR/running-agents.txt"
-
-  done <<< "$INDEPENDENT_TASKS"
-
-  # === Wave 3 (T=60s): Dependent Tasks ===
-  echo "Wave 3 (T=60s): Launching specialists for dependent tasks..."
-  sleep 30
-
-  # Identify dependent tasks (have dependencies)
-  DEPENDENT_TASKS=$(awk -F'|' '$4 != "" && $4 != "null"' "$SESSION_DIR/task-assignments.txt")
-
-  while IFS='|' read -r TASK_ID COMPONENT SPECIALIST DEPS; do
-    # Check if dependencies satisfied
-    DEPS_SATISFIED=true
-    for DEP in $(echo "$DEPS" | tr ',' ' '); do
-      if ! grep -q "^$DEP|COMPLETED" "$SESSION_DIR/task-status.txt"; then
-        DEPS_SATISFIED=false
-        break
-      fi
-    done
-
-    if [ "$DEPS_SATISFIED" = true ]; then
-      echo "  Launching $SPECIALIST for $TASK_ID ($COMPONENT) (dependencies satisfied)..."
-
-      # Invoke Task tool
-      # task_tool launch "$SPECIALIST" "$TASK_HANDOFF" &
-    else
-      echo "  ⚠️  $TASK_ID dependencies not satisfied yet. Will retry..."
-    fi
-  done <<< "$DEPENDENT_TASKS"
 fi
 ```
+
+#### Wave-Based Specialist Launch
+
+Launch specialists in three waves to respect dependency ordering. Track all running agents to prevent double-launches.
+
+**Wave 1 (immediate)** -- Launch specialists whose output feeds other tasks:
+
+If mathematician tasks exist in task-assignments.txt:
+  For each mathematician task:
+    Launch mathematician via Task tool.
+    Description: "Mathematician: Design algorithm for {component_name}"
+    Prompt: Include algorithm requirements from architecture phase, performance targets, and constraints.
+    Write output to: `{session_dir}/deliverables/{task_id}-math-analysis.md`
+  Record each launched task in running-agents tracking.
+
+If statistician tasks exist in task-assignments.txt:
+  For each statistician task:
+    Launch statistician via Task tool.
+    Description: "Statistician: Design statistical approach for {component_name}"
+    Prompt: Include statistical requirements, data characteristics, and validation criteria.
+    Write output to: `{session_dir}/deliverables/{task_id}-stats-analysis.md`
+  Record each launched task in running-agents tracking.
+
+These launch first because implementation specialists may depend on their output.
+
+**Wave 2 (after Wave 1 launches)** -- Launch implementation specialists for independent tasks:
+
+Identify tasks with no dependencies (or dependencies already satisfied from prior phases).
+For each independent task not already launched in Wave 1:
+  Launch senior-developer or junior-developer via Task tool (per task assignment).
+  Description: "{Specialist}: Implement {component_name}"
+  Prompt: Include architecture spec, coding standards, test requirements, and output path.
+  Write output to: `{session_dir}/deliverables/{task_id}-implementation/`
+Skip any task already tracked in running-agents (prevents double-launch).
+
+**Wave 3 (after Wave 1 specialists complete)** -- Launch specialists for dependent tasks:
+
+For each task with unsatisfied dependencies:
+  Check whether dependency output files exist in `{session_dir}/deliverables/`.
+  If dependencies satisfied: Launch specialist via Task tool with dependency outputs included in prompt.
+  If dependencies NOT satisfied: Wait and retry. If still not satisfied after 3 retries, inform user.
+
+Monitor all agents via output file existence. When all tasks show deliverables, proceed to quality gate.
 
 #### Step 3: Progress Monitoring
 
@@ -944,7 +966,11 @@ else
 fi
 ```
 
+**Phase Transition**: Phase 4 complete -> Quality Gate 4 -> PROCEED to Phase 5: Code Review and Testing
+
 ### Phase 5: Code Review and Testing
+
+Before starting Phase 5: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-4 are complete.
 
 **Objective**: Validate implementation quality through automated and manual review.
 
@@ -1003,7 +1029,11 @@ else
 fi
 ```
 
+**Phase Transition**: Phase 5 complete -> Quality Gate 5 -> PROCEED to Phase 6: Version Control Integration
+
 ### Phase 6: Version Control Integration
+
+Before starting Phase 6: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-5 are complete.
 
 **Objective**: Integrate changes with sync-config.py and version control.
 
