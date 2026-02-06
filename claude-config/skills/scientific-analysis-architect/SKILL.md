@@ -9,6 +9,44 @@ tags: [scientific-analysis, multi-agent, jupyter, research-planning, pseudocode]
 
 Multi-phase workflow for planning scientific research analyses using Jupyter notebooks with pseudocode. Biology-agnostic design ensures agents request context via user prompts, never inject biological interpretation.
 
+## Delegation Mandate
+
+You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
+
+You MUST delegate all specialist work using the appropriate tool (see Tool Selection below). This means you do not design statistical approaches, do not analyze algorithm requirements, do not write analysis code, and do not create notebook content. Those are specialist tasks.
+
+You are NOT a statistician. You do not design or validate statistical approaches.
+You are NOT a mathematician. You do not design algorithms or analyze computational requirements.
+You are NOT an analysis programmer. You do not write analysis code, data processing scripts, or notebook content.
+You ARE the architect who plans how these specialists work together.
+
+**Orchestrator-owned tasks** (you DO perform these yourself):
+- Session setup, directory creation, state file management
+- Quality gate evaluation and validation commands (e.g., nbformat checks, dependency verification)
+- User communication (summaries, approvals, status reports)
+- Workflow coordination (reading state, tracking progress, managing handoffs)
+- Pre-flight validation (checking dependencies, skill availability)
+
+If a required specialist is unavailable, stop and inform the user. Do not attempt the specialist work yourself.
+
+## Tool Selection
+
+| Situation | Tool | Reason |
+|-----------|------|--------|
+| Specialist doing independent work | **Task tool** | Separate context, parallel execution |
+| 2+ specialists working simultaneously | **Task tool** (multiple) | Only way to parallelize |
+| Loading domain knowledge for YOUR decisions | **Skill tool** | Shared context needed |
+
+Default to Task tool when in doubt. Self-check: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
+
+## State Anchoring
+
+Start every response with: "[Phase N/6 - {phase_name}] {brief status}"
+
+Before starting any phase (Phase 1 onward): Read `{session_dir}/session-state.json`. Confirm `current_phase` and `completed_phases` match expectations.
+
+After any user interaction: Answer the user, then re-anchor: "Returning to Phase N - {phase_name}. Next step: {action}."
+
 ## When to Use
 
 - Planning multi-chapter scientific data analysis (RNA-seq, proteomics, imaging)
@@ -126,7 +164,11 @@ Corrected notebooks (final)
 
 **Quality Gate 0**: Session directory created, output directory validated, nbformat available.
 
+**Phase Transition**: Phase 0 complete -> Announce to user -> PROCEED to Phase 1: Birds-Eye Planning
+
 ## Phase 1: Birds-Eye Planning
+
+If resuming from a previous session: Read `{session_dir}/session-state.json` to confirm Phase 0 is complete.
 
 **Owner**: research-architect (Sonnet 4.5)
 **Duration**: ~12 minutes
@@ -146,7 +188,11 @@ Corrected notebooks (final)
 
 **Quality Gate 1**: Structure has 3-7 chapters, each with goal and analyses.
 
+**Phase Transition**: Phase 1 complete -> Announce to user -> PROCEED to Phase 2: Subsection Planning
+
 ## Phase 2: Subsection Planning
+
+Before starting Phase 2: Read `{session_dir}/session-state.json`. Confirm Phases 0-1 are complete.
 
 **Owner**: analysis-planner (Sonnet 4.5)
 **Duration**: ~12 minutes for 3 chapters
@@ -171,7 +217,11 @@ For each chapter:
 
 **Quality Gate 2**: All chapters have notebook plans, no unresolved conflicts.
 
+**Phase Transition**: Phase 2 complete -> Announce to user -> PROCEED to Phase 3: Structure Review
+
 ## Phase 3: Structure Review
+
+Before starting Phase 3: Read `{session_dir}/session-state.json`. Confirm Phases 0-2 are complete.
 
 **Owner**: structure-reviewer (Haiku)
 **Duration**: ~5 minutes
@@ -195,7 +245,11 @@ Summary:
 Approve / Request changes / Reject? [A/c/r]
 ```
 
+**Phase Transition**: Phase 3 complete (user approved) -> PROCEED to Phase 4: Notebook Review
+
 ## Phase 4: Notebook Review
+
+Before starting Phase 4: Read `{session_dir}/session-state.json`. Confirm Phases 0-3 are complete.
 
 **Owner**: notebook-reviewer (Sonnet 4.5)
 **Duration**: ~10 minutes
@@ -218,7 +272,11 @@ Per-Chapter Summary:
 Approve / Request changes / Reject? [A/c/r]
 ```
 
+**Phase Transition**: Phase 4 complete (user approved) -> PROCEED to Phase 5: Notebook Generation
+
 ## Phase 5: Notebook Generation
+
+Before starting Phase 5: Read `{session_dir}/session-state.json`. Confirm Phases 0-4 are complete.
 
 **Owner**: notebook-generator (Sonnet 4.5)
 **Duration**: ~7 minutes
@@ -249,7 +307,11 @@ for notebook_path in generated_notebooks:
         print(f"VALID: {notebook_path}")
 ```
 
+**Phase Transition**: Phase 5 complete -> Quality Gate 5 -> PROCEED to Phase 6: Statistical Fact-Checking
+
 ## Phase 6: Statistical Fact-Checking
+
+Before starting Phase 6: Read `{session_dir}/session-state.json`. Confirm Phases 0-5 are complete.
 
 **Owner**: statistical-fact-checker (Sonnet 4.5)
 **Duration**: ~10-20 minutes

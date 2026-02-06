@@ -239,35 +239,24 @@ END Phase 2 -> Quality Gate 2
 
 ### Task Tool Invocation Pattern
 
-```python
-# Fan-out pattern for Phase 2 consultants
-tasks = []
+Launch all consultants simultaneously using Task tool (fan-out):
 
-# Spawn all consultants in parallel
-statistician_task = Task(
-    prompt=f"Review statistical approaches for: {chapter_analyses}",
-    agent="statistician-consultant",
-    timeout=300000  # 5 minutes
-)
-tasks.append(statistician_task)
+**Statistician consultant:**
+  Launch via Task tool.
+  Description: "Statistician consultant: Review statistical approaches for chapter analyses"
+  Prompt: Include the chapter analysis requirements. Ask for: statistical method recommendations, power analysis considerations, multiple comparison handling, and validation approaches. Write output to `{session_dir}/consultations/statistician-review.md`.
 
-mathematician_task = Task(
-    prompt=f"Review algorithms for: {chapter_analyses}",
-    agent="mathematician-consultant",
-    timeout=300000
-)
-tasks.append(mathematician_task)
+**Mathematician consultant:**
+  Launch via Task tool.
+  Description: "Mathematician consultant: Review algorithms for chapter analyses"
+  Prompt: Include the chapter analysis requirements. Ask for: algorithm recommendations, complexity analysis, convergence properties, and numerical stability considerations. Write output to `{session_dir}/consultations/mathematician-review.md`.
 
-programmer_task = Task(
-    prompt=f"Review data requirements for: {chapter_analyses}",
-    agent="programmer-consultant",
-    timeout=300000
-)
-tasks.append(programmer_task)
+**Programmer consultant:**
+  Launch via Task tool.
+  Description: "Programmer consultant: Review data requirements for chapter analyses"
+  Prompt: Include the chapter analysis requirements. Ask for: data format requirements, library recommendations, performance considerations, and implementation approach. Write output to `{session_dir}/consultations/programmer-review.md`.
 
-# Wait for all tasks (fan-in handled by Task tool)
-results = await asyncio.gather(*[t.run() for t in tasks], return_exceptions=True)
-```
+All three run simultaneously in separate contexts. When all complete, aggregate results (fan-in) for quality gate evaluation.
 
 ### Error Handling for Fan-Out
 
