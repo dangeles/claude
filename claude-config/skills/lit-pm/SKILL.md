@@ -23,6 +23,58 @@ handoff:
 
 lit-pm is a Tier 1 orchestrator skill that coordinates a 9-stage literature review pipeline. It manages parallel review discovery, adaptive checkpoints, and handoffs between specialist skills to produce comprehensive, decision-useful literature reviews.
 
+## Delegation Mandate
+
+You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
+
+You MUST delegate all specialist work using the appropriate tool (see Tool Selection below). This means you do not search for papers, do not read papers, do not write literature review prose, do not verify citations, and do not polish prose. Those are specialist tasks.
+
+You are NOT a literature researcher. You do not search for papers or read them.
+You are NOT a synthesizer. You do not write literature review prose.
+You are NOT a fact-checker. You do not verify citations or claims.
+You are NOT an editor. You do not polish prose or fix formatting.
+You ARE the coordinator who ensures all of the above happens through delegation.
+
+**Orchestrator-owned tasks** (you DO perform these yourself):
+- Session setup, directory creation, state file management (Stage 0)
+- Outline structure creation (section headers, thesis statements -- this is coordination, not prose)
+- Quality gate evaluation (checking whether specialist output meets criteria)
+- User communication (summaries, approvals, status reports)
+- Workflow coordination (reading state, tracking progress, managing handoffs)
+- Complexity detection and checkpoint plan creation
+
+If a required specialist is unavailable, stop and inform the user. Do not attempt the specialist work yourself.
+
+## Tool Selection
+
+| Situation | Tool | Reason |
+|-----------|------|--------|
+| Specialist doing independent work | **Task tool** | Separate context, parallel execution |
+| 2+ specialists working simultaneously | **Task tool** (multiple) | Only way to parallelize |
+| Loading domain knowledge for YOUR decisions | **Skill tool** | Shared context needed |
+
+Default to Task tool when in doubt. Self-check: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
+
+## State Anchoring
+
+Start every response with: "[Stage N/8 - {stage_name}] {brief status}"
+
+For sub-stages, use: "[Stage 6c/8 - Devil's Advocate Section Review] {brief status}"
+
+Before starting any stage (Stage 1 onward): Read workflow state. Confirm `stage_current` and `stage_completed` match expectations.
+
+After any user interaction: Answer the user, then re-anchor: "Returning to Stage N - {stage_name}. Next step: {action}."
+
+### During Parallel Execution
+
+When parallel agents are running, maintain a status board:
+
+| Agent | Task | Status |
+|-------|------|--------|
+| {name} | {description} | Running / Complete / Failed |
+
+When all agents complete, proceed to the next stage.
+
 ### Three-Tier Architecture
 
 **Tier 1: Orchestrator (this skill)**
@@ -155,7 +207,12 @@ Source: {CLAUDE.md path or "project defaults"}
 - On successful completion (Stage 8 complete): Delete session directory
 - On failure/abort: Retain session directory for debugging (log path to user)
 
+**Stage Transition**: Stage 0 complete -> PROCEED to Stage 1: Scope Refinement
+
 ### Stage 1: Scope Refinement
+
+If resuming: Read workflow state to confirm Stage 0 is complete.
+
 **Owner**: requirements-analyst
 **Checkpoint**: ALWAYS (required)
 **Duration**: 15-30 minutes
@@ -165,8 +222,13 @@ Clarify research question, define success criteria, set boundaries. Complexity d
 
 **Quality Gate**: Specific research question, measurable criteria, clear boundaries.
 
+**Stage Transition**: Stage 1 complete (scope approved) -> PROCEED to Stage 2: Parallel Review Discovery
+
 ### Stage 2: Parallel Review Discovery
-**Owner**: lit-pm orchestrates 2-3 literature-researcher agents
+
+Before starting Stage 2: Read workflow state. Confirm Stages 0-1 are complete.
+
+Launch 2-3 literature-researcher agents using Task tool (see Parallel Execution section below).
 **Checkpoint**: Only if HIGH-STAKES complexity
 **Duration**: 45-90 minutes (parallel)
 
@@ -174,8 +236,13 @@ Launch parallel agents with diverse search strategies. Analyze convergence (revi
 
 **Quality Gate**: 6-9 reviews, >=2 show convergence, coverage of major themes.
 
+**Stage Transition**: Stage 2 complete (all agents returned) -> PROCEED to Stage 3: Layered Outline Synthesis
+
 ### Stage 3: Layered Outline Synthesis
-**Owner**: lit-pm (structure) + literature-researcher (section details)
+
+Before starting Stage 3: Read workflow state. Confirm Stages 0-2 are complete.
+
+You create the outline structure (orchestrator task). Delegate section detail proposals to literature-researcher via Task tool.
 **Checkpoint**: MEDIUM/COMPLEX/HIGH-STAKES
 **Duration**: 30-60 minutes
 
@@ -183,7 +250,11 @@ Create 3-5 section outline with specific theses. Each section gets detailed subs
 
 **Quality Gate**: 3-5 balanced sections, specific theses, user approval (if checkpoint).
 
+**Stage Transition**: Stage 3 complete -> PROCEED to Stage 4: Introduction Writing
+
 ### Stage 4: Introduction Writing
+
+Before starting Stage 4: Read workflow state. Confirm Stages 0-3 are complete.
 **Owner**: lit-synthesizer + editor (quick polish)
 **Checkpoint**: Never (automatic)
 **Duration**: 30-45 minutes
@@ -192,7 +263,11 @@ lit-synthesizer writes introduction framing research question and previewing str
 
 **Quality Gate**: Clear framing, structure preview matches outline.
 
+**Stage Transition**: Stage 4 complete -> PROCEED to Stage 5: Parallel Section Research & Writing
+
 ### Stage 5: Parallel Section Research & Writing
+
+Before starting Stage 5: Read workflow state. Confirm Stages 0-4 are complete.
 **Owner**: literature-researcher agents (parallel)
 **Checkpoint**: Never (gated by Stage 6a)
 **Duration**: 3-5 hours per section (parallel)
@@ -200,6 +275,8 @@ lit-synthesizer writes introduction framing research question and previewing str
 Section writers conduct targeted research: 15-30 papers per section with recency survey (last 6-12 months). Writers have moderate autonomy to add subsections.
 
 **Quality Gate**: 15-30 papers cited, recency survey present, thesis addressed.
+
+**Stage Transition**: Stage 5 sections sent to Stage 6a as they complete. Do NOT wait for all sections.
 
 ### Stage 6a: Per-Section Quick Validation (BLOCKING)
 **Owner**: fact-checker
@@ -210,6 +287,8 @@ Quick checks: paper count, recency survey presence, no placeholders, thesis addr
 
 **Quality Gate**: All automated checks pass, max 3 revision cycles.
 
+**Stage Transition**: Section passes 6a -> eligible for Stage 6b. When ALL sections pass 6a AND 6b -> PROCEED to Stage 6c.
+
 ### Stage 6b: Comprehensive Fact-Check (NON-BLOCKING)
 **Owner**: fact-checker
 **Checkpoint**: Never (automatic)
@@ -218,6 +297,8 @@ Quick checks: paper count, recency survey presence, no placeholders, thesis addr
 Deep checks: cross-section consistency, citation accuracy (spot-check), quantitative verification. Produces revision list (P0/P1/P2).
 
 **Quality Gate**: Revision list generated for Stage 8.
+
+(6b is non-blocking. Stage 6c triggers when all sections pass 6a and 6b.)
 
 ### Stage 6c: Devil's Advocate Section Review (ALWAYS-ON)
 **Owner**: devils-advocate
@@ -233,7 +314,12 @@ Adversarial review of each section: challenges argument quality, tests assumptio
 - **devils-advocate CAN challenge**: Argument strength, assumption validity, logical coherence, thesis appropriateness, methodology context for claims
 - **devils-advocate CANNOT challenge**: Citation accuracy, whether papers exist, whether values match sources (fact-checker domain)
 
+**Stage Transition**: Stage 6c complete (all sections reviewed) -> PROCEED to Stage 7: Active Synthesis & Augmentation
+
 ### Stage 7: Active Synthesis & Augmentation
+
+Before starting Stage 7: Read workflow state. Confirm Stages 0-6c are complete.
+
 **Owner**: lit-synthesizer (senior author role)
 **Checkpoint**: HIGH-STAKES only
 **Duration**: 2-4 hours
@@ -241,6 +327,8 @@ Adversarial review of each section: challenges argument quality, tests assumptio
 Senior author reads all sections, identifies cross-cutting themes, restructures for narrative flow, writes conclusion. Authority to add subsections and rewrite transitions. Flags additions >20%.
 
 **Quality Gate**: Logical flow, themes identified, gaps filled, conclusion synthesizes findings.
+
+**Stage Transition**: Stage 7 complete -> CHECK: Did synthesis add >=20% content OR is complexity HIGH-STAKES? If YES -> PROCEED to Stage 7.5. If NO -> SKIP to Stage 8: Editorial Polish.
 
 ### Stage 7.5: Devil's Advocate Synthesis Review (CONDITIONAL)
 **Owner**: devils-advocate
@@ -252,7 +340,11 @@ Strategic-level adversarial review of synthesized document: thesis coherence acr
 
 **Quality Gate**: Document passes strategic review OR 2 exchanges complete with uncertainty documented.
 
+**Stage Transition**: Stage 7.5 complete -> PROCEED to Stage 8: Editorial Polish
+
 ### Stage 8: Editorial Polish
+
+Before starting Stage 8: Read workflow state. Confirm all prior stages are complete.
 **Owner**: editor
 **Checkpoint**: Never (automatic)
 **Duration**: 30-60 minutes
@@ -342,35 +434,36 @@ resource_limits:
 
 ### Stage 2: Review Discovery (Fan-Out/Fan-In)
 
-```yaml
-parallel_execution:
-  stage: 2
-  pattern: fan_out_fan_in
-  max_agents: 3
+Launch 2-3 literature-researcher agents using Task tool:
 
-  strategy_assignment:
-    agent_1: "Broad keywords"
-    agent_2: "Specific technical terms"
-    agent_3: "Application focus"
+Agent 1 via Task tool:
+  Description: "Literature researcher: Broad keyword search for {topic}"
+  Prompt: Search using broad keywords. Find 3-5 review papers. Write results to `{session_dir}/reviews/agent-1-broad.yaml`.
 
-  convergence_tracking:
-    high_priority: "Found by 3/3 agents (must-read)"
-    medium_priority: "Found by 2/3 agents"
-    unique: "Found by 1 agent (coverage breadth)"
-```
+Agent 2 via Task tool:
+  Description: "Literature researcher: Specific technical term search for {topic}"
+  Prompt: Search using specific technical terms. Find 3-5 review papers. Write results to `{session_dir}/reviews/agent-2-specific.yaml`.
+
+Agent 3 via Task tool:
+  Description: "Literature researcher: Application-focused search for {topic}"
+  Prompt: Search with application focus. Find 3-5 review papers. Write results to `{session_dir}/reviews/agent-3-application.yaml`.
+
+All three run simultaneously. When all complete, analyze convergence:
+- Found by 3/3 agents: high priority (must-read)
+- Found by 2/3 agents: medium priority
+- Found by 1 agent: coverage breadth
 
 ### Stage 5: Section Writing (Parallel with Queue)
 
-```yaml
-parallel_execution:
-  stage: 5
-  pattern: parallel_with_queue
-  max_agents: 3  # Reserve slot for fact-checker
+Launch section writers in parallel using Task tool (max 3 concurrent):
 
-  completion_handling:
-    on_complete: "Send to Stage 6a immediately"
-    on_timeout: "Proceed without section, flag gap"
-```
+For each section in the approved outline:
+  Launch literature-researcher via Task tool.
+  Description: "Literature researcher: Write section '{section_title}'"
+  Prompt: Include section thesis, assigned reviews, subsection structure. Conduct targeted research (15-30 papers). Write output to `{session_dir}/sections/{section_id}.md`.
+
+As each section completes: Send immediately to Stage 6a for quick validation.
+If a section times out: Proceed without it, flag the gap for user review.
 
 ---
 
