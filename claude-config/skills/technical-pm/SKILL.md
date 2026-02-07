@@ -435,6 +435,48 @@ Task tool with subagent_type: "Researcher"  ❌ WRONG - will fail
 
 When coordinating multi-agent work, use the **Skill tool** to invoke the specialized agents listed in the Agent Assignment Guide above.
 
+### Git Strategy Advisory (Optional)
+
+When coordinating work that produces files, you MAY invoke `git-strategy-advisor` via
+Task tool for scope-adaptive git recommendations at two points:
+
+**Pre-work** (before agents start writing files):
+```
+Use git-strategy-advisor to determine git strategy for planned work.
+
+mode: pre-work
+
+Task: [description of planned multi-agent work]
+Estimated scope: [files and directories that will be created/modified]
+```
+
+**Post-work** (after all agent work completes):
+```
+Use git-strategy-advisor to determine git strategy for completed work.
+
+mode: post-work
+```
+
+The advisor provides recommendations for branch strategy, branch naming, push timing,
+and PR creation. This is **advisory only** -- it never executes git commands.
+
+**Response handling**: Read the advisor's `summary` field and include in the coordination
+report or user communication.
+
+**Confidence handling**: If the advisor returns confidence "none", silently skip.
+If confidence is "low", present with a caveat: "Low-confidence recommendation due to
+limited context. Consider re-invoking in post-work mode for higher accuracy."
+
+**De-duplication**: If technical-pm coordinates sub-workflows that each invoke
+git-strategy-advisor independently, the sub-workflow recommendations are authoritative
+for their respective outputs. technical-pm's own post-work invocation should cover
+only the overall coordination artifacts. If sub-workflows have already obtained git
+strategy recommendations, technical-pm MAY skip its own invocation.
+
+If `git-strategy-advisor` is not available or returns an error, omit this step.
+technical-pm does not have built-in git logic, so the advisor's recommendations
+inform your guidance to the user about how to handle the produced files.
+
 ## Agent Progress Monitoring (Multi-Agent Coordination)
 
 When you coordinate agents (assign researcher/synthesizer/fact-checker tasks), monitor their progress and intervene on timeouts.

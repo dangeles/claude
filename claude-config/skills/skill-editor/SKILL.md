@@ -1735,6 +1735,37 @@ chmod +x /tmp/test-skill.sh
 # - Outcome: Success
 ```
 
+#### Optional: Git Strategy Advisory
+
+Before committing changes, you MAY invoke `git-strategy-advisor` via Task tool in
+post-work mode to get scope-adaptive git recommendations:
+
+**Invocation** (via Task tool):
+```
+Use git-strategy-advisor to determine git strategy for completed work.
+
+mode: post-work
+```
+
+The advisor analyzes actual changes and may recommend creating a feature branch
+(for larger skill changes) vs direct commit (for typo fixes), branch naming
+convention, push timing, and PR creation.
+
+**Conflict resolution**: If the advisor's recommendation differs from Step 8's
+existing logic (which commits directly), Step 8 logic takes precedence
+unconditionally. Present the advisor's recommendation as an informational note
+in the completion summary (e.g., "Note: git-strategy-advisor suggests creating a
+feature branch for this scope of changes").
+
+**Response handling**: Read the advisor's `summary` field for the human-readable
+recommendation. Include in the planning journal entry if noteworthy.
+
+**Confidence handling**: If the advisor returns confidence "none", silently skip.
+If confidence is "low", present with a caveat.
+
+This is **advisory only**. If `git-strategy-advisor` is not available or returns
+an error, proceed with existing Step 8 logic unchanged.
+
 #### Step 8: Commit Changes
 
 ```bash

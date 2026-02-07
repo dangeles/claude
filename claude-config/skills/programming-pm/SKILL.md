@@ -1081,6 +1081,38 @@ Before starting Phase 6: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Co
 
 **Objective**: Integrate changes with sync-config.py and version control.
 
+#### Optional: Git Strategy Advisory
+
+Before proceeding with version control integration, you MAY invoke `git-strategy-advisor`
+via Task tool in post-work mode to get scope-adaptive git recommendations:
+
+**Invocation** (via Task tool):
+```
+Use git-strategy-advisor to determine git strategy for completed work.
+
+mode: post-work
+```
+
+The advisor analyzes actual changes (files, lines, directories) and recommends branch
+strategy, branch naming, push timing, and PR creation.
+
+**Conflict resolution**: If the advisor's recommendation differs from Phase 6 Step 3's
+existing logic (which creates a feature branch when on main), Phase 6 Step 3 takes
+precedence unconditionally. Present the advisor's recommendation as an informational
+note in the completion summary (e.g., "Note: git-strategy-advisor suggests direct-commit
+for this trivial change"). The orchestrator proceeds with its default behavior.
+
+**Response handling**: Read the advisor's `summary` field for the human-readable
+recommendation. Optionally read `strategy.branch.action` to note whether the advisor
+agrees with the default strategy. Include the summary in the Phase 6 completion report.
+
+**Confidence handling**: If the advisor returns confidence "none" (e.g., no git repository
+found), silently skip the git strategy section. If confidence is "low", present the
+recommendation with a caveat noting limited accuracy.
+
+This is **advisory only**. If `git-strategy-advisor` is not available or returns an error,
+proceed with existing Phase 6 logic unchanged.
+
 **Steps**:
 
 #### Step 1: Pre-Merge Validation
@@ -1543,6 +1575,7 @@ handoff:
 - `references/team-composition.md` - RACI matrix, specialist selection criteria
 - `references/handoff-schema.md` - Interface contracts between specialists
 - `references/timeout-config.md` - Per-phase and per-specialist timeout configuration
+- `git-strategy-advisor` - Phase 6 git strategy consultation (optional, advisory)
 
 ## Example Workflow
 

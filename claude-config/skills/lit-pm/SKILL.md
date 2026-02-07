@@ -351,6 +351,38 @@ Incorporate P0/P1 revisions from Stage 6b, polish for clarity, ensure voice cons
 
 **Quality Gate**: Revisions incorporated, consistent voice, formatted, final read complete.
 
+### Post-Pipeline: Git Strategy Advisory (Optional)
+
+After Stage 8 completes and the final document is ready, you MAY invoke
+`git-strategy-advisor` via Task tool in post-work mode to get recommendations for
+how to handle the produced files in version control:
+
+**Invocation** (via Task tool):
+```
+Use git-strategy-advisor to determine git strategy for completed work.
+
+mode: post-work
+```
+
+The advisor analyzes the files produced by the pipeline (review document, notes,
+synthesis, fact-check report) and recommends branch strategy, push timing, and
+PR creation based on the actual scope of output.
+
+**Response handling**: Read the advisor's `summary` field. Include in the completion
+summary for user action.
+
+**Confidence handling**: If the advisor returns confidence "none" or "low", silently
+skip the git strategy section in the completion summary.
+
+**Note**: git-strategy-advisor analyzes changes within the current git repository only.
+If this pipeline's output files are written outside the repository (e.g., to /tmp/ or
+a user-specified output directory), the advisor will not detect them. In that case,
+omit the git strategy section from the completion summary.
+
+This is **advisory only**. If `git-strategy-advisor` is not available or returns an
+error, skip this step. lit-pm does not have built-in git logic; the advisor's
+recommendation can be passed to the user in the completion summary.
+
 ---
 
 ## Adaptive Orchestration

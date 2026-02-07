@@ -390,6 +390,36 @@ Apply corrections? [yes/no]
 - Updated .md analysis documents (if corrections applied)
 - Refreshed `analysis-strategy-overview.md` (if corrections applied)
 
+### Post-Workflow: Git Strategy Advisory (Optional)
+
+After Phase 6 completes and all analysis documents are finalized, you MAY invoke
+`git-strategy-advisor` via Task tool in post-work mode to recommend how to handle
+the generated files in version control:
+
+**Invocation** (via Task tool):
+```
+Use git-strategy-advisor to determine git strategy for completed work.
+
+mode: post-work
+```
+
+The advisor analyzes the generated analysis documents and overview file, then
+recommends branch strategy, branch naming, push timing, and PR creation based on
+the actual scope of output.
+
+**Response handling**: Read the advisor's `summary` field. Include in the completion
+summary for user action.
+
+**Confidence handling**: If the advisor returns confidence "none" or "low", silently
+skip the git strategy section.
+
+**Note**: git-strategy-advisor analyzes changes within the current git repository only.
+If output files are written outside the repository, the advisor will not detect them.
+
+This is **advisory only**. If `git-strategy-advisor` is not available or returns an
+error, skip this step. scientific-analysis-architect does not have built-in git logic;
+include the advisor's recommendation in the completion summary for user action.
+
 ## Session Management
 
 ### Session Directory Structure

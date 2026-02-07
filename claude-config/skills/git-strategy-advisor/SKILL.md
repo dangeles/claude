@@ -28,7 +28,7 @@ This skill is **advisory only**. It reads git state but never modifies it. The c
 - Complex branching strategies (mono-repos, release branches, gitflow)
 - Conflict resolution
 - Repository initialization or setup
-- When `programming-pm` or `skill-editor` already handle git in their workflow (those have their own git logic)
+- Re-invoking orchestrator or pipeline skills from within this skill (this skill is a leaf node; it reads git state and returns recommendations but never delegates work to other skills or orchestrators)
 
 ## Workflow Overview
 
@@ -327,9 +327,12 @@ This skill uses in-context state only. No intermediate files, no session directo
 
 ### Ecosystem Alignment
 
-- **vs. programming-pm Phase 6**: programming-pm always creates a feature branch on main. git-strategy-advisor may recommend direct-commit for trivial changes. This is intentional -- scope-adaptive ceremony reduces overhead for small changes.
-- **vs. programming-pm branch naming**: programming-pm uses `{type}/{task-id}-{description}`. git-strategy-advisor uses `{type}/{description}` (no task ID available). If caller provides task ID, include it in the description.
-- **vs. skill-editor Phase 4**: skill-editor commits directly. git-strategy-advisor may recommend branching for skill changes depending on scope.
+- **with programming-pm Phase 6**: programming-pm may optionally invoke git-strategy-advisor in post-work mode before its existing branching logic. The advisor may recommend direct-commit for trivial changes or confirm the existing branch-on-main behavior for larger changes. programming-pm's existing Phase 6 logic takes precedence unconditionally; the advisor's recommendation is presented as an informational note.
+- **with programming-pm branch naming**: programming-pm uses `{type}/{task-id}-{description}`. git-strategy-advisor uses `{type}/{description}` (no task ID available). If caller provides task ID, include it in the description.
+- **with skill-editor Phase 4**: skill-editor may optionally invoke git-strategy-advisor in post-work mode before committing. The advisor may recommend branching for skill changes depending on scope. skill-editor's existing commit logic takes precedence unconditionally; the advisor's recommendation is presented as an informational note.
+- **with other orchestrators**: technical-pm, lit-pm, scientific-analysis-architect, and research-pipeline may invoke git-strategy-advisor in post-work mode after completing their workflows to get git recommendations for the produced files.
+
+**Maintenance note**: git-strategy-advisor integration sections exist in 6 orchestrator SKILL.md files (programming-pm, skill-editor, technical-pm, lit-pm, scientific-analysis-architect, research-pipeline). When modifying the integration pattern in any single orchestrator, check all 6 for consistency.
 
 ### Invocation Patterns
 

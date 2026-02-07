@@ -279,6 +279,36 @@ pipeline:
 - Fact-check report: {path}
 ```
 
+### Optional: Git Strategy Advisory
+
+After generating the completion report, you MAY invoke `git-strategy-advisor` via
+Task tool in post-work mode to recommend git strategy for the pipeline output files:
+
+**Invocation** (via Task tool):
+```
+Use git-strategy-advisor to determine git strategy for completed work.
+
+mode: post-work
+```
+
+The advisor analyzes the collection of output files (final document, intermediate
+outputs, notes, reports) and recommends branch strategy, push timing, and PR creation
+based on the actual scope.
+
+**Response handling**: Read the advisor's `summary` field. Include in the completion
+report if available.
+
+**Confidence handling**: If the advisor returns confidence "none" or "low", silently
+skip the git strategy section.
+
+**Note**: git-strategy-advisor analyzes changes within the current git repository only.
+If pipeline output files are written outside the repository (e.g., to /tmp/), the
+advisor will not detect them.
+
+This is **advisory only**. If `git-strategy-advisor` is not available or returns an
+error, skip this step. Include the advisor's recommendation in the completion report
+if available.
+
 ## Handoff Format
 
 Each stage-to-stage transition uses the standardized handoff format from technical-pm:
@@ -448,6 +478,13 @@ Skill(archive-workflow, project="{project root}")
 ```
 
 Pipeline does NOT automatically invoke archive-workflow to give user control over organization decisions.
+
+### Handoff to git-strategy-advisor
+
+After pipeline completion, the pipeline MAY invoke git-strategy-advisor for git workflow
+recommendations. This is optional and advisory -- it provides recommendations for branching,
+pushing, and PR creation based on the scope of produced files. Invocation is via Task tool,
+not Skill tool.
 
 ## Example Invocations
 
