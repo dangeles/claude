@@ -23,7 +23,7 @@ All handoffs include these base fields.
 ```yaml
 handoff:
   # Metadata
-  version: "1.1"
+  version: "1.2"
   from_phase: int  # 0-6
   to_phase: int    # 0-6
   producer: string  # skill name that created this
@@ -208,6 +208,11 @@ architecture_handoff:
     - component: string
       priority: int
       dependencies: []
+
+  architecture_context:  # Optional (v1.2+)
+    path: string  # Absolute path to .architecture/context.md if generated
+    generated: boolean  # Whether context document was created in Phase 3
+    version: string  # Template version (e.g., "1.0")
 ```
 
 ---
@@ -373,6 +378,14 @@ code_handoff:
     number: int
     changes_made: []
     previous_feedback_addressed: []
+
+  # Architecture context (v1.2+)
+  architecture_context:  # Optional
+    read: boolean  # Whether developer read .architecture/context.md before implementation
+    component_tier: int  # 0=foundation, 1=core, 2=application (from context doc)
+    discrepancy_noted: boolean  # True if developer found context-code mismatch
+    discrepancy_details: string  # Description of mismatch (required if discrepancy_noted=true)
+    stale: boolean  # True if staleness warning was shown during pre-flight
 ```
 
 ---
@@ -487,7 +500,7 @@ def validate_handoff(handoff_path: Path, schema: dict) -> list[str]:
 
 Handoff schema version is included in each handoff.
 
-Current version: **1.1**
+Current version: **1.2**
 
 ### Version History
 
@@ -495,6 +508,7 @@ Current version: **1.1**
 |---------|---------|
 | 1.0 | Initial schema |
 | 1.1 | Added Phase 0 (Archival Setup), session context in all handoffs, phase range 0-6 |
+| 1.2 | Added architecture_context fields to architecture_handoff and code_handoff schemas |
 
 ### Compatibility
 
