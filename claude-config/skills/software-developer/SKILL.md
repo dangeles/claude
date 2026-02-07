@@ -45,6 +45,23 @@ Biologist Commentator validates biological correctness
 Production-ready software
 ```
 
+## Archival Compliance
+
+Before writing any output file:
+1. Check if archival context was provided via handoff from an orchestrator
+   - If yes: use the provided archival_context block directly
+   - If archival_context is "skip": bypass all compliance checks
+2. If no handoff context: check for `.archive-metadata.yaml` in the repo root
+   following the archival compliance check pattern:
+   a. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
+   b. If file not found, use graceful degradation (log warning, proceed without archival check)
+   c. Apply the 5-step pattern to all file creation operations
+3. Before writing output, validate path against guidelines
+4. On violation: if invoked standalone, present advisory options;
+   if invoked via Task tool (sub-agent), apply archival guidelines silently
+
+**software-developer specific**: Focus on code naming conventions (snake_case for .py) and directory structure (src/, tests/) validation.
+
 ## Core Capabilities
 
 ### 1. Implementation from Spec
