@@ -80,6 +80,39 @@ Software Developer implements from spec
 - Dependency management
 - Version pinning
 
+### 5. Architecture Context Document
+- Maintain persistent context document describing module structure
+- Track dependencies and modification order for safe incremental changes
+- Document intended usage patterns for each major component
+- Provide streaming/incremental change strategies
+
+## Architecture Context Document
+
+The Architecture Context Document (`.architecture/context.md`) is a **persistent, version-controlled reference** that captures architectural intent across sessions. Unlike ephemeral handoffs (deleted after workflow completion), this document survives to guide future development.
+
+**Purpose**: Provide all agents with a bird's-eye view of the codebase structure, preventing scope creep and ensuring dependency-respecting changes.
+
+**Lifecycle**:
+- **Created**: During Phase 3 (Architecture Design) of programming-pm workflow
+- **Updated**: When architectural changes occur (new modules, dependency changes, interface modifications)
+- **Read**: By senior-developer and junior-developer before starting implementation (pre-flight step)
+
+**Template and protocols**: See `references/architecture-context-template.md` for:
+- Four-section template (Module Interconnections, Usage Patterns, Modification Order, Streaming Strategies)
+- Generation protocol (Phase 3, Bootstrap Mode for existing codebases, SIMPLE mode abbreviation)
+- Maintenance protocol (when to update, staleness detection, drift handling)
+- Merge conflict resolution
+
+### Bootstrap Mode
+
+For **existing codebases without an Architecture Context Document**, systems-architect generates the document during Phase 3 using static analysis:
+1. List modules/components from directory structure (`src/`, `modules/`)
+2. Infer dependencies from import statements
+3. Mark unknowns explicitly with `[TBD]`, `[UNKNOWN]`, or `[INFERRED]` tags
+4. Document incomplete areas as "Known Gaps" at document end
+
+Bootstrap Mode prioritizes **incomplete but honest** documentation over fabricated completeness. Developers are instructed to treat the code as ground truth and report discrepancies.
+
 ## Standard Architecture Template
 
 Use `assets/architecture_template.md`:
@@ -192,6 +225,7 @@ Deliverable to Software Developer includes:
 5. **Error handling** (what to do when steps fail)
 6. **Performance requirements** (memory, time, storage)
 7. **Testing strategy** (unit, integration, validation)
+8. **Architecture Context Document** (`.architecture/context.md` - persistent context for incremental development)
 
 ## References
 
@@ -200,6 +234,7 @@ For detailed guidance:
 - `references/data_structure_guide.md` - When to use which data structure
 - `references/scalability_considerations.md` - Memory, compute, storage planning
 - `references/integration_patterns.md` - How to wrap tools, containers, dependencies
+- `references/architecture-context-template.md` - Architecture Context Document template, generation, and maintenance protocols
 
 ## Example Architecture
 
