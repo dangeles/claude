@@ -9,30 +9,27 @@ Examples of Phase 6 statistical fact-checking interview scenarios.
 ```
 Statistical Concern 1 of 1
 
-Notebook: chapter2_hypothesis/notebook2_1_differential-expression.ipynb
-Cell: 4
+Document: chapter2_hypothesis/analysis2_1_differential-expression.md
+Section: Analysis Steps > Step 3: Compare Expression
+Code Block: 0
 Severity: Standard
 
 Issue: T-test used for non-normal data
 
-Current pseudocode:
-```python
+Current:
 # Compare expression between groups
 # result = scipy.stats.ttest_ind(group1_expr, group2_expr)
 # significant = result.pvalue < 0.05
-```
 
 Concern: Gene expression data is typically not normally distributed,
 especially in single-cell data. T-test assumes normality and may give
 unreliable p-values.
 
 Recommendation:
-```python
 # Compare expression between groups (non-parametric)
 # result = scipy.stats.mannwhitneyu(group1_expr, group2_expr, alternative='two-sided')
 # significant = result.pvalue < 0.05
 # Note: Mann-Whitney U test (Wilcoxon rank-sum) makes no distributional assumptions
-```
 
 Accept? [yes/no/skip/explain]
 ```
@@ -54,7 +51,7 @@ Apply all accepted corrections now? [yes/no]
 User: yes
 
 Applying corrections...
-  notebook2_1_differential-expression.ipynb ... updated
+  analysis2_1_differential-expression.md ... updated
   Validation passed.
 
 Statistical review complete.
@@ -69,24 +66,22 @@ Statistical review complete.
 ```
 Statistical Concern 3 of 5
 
-Notebook: chapter1_atlas/notebook1_2_normalization.ipynb
-Cell: 3
+Document: chapter1_atlas/analysis1_2_normalization.md
+Section: Analysis Steps > Step 2: Batch Effect Assessment
+Code Block: 0
 Severity: Standard
 
 Issue: No normality test before parametric analysis
 
-Current pseudocode:
-```python
+Current:
 # Batch effect assessment
 # F-statistic = one_way_anova(batch1, batch2, batch3)
 # Check if batch explains significant variance
-```
 
 Concern: ANOVA assumes normally distributed residuals. Without testing this
 assumption, p-values may be unreliable.
 
 Recommendation:
-```python
 # Batch effect assessment with assumption checking
 #
 # Step 1: Test normality of residuals
@@ -98,7 +93,6 @@ Recommendation:
 #   F_stat, p = scipy.stats.f_oneway(batch1, batch2, batch3)
 # else:
 #   H_stat, p = scipy.stats.kruskal(batch1, batch2, batch3)
-```
 
 Accept? [yes/no/skip/explain]
 ```
@@ -129,7 +123,7 @@ Summary:
 - 1 correction skipped
 
 Rejected corrections:
-1. [Standard] Normality test for batch ANOVA (notebook 1.2)
+1. [Standard] Normality test for batch ANOVA (analysis 1.2)
    Reason: "Diagnostic use only, not formal hypothesis test"
 
 ...
@@ -179,8 +173,9 @@ Reviewing 3 Critical concerns...
 ```
 Statistical Concern 1 of 3 (Critical)
 
-Notebook: chapter2_hypothesis/notebook2_1_de-analysis.ipynb
-Cell: 6
+Document: chapter2_hypothesis/analysis2_1_de-analysis.md
+Section: Analysis Steps > Step 4: Differential Expression
+Code Block: 0
 Severity: Critical
 
 Issue: No multiple testing correction for 20,000+ tests
@@ -287,7 +282,7 @@ Statistical Review Complete
 No statistical concerns identified.
 
 Justification:
-- 8 notebooks reviewed
+- 8 analysis documents reviewed
 - 12 statistical methods examined
 
 Methods validated:
@@ -320,21 +315,20 @@ No corrections needed. Proceeding to completion.
 ```
 Statistical Concern 2 of 4
 
-Notebook: chapter3_mechanism/notebook3_1_trajectory.ipynb
-Cell: 7
+Document: chapter3_mechanism/analysis3_1_trajectory.md
+Section: Analysis Steps > Step 4: Gene-Pseudotime Correlation
+Code Block: 0
 Severity: Standard
 
 Issue: Pseudotime correlation without multiple testing correction
 
-Current pseudocode:
-```python
+Current:
 # Correlate gene expression with pseudotime
 # correlations = []
 # for gene in genes:
 #     r, p = scipy.stats.spearmanr(pseudotime, expression[gene])
 #     if p < 0.05:
 #         correlations.append((gene, r, p))
-```
 
 Concern: Testing thousands of genes for pseudotime correlation without
 correction will yield many false positives.
@@ -413,7 +407,7 @@ Correction accepted. (2 remaining)
 ```
 Statistical Concern 4 of 8
 
-Notebook: chapter2_hypothesis/notebook2_2_gsea.ipynb
+Document: chapter2_hypothesis/analysis2_2_gsea.md
 ...
 
 Accept? [yes/no/skip/explain]
@@ -454,7 +448,7 @@ User: yes
 
 Statistical Concern 4 of 8
 
-Notebook: chapter2_hypothesis/notebook2_2_gsea.ipynb
+Document: chapter2_hypothesis/analysis2_2_gsea.md
 ...
 ```
 
@@ -485,5 +479,5 @@ Notebook: chapter2_hypothesis/notebook2_2_gsea.ipynb
 
 | Option | Effect |
 |--------|--------|
-| yes | Apply all accepted corrections to notebooks |
-| no | Save manifest for later, do not modify notebooks |
+| yes | Apply all accepted corrections to analysis documents |
+| no | Save manifest for later, do not modify documents |

@@ -1,6 +1,6 @@
-# Notebook Templates
+# Analysis Document Templates
 
-Templates and guidelines for generating Jupyter notebooks with pseudocode.
+Templates and guidelines for generating markdown analysis documents with pseudocode.
 
 ## Detail Levels
 
@@ -8,301 +8,343 @@ Templates and guidelines for generating Jupyter notebooks with pseudocode.
 
 Use for exploratory analyses where implementation details are flexible.
 
+```markdown
+# Quality Control
+
+## Goal
+Filter low-quality cells and genes to ensure reliable downstream analysis.
+
+## Statistical Approach
+MAD-based outlier detection for adaptive QC thresholds.
+
+## Prerequisites
+- Input: raw_counts.h5ad
+- Libraries: scanpy
+
+## Analysis Steps
+
+### Step 1: Load Data
+Load the AnnData object containing single-cell RNA-seq data.
+
 ```python
-# Cell 1: Setup
-# Import necessary libraries for single-cell analysis
+# sc.read_h5ad("raw_counts.h5ad")
+# Expected: (50000, ~20000) cells x genes
+```
 
-# Cell 2: Load Data
-# Load the AnnData object containing single-cell RNA-seq data
+### Step 2: Quality Control
+Filter cells and genes based on standard QC metrics.
 
-# Cell 3: Quality Control
-# Filter cells and genes based on standard QC metrics
+```python
+# Calculate QC metrics and filter
+# sc.pp.calculate_qc_metrics(adata, inplace=True)
+# Filter cells by gene count and mitochondrial fraction
+```
 
-# Cell 4: Normalization
-# Normalize counts and apply log transformation
+### Step 3: Visualization
+Create QC diagnostic plots.
 
-# Cell 5: Visualization
-# Create UMAP embedding and visualize by condition
+```python
+# Plot QC metric distributions
+# Save to figures directory
+```
+
+## Expected Outputs
+- adata_qc.h5ad: Filtered AnnData object
+- qc_report figures
+
+## Notes and Caveats
+- Thresholds may need dataset-specific tuning
 ```
 
 **Characteristics:**
-- One-line comments per logical step
-- No specific function calls
-- No parameters
+- Brief prose sections
+- One fenced code block per step with one-line comments
+- No specific function parameters
 - Suitable for: brainstorming, early planning
 
 ### Standard (API-Level)
 
 Use for defined analyses where methods are chosen but parameters need tuning.
 
-```python
-# Cell 1: Setup and Imports
-# TODO: Import the following libraries
-# - scanpy (sc): Single-cell analysis
-# - pandas (pd): Data manipulation
-# - numpy (np): Numerical operations
-# - matplotlib.pyplot (plt): Visualization
+```markdown
+# Quality Control
 
-# Cell 2: Load Data
+## Goal
+Filter low-quality cells and genes to ensure reliable downstream analysis.
+
+## Statistical Approach
+- MAD-based outlier detection for adaptive thresholds
+- Thresholds: 3 MAD from median for each QC metric
+- Metrics: n_genes, total_counts, pct_mito
+
+## Prerequisites
+- Input: raw_counts.h5ad (AnnData format)
+- Libraries: scanpy, matplotlib, numpy
+- No upstream dependencies (first analysis)
+
+## Analysis Steps
+
+### Step 1: Load Data
+Load the raw count matrix and verify expected dimensions.
+
+```python
 # TODO: Load AnnData from file
 # Function: sc.read_h5ad(path)
 # Expected input: "{data_dir}/raw_counts.h5ad"
 # Expected shape: (n_cells, n_genes) approximately (50000, 20000)
+```
 
-# Cell 3: Quality Control
-# TODO: Apply QC filters
-# Step 1: Calculate QC metrics
-#   sc.pp.calculate_qc_metrics(adata, inplace=True)
-#
-# Step 2: Filter cells
-#   sc.pp.filter_cells(adata, min_genes=200)
-#   sc.pp.filter_cells(adata, max_genes=5000)
-#
-# Step 3: Filter genes
-#   sc.pp.filter_genes(adata, min_cells=3)
+### Step 2: Calculate QC Metrics
+Compute per-cell quality metrics for filtering decisions.
 
-# Cell 4: Normalization
-# TODO: Normalize and transform
-# Step 1: Total count normalization
-#   sc.pp.normalize_total(adata, target_sum=1e4)
+```python
+# TODO: Calculate QC metrics
+# sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], inplace=True)
 #
-# Step 2: Log transformation
-#   sc.pp.log1p(adata)
+# Metrics added to adata.obs:
+#   - n_genes_by_counts
+#   - total_counts
+#   - pct_counts_mt
+```
 
-# Cell 5: Dimensionality Reduction
-# TODO: Compute PCA and UMAP
-# Step 1: Identify highly variable genes
-#   sc.pp.highly_variable_genes(adata, n_top_genes=2000)
+### Step 3: Visualize QC Distributions
+Plot distributions of QC metrics to inform threshold selection.
+
+```python
+# TODO: Create QC diagnostic plots
+# Plot: n_genes, total_counts, pct_mito distributions by sample
+# Add threshold lines at 3 MAD from median
+# Save to: {output_dir}/figures/qc_distributions.png
+```
+
+### Step 4: Apply MAD-Based Filtering
+Filter cells using adaptive thresholds based on median absolute deviation.
+
+```python
+# TODO: Apply MAD-based filtering
+# For each metric:
+#   median = np.median(values)
+#   mad = np.median(np.abs(values - median))
+#   lower = median - 3*mad
+#   upper = median + 3*mad
+#   filter cells outside range
 #
-# Step 2: PCA
-#   sc.tl.pca(adata, n_comps=50)
-#
-# Step 3: UMAP
-#   sc.pp.neighbors(adata, n_neighbors=15)
-#   sc.tl.umap(adata)
+# sc.pp.filter_cells(adata, min_genes=200)
+# sc.pp.filter_cells(adata, max_genes=5000)
+# sc.pp.filter_genes(adata, min_cells=3)
+```
+
+### Step 5: Report Filtering Results
+Summarize cell and gene counts before and after filtering.
+
+```python
+# TODO: Report filtering results
+# Print: cells before/after, genes before/after
+# Validate: sufficient cells remain (>= 100)
+# Save: adata_qc.h5ad
+```
+
+## Expected Outputs
+- adata_qc.h5ad: Filtered AnnData object
+- qc_distributions.png: QC metric distributions
+- Console: filtering summary statistics
+
+## Notes and Caveats
+- MAD thresholds assume roughly symmetric distributions
+- Mitochondrial gene patterns are species-specific (mouse: ^mt-, human: ^MT-)
+- Consider sample-specific thresholds if batch effects are strong
 ```
 
 **Characteristics:**
-- Multiple lines per step with numbered sub-steps
-- Specific function names and key parameters
-- Expected inputs/outputs documented
+- Detailed prose explaining what and why for each step
+- Fenced code blocks with specific function calls and parameters
+- Expected inputs/outputs documented per step
 - Suitable for: implementation-ready plans
 
 ### Complex (Implementation Skeleton)
 
 Use for critical analyses requiring error handling and validation.
 
+```markdown
+# Differential Expression Analysis
+
+## Goal
+Identify differentially expressed genes between conditions with proper statistical controls.
+
+## Statistical Approach
+- Test: Wilcoxon rank-sum (non-parametric, appropriate for scRNA-seq)
+- Multiple testing: Benjamini-Hochberg FDR correction (alpha=0.05)
+- Effect size: log2 fold-change threshold of 0.5
+- Rationale: Non-parametric test avoids normality assumption violated by count data
+
+## Prerequisites
+- Input: adata_normalized.h5ad (from Normalization analysis)
+- Libraries: scanpy, pandas, numpy, statsmodels
+- Upstream: Quality Control and Normalization must complete first
+
+## Analysis Steps
+
+### Step 1: Setup and Configuration
+Configure analysis parameters and validate input data.
+
 ```python
-# Cell 1: Setup and Configuration
 # TODO: Import libraries and set configuration
 #
 # Required imports:
 #   import scanpy as sc
 #   import pandas as pd
 #   import numpy as np
-#   from scipy import stats
-#   import warnings
-#
-# Configuration:
-#   sc.settings.verbosity = 3
-#   sc.settings.figdir = "{output_dir}/figures/"
-#   warnings.filterwarnings('ignore', category=FutureWarning)
+#   from statsmodels.stats.multitest import multipletests
 #
 # Parameters (adjust as needed):
-#   MIN_GENES_PER_CELL = 200
-#   MAX_GENES_PER_CELL = 5000
-#   MIN_CELLS_PER_GENE = 3
-#   N_TOP_GENES = 2000
-#   N_PCS = 50
-#   N_NEIGHBORS = 15
+#   ALPHA = 0.05
+#   LOG2FC_THRESHOLD = 0.5
+#   MIN_CELLS_PER_GROUP = 10
+#
+# Validation:
+#   assert 'condition' in adata.obs.columns
+#   assert adata.obs['condition'].nunique() >= 2
+```
 
-# Cell 2: Load and Validate Data
+### Step 2: Load and Validate Data
+Load normalized data with validation checks.
+
+```python
 # TODO: Load data with validation
 #
 # def load_and_validate(path: str) -> sc.AnnData:
-#     """Load AnnData with validation checks."""
+#     # Load: sc.read_h5ad(path)
+#     # Check: file exists, n_obs > 0, n_vars > 0
+#     # Check: required columns in obs
+#     # Check: min cells per group >= MIN_CELLS_PER_GROUP
+#     # Log: data dimensions, conditions, cell counts per group
+#     # Return: validated AnnData
 #
-#     # Check file exists
-#     if not os.path.exists(path):
-#         raise FileNotFoundError(f"Data file not found: {path}")
-#
-#     # Load data
-#     adata = sc.read_h5ad(path)
-#
-#     # Validation checks
-#     assert adata.n_obs > 0, "No cells in dataset"
-#     assert adata.n_vars > 0, "No genes in dataset"
-#
-#     # Log data summary
-#     print(f"Loaded: {adata.n_obs} cells x {adata.n_vars} genes")
-#     print(f"Conditions: {adata.obs['condition'].unique()}")
-#
-#     return adata
-#
-# adata = load_and_validate("{data_dir}/raw_counts.h5ad")
+# adata = load_and_validate("{data_dir}/adata_normalized.h5ad")
+```
 
-# Cell 3: Quality Control with Diagnostics
-# TODO: QC with diagnostic plots
-#
-# # Calculate QC metrics
-# sc.pp.calculate_qc_metrics(adata, inplace=True)
-#
-# # Diagnostic plots BEFORE filtering
-# fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-#
-# # Plot 1: Genes per cell distribution
-# axes[0].hist(adata.obs['n_genes_by_counts'], bins=50)
-# axes[0].axvline(MIN_GENES_PER_CELL, color='r', linestyle='--')
-# axes[0].axvline(MAX_GENES_PER_CELL, color='r', linestyle='--')
-# axes[0].set_title('Genes per cell')
-#
-# # Plot 2: Counts per cell distribution
-# axes[1].hist(adata.obs['total_counts'], bins=50)
-# axes[1].set_title('Counts per cell')
-#
-# # Plot 3: Cells per gene distribution
-# axes[2].hist(adata.var['n_cells_by_counts'], bins=50)
-# axes[2].axvline(MIN_CELLS_PER_GENE, color='r', linestyle='--')
-# axes[2].set_title('Cells per gene')
-#
-# plt.tight_layout()
-# plt.savefig(f"{sc.settings.figdir}/qc_before_filtering.png")
-#
-# # Record cell counts before filtering
-# n_cells_before = adata.n_obs
-# n_genes_before = adata.n_vars
-#
-# # Apply filters
-# sc.pp.filter_cells(adata, min_genes=MIN_GENES_PER_CELL)
-# sc.pp.filter_cells(adata, max_genes=MAX_GENES_PER_CELL)
-# sc.pp.filter_genes(adata, min_cells=MIN_CELLS_PER_GENE)
-#
-# # Report filtering results
-# print(f"Cells: {n_cells_before} -> {adata.n_obs} ({n_cells_before - adata.n_obs} removed)")
-# print(f"Genes: {n_genes_before} -> {adata.n_vars} ({n_genes_before - adata.n_vars} removed)")
-#
-# # Validate sufficient data remains
-# assert adata.n_obs >= 100, f"Too few cells remaining: {adata.n_obs}"
-# assert adata.n_vars >= 1000, f"Too few genes remaining: {adata.n_vars}"
+### Step 3: Run Differential Expression
+Execute DE analysis with explicit statistical parameters.
 
-# Cell 4: Differential Expression with Multiple Testing Correction
-# TODO: DE analysis with proper statistics
+```python
+# TODO: Run DE analysis
 #
-# def run_de_analysis(adata, groupby: str, groups: list) -> pd.DataFrame:
-#     """Run differential expression with BH correction."""
+# sc.tl.rank_genes_groups(
+#     adata,
+#     groupby='condition',
+#     groups=['treatment'],
+#     reference='control',
+#     method='wilcoxon',
+#     corr_method='benjamini-hochberg'
+# )
 #
-#     # Run rank_genes_groups
-#     sc.tl.rank_genes_groups(
-#         adata,
-#         groupby=groupby,
-#         groups=groups,
-#         method='wilcoxon',  # Non-parametric, doesn't assume normality
-#         pts=True  # Include percent expressed
-#     )
+# result = sc.get.rank_genes_groups_df(adata, group='treatment')
 #
-#     # Extract results
-#     result = sc.get.rank_genes_groups_df(adata, group=groups[0])
+# # Apply additional BH correction (verification)
+# _, result['pvals_adj_bh'], _, _ = multipletests(
+#     result['pvals'],
+#     method='fdr_bh',
+#     alpha=ALPHA
+# )
+```
+
+### Step 4: Filter Significant Results
+Apply significance and effect size thresholds.
+
+```python
+# TODO: Filter significant genes
 #
-#     # Apply Benjamini-Hochberg correction
-#     from statsmodels.stats.multitest import multipletests
-#     _, result['pvals_adj_bh'], _, _ = multipletests(
-#         result['pvals'],
-#         method='fdr_bh',
-#         alpha=0.05
-#     )
+# significant = result[
+#     (result['pvals_adj_bh'] < ALPHA) &
+#     (abs(result['logfoldchanges']) > LOG2FC_THRESHOLD)
+# ]
 #
-#     # Filter significant
-#     significant = result[
-#         (result['pvals_adj_bh'] < 0.05) &
-#         (abs(result['logfoldchanges']) > 0.5)
-#     ]
+# # Report results
+# print(f"Total genes tested: {len(result)}")
+# print(f"Significant (FDR<{ALPHA}, |log2FC|>{LOG2FC_THRESHOLD}): {len(significant)}")
+# print(f"Up-regulated: {(significant['logfoldchanges'] > 0).sum()}")
+# print(f"Down-regulated: {(significant['logfoldchanges'] < 0).sum()}")
 #
-#     print(f"Significant genes: {len(significant)} of {len(result)}")
+# # Validate: not suspiciously many or few
+# pct_sig = len(significant) / len(result) * 100
+# if pct_sig > 50:
+#     print(f"WARNING: {pct_sig:.1f}% genes significant -- check for batch effects")
+# if pct_sig == 0:
+#     print("WARNING: No significant genes -- check sample sizes and conditions")
+```
+
+### Step 5: Save Results
+Export results with provenance metadata.
+
+```python
+# TODO: Save results
 #
-#     return significant
+# significant.to_csv(f"{output_dir}/de_results.csv", index=False)
+# result.to_csv(f"{output_dir}/de_all_genes.csv", index=False)
 #
-# de_results = run_de_analysis(adata, groupby='condition', groups=['treatment', 'control'])
-# de_results.to_csv(f"{output_dir}/de_results.csv")
+# # Save AnnData with DE results
+# adata.write(f"{output_dir}/adata_with_de.h5ad")
+```
+
+## Expected Outputs
+- de_results.csv: Significant DE genes with statistics
+- de_all_genes.csv: Full gene-level results
+- adata_with_de.h5ad: AnnData with DE results stored
+
+## Notes and Caveats
+- Wilcoxon test may have reduced power compared to parametric alternatives
+- FDR correction is per-comparison; consider experiment-wide correction if multiple comparisons
+- Log2FC threshold is arbitrary; adjust based on biological significance
+- Pseudobulk approach recommended for interaction analyses (see Chapter 4)
 ```
 
 **Characteristics:**
 - Full function definitions with docstrings
 - Type hints and validation
-- Error handling with assertions
-- Diagnostic plots and logging
+- Error handling with assertions and warnings
+- Diagnostic output and logging
 - Multiple testing correction implemented
 - Suitable for: production-ready implementation
 
-## Notebook Structure
+## Document Structure
 
-### Standard Notebook Layout
+### Standard Analysis Document Layout
 
 ```
-1. Title and Overview (Markdown)
-   - Analysis name
-   - Goal (one sentence)
-   - Statistical approach summary
+# Analysis Title
 
-2. Setup and Imports (Code)
-   - Library imports
-   - Configuration
-   - Parameter definitions
-
-3. Data Loading (Code)
-   - Load data
-   - Initial validation
-   - Data summary
-
-4. Exploratory / QC (Code)
-   - Quality metrics
-   - Diagnostic plots
-   - Filtering decisions
-
-5-N. Analysis Steps (Code/Markdown alternating)
-   - Each major step has:
-     - Markdown: What and why
-     - Code: Implementation
-     - Output: Validation/visualization
-
-N+1. Results Summary (Markdown)
-   - Key findings
-   - Output files generated
-   - Next steps
-
-N+2. Session Info (Code)
-   - Package versions
-   - Runtime environment
+## Goal
+## Statistical Approach
+## Prerequisites
+## Analysis Steps
+### Step 1: [Name]
+### Step 2: [Name]
+...
+## Expected Outputs
+## Notes and Caveats
 ```
 
-### Notebook Metadata
+## Code Block Formatting Rules
 
-All generated notebooks include metadata:
+1. **Language identifier**: Always use triple backticks with `python` language tag
+2. **No nesting**: Never nest fenced code blocks inside other fenced code blocks
+3. **Triple-quoted strings**: If pseudocode contains docstrings, use single-quoted triple quotes in comments instead
+4. **Multi-line strings**: Use comment notation rather than string literals
+5. **Balanced fences**: Every opening ``` must have a closing ```
+6. **One block per step**: Each Analysis Step subsection should have at most one fenced code block
 
-```json
-{
-  "metadata": {
-    "kernelspec": {
-      "display_name": "Python 3",
-      "language": "python",
-      "name": "python3"
-    },
-    "language_info": {
-      "name": "python",
-      "version": "3.9"
-    },
-    "scientific_analysis_architect": {
-      "version": "1.0.0",
-      "session_id": "session-20260204-143022-12345",
-      "chapter": 1,
-      "notebook_number": 2,
-      "analysis_type": "differential_expression",
-      "detail_level": "standard",
-      "generated_at": "2026-02-04T15:15:00Z"
-    }
-  },
-  "nbformat": 4,
-  "nbformat_minor": 5
-}
+## Provenance Metadata
+
+All generated analysis documents include an HTML comment block with provenance:
+
+```markdown
+<!-- Generated by: scientific-analysis-architect v2.0.0 -->
+<!-- Session: {session_id} -->
+<!-- Phase: 5 -->
+<!-- Agent: notebook-generator -->
+<!-- Timestamp: {iso8601_timestamp} -->
+<!-- Chapter: {N}, Analysis: {M} -->
+<!-- Detail Level: {simple|standard|complex} -->
 ```
 
 ## Variable Naming
@@ -319,95 +361,80 @@ All generated notebooks include metadata:
 
 ### Consistency Rules
 
-1. **Reuse standard names across notebooks**:
+1. **Reuse standard names across analysis documents**:
    - `adata` for main AnnData object
    - `results` for analysis output DataFrames
    - `fig, ax` for matplotlib figures
 
-2. **Document data flow**:
-   ```python
-   # Input: adata (raw counts, shape: n_cells x n_genes)
-   # Output: adata_normalized (log-normalized, same shape)
+2. **Document data flow** in prose or code comments:
+   ```
+   Input: adata (raw counts, shape: n_cells x n_genes)
+   Output: adata_normalized (log-normalized, same shape)
    ```
 
 3. **Use meaningful intermediate names**:
-   ```python
-   # Good
-   highly_variable_genes = sc.pp.highly_variable_genes(adata, n_top_genes=2000)
-
-   # Avoid
-   hvg = sc.pp.highly_variable_genes(adata, n_top_genes=2000)
+   ```
+   Good: highly_variable_genes = ...
+   Avoid: hvg = ...
    ```
 
-## Cell Organization
+## Output File Structure
 
-### Markdown Cells
-
-Use markdown to explain:
-- **What**: Brief description of the step
-- **Why**: Statistical/biological rationale
-- **Notes**: Assumptions, caveats, references
-
-Example:
-```markdown
-## Differential Expression Analysis
-
-We use the Wilcoxon rank-sum test for differential expression because:
-1. Non-parametric: doesn't assume normal distribution
-2. Robust to outliers common in single-cell data
-3. Widely used and well-validated for scRNA-seq
-
-Multiple testing correction: Benjamini-Hochberg (FDR < 0.05)
+```
+{output_dir}/
++-- analysis-strategy-overview.md
++-- chapter1_data-atlas/
+|   +-- analysis1_1_quality-control.md
+|   +-- analysis1_2_normalization.md
+|   +-- analysis1_3_clustering.md
++-- chapter2_hypothesis-testing/
+|   +-- analysis2_1_differential-expression.md
+|   +-- analysis2_2_pathway-enrichment.md
++-- chapter3_mechanism-exploration/
+    +-- analysis3_1_trajectory-analysis.md
+    +-- analysis3_2_gene-regulatory-networks.md
 ```
 
-### Code Cells
+### Naming Convention
 
-Structure each code cell:
-1. **Comment header** (what this cell does)
-2. **Code body** (implementation or pseudocode)
-3. **Validation/output** (print statements, assertions)
+`analysis{chapter}_{number}_{slug}.md`
 
-Example:
-```python
-# DIFFERENTIAL EXPRESSION: Run DE analysis between conditions
-# Statistical test: Wilcoxon rank-sum
-# Multiple testing: Benjamini-Hochberg correction
-
-sc.tl.rank_genes_groups(adata, groupby='condition', method='wilcoxon')
-de_results = sc.get.rank_genes_groups_df(adata, group='treatment')
-
-# Apply BH correction
-from statsmodels.stats.multitest import multipletests
-_, de_results['pvals_adj'], _, _ = multipletests(de_results['pvals'], method='fdr_bh')
-
-# Report significant genes
-n_sig = (de_results['pvals_adj'] < 0.05).sum()
-print(f"Significant genes (FDR < 0.05): {n_sig}")
-```
+- `{chapter}`: Chapter number (1-7)
+- `{number}`: Analysis number within chapter (1-N)
+- `{slug}`: Kebab-case analysis name
 
 ## Validation
 
-All notebooks must pass nbformat validation:
+All analysis documents must pass structural validation:
 
 ```python
-import nbformat
+import os
+import re
 
-def validate_notebook(path: str) -> bool:
-    """Validate notebook structure."""
+REQUIRED_SECTIONS = {
+    "goal": [r'^##\s+(Goal|Objective|Goals)\b'],
+    "statistical_approach": [r'^##\s+(Statistical Approach|Statistical Method|Methods)\b'],
+    "analysis_steps": [r'^##\s+(Analysis Steps|Steps|Workflow Steps)\b'],
+    "expected_outputs": [r'^##\s+(Expected Outputs|Outputs|Results)\b']
+}
 
+def validate_analysis_document(path: str) -> bool:
+    """Validate markdown analysis document structure."""
     with open(path) as f:
-        nb = nbformat.read(f, as_version=4)
+        content = f.read()
 
-    # Structural validation
-    nbformat.validate(nb)
+    # Check required sections
+    for section_name, patterns in REQUIRED_SECTIONS.items():
+        if not any(re.search(p, content, re.MULTILINE | re.IGNORECASE) for p in patterns):
+            return False
 
-    # Content validation
-    assert len(nb.cells) > 0, "Notebook has no cells"
-    assert nb.cells[0].cell_type == "markdown", "First cell should be markdown (title)"
+    # Check for at least one fenced code block
+    if '```' not in content:
+        return False
 
-    # Check for required metadata
-    assert "kernelspec" in nb.metadata, "Missing kernelspec"
-    assert "scientific_analysis_architect" in nb.metadata, "Missing provenance metadata"
+    # Check balanced fences
+    if content.count('```') % 2 != 0:
+        return False
 
     return True
 ```
@@ -436,26 +463,73 @@ def select_detail_level(analysis: dict) -> str:
     return "standard"
 ```
 
-## Output File Structure
+## Master Strategy Overview Template
 
+The master strategy overview is generated as Step 1 of Phase 5, synthesizing approved content from Phases 1-4.
+
+```markdown
+# Analysis Strategy Overview: {Project Title}
+
+## Project Objective
+{1-2 paragraph summary of the research question and approach}
+
+## Dataset Summary
+{Key characteristics: data type, sample size, conditions}
+
+## Strategy at a Glance
+
+| Chapter | Title | Goal | Analyses | Key Method |
+|---------|-------|------|----------|------------|
+| 1 | ... | atlas | 4 | ... |
+| 2 | ... | hypothesis | 3 | ... |
+| ... | | | | |
+
+## Chapter Summaries
+
+### Chapter 1: {Title}
+{2-4 sentences: what this chapter achieves and why}
+- Key analyses: {list}
+- Outputs: {what downstream chapters consume}
+
+### Chapter 2: {Title}
+...
+
+## Data Flow
+{Description of how data moves between chapters}
+
+Chapter 1 (raw data) -> Chapter 2 (normalized + annotated) -> Chapter 3 (DE results) -> ...
+
+## Consolidated Methods
+
+| Analysis Type | Method | Justification |
+|--------------|--------|---------------|
+| Clustering | Leiden | Better resolution than Louvain |
+| DE testing | Wilcoxon | Non-parametric, robust for scRNA-seq |
+| ... | | |
+
+## Required Libraries
+- scanpy: Single-cell analysis
+- pandas: Data manipulation
+- ...
+
+## Execution Order
+1. Chapter 1 must complete first (provides base data)
+2. Chapters 2 and 3 can run in parallel (independent analyses)
+3. Chapter 4 requires Chapters 2 and 3 (interaction analysis)
+
+## Assumptions and Limitations
+- {List of key assumptions}
+- {Known limitations}
+
+## Generated by
+scientific-analysis-architect v2.0.0
+Session: {session_id}
+Date: {date}
 ```
-{output_dir}/
-├── chapter1_data-atlas/
-│   ├── notebook1_1_quality-control.ipynb
-│   ├── notebook1_2_normalization.ipynb
-│   └── notebook1_3_clustering.ipynb
-├── chapter2_hypothesis-testing/
-│   ├── notebook2_1_differential-expression.ipynb
-│   └── notebook2_2_pathway-enrichment.ipynb
-└── chapter3_mechanism-exploration/
-    ├── notebook3_1_trajectory-analysis.ipynb
-    └── notebook3_2_gene-regulatory-networks.ipynb
-```
 
-### Naming Convention
+### Length Guidelines
 
-`notebook{chapter}_{number}_{slug}.ipynb`
-
-- `{chapter}`: Chapter number (1-7)
-- `{number}`: Notebook number within chapter (1-N)
-- `{slug}`: Kebab-case analysis name
+- Total length: 1-3 pages (concise, not comprehensive)
+- Chapter summaries: 2-4 sentences each (what and why, not how)
+- For projects with <= 4 chapters: omit Execution Order if linear
+- For projects with >= 6 chapters: include a dependency graph

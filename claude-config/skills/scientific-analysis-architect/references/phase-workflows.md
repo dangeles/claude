@@ -14,42 +14,32 @@ Detailed workflows for each phase of the scientific-analysis-architect skill.
 START Phase 0
     |
     v
-[1] Check nbformat availability
-    |
-    +---> If missing: ERROR - abort with install instructions
-    |
-    v
-[2] Check jupytext availability
-    |
-    +---> If missing: WARNING - proceed without Jupytext metadata
-    |
-    v
-[3] Ask user for output directory
+[1] Ask user for output directory
     |
     +---> Default: current working directory
     |
     v
-[4] Validate output directory
+[2] Validate output directory
     |
     +---> Check exists
     +---> Check writable (perform write test)
     +---> If fails: offer alternatives or ask for new path
     |
     v
-[5] Create session directory
+[3] Create session directory
     |
     +---> Primary: {output_dir}/.scientific-analysis-session/
     +---> Fallback: /tmp/scientific-analysis-architect-session-{timestamp}/
     |
     v
-[6] Initialize session-state.json
+[4] Initialize session-state.json
     |
     +---> Set status: "initialized"
     +---> Set current_phase: 0
     +---> Record config: output_directory
     |
     v
-[7] Check for existing sessions
+[5] Check for existing sessions
     |
     +---> If found and < 72 hours: offer resume
     |
@@ -59,7 +49,6 @@ END Phase 0 -> Quality Gate 0
 
 ### Quality Gate 0 Criteria
 
-- [ ] nbformat available (required)
 - [ ] Session directory created and writable
 - [ ] Output directory validated
 - [ ] session-state.json initialized
@@ -280,9 +269,9 @@ For each consultant result:
 
 ### Quality Gate 2 Criteria
 
-- [ ] All chapters have notebook plans
+- [ ] All chapters have analysis plans
 - [ ] No unresolved critical conflicts
-- [ ] Each notebook has statistical approach defined
+- [ ] Each analysis has statistical approach defined
 - [ ] Data flow is consistent (outputs match downstream inputs)
 
 ---
@@ -331,7 +320,7 @@ START Phase 3
 
     Summary:
     - {N} chapters planned
-    - {M} notebooks total
+    - {M} analyses total
     - {K} issues identified (X critical, Y major, Z minor)
 
     Critical Issues:
@@ -368,7 +357,7 @@ END Phase 3 -> Phase 4
 
 ---
 
-## Phase 4: Notebook Review
+## Phase 4: Plan Review
 
 **Duration**: ~10 minutes
 **Owner**: notebook-reviewer (Sonnet 4.5)
@@ -388,7 +377,7 @@ START Phase 4
     +---> For each chapter:
           |
           Task: notebook-reviewer
-          Prompt: "Review notebook plans for Chapter {N}:
+          Prompt: "Review analysis plans for Chapter {N}:
                    {chapter_plan_content}
 
                    Check:
@@ -410,11 +399,11 @@ START Phase 4
 [5] Present to user (USER APPROVAL GATE 2)
     |
     AskUserQuestion:
-    "Notebook Review Complete
+    "Plan Review Complete
 
     Per-Chapter Summary:
-    - Chapter 1: {N} notebooks, {K} issues
-    - Chapter 2: {N} notebooks, {K} issues
+    - Chapter 1: {N} analyses, {K} issues
+    - Chapter 2: {N} analyses, {K} issues
     ...
 
     Critical Issues:
@@ -435,11 +424,11 @@ END Phase 4 -> Phase 5
 
 ---
 
-## Phase 5: Notebook Generation
+## Phase 5: Document Generation
 
-**Duration**: ~7 minutes
-**Owner**: notebook-generator (Sonnet 4.5)
-**Timeout**: 15 minutes total
+**Duration**: ~10 minutes
+**Owner**: Orchestrator (Step 1) + notebook-generator (Step 2)
+**Timeout**: 20 minutes total
 
 ### Workflow Steps
 
@@ -447,100 +436,126 @@ END Phase 4 -> Phase 5
 START Phase 5
     |
     v
-[1] Read all approved chapter plans
+[1] Read all approved chapter plans + research-structure.md
     |
     v
-[2] Fan-out: One generator per chapter (PARALLEL)
+[2] STEP 1: Generate Master Strategy Overview (Orchestrator)
+    |
+    +---> Read research-structure.md and all chapter{N}-notebook-plans.md
+    +---> Synthesize into analysis-strategy-overview.md
+    +---> Write to {output_dir}/ and {session_dir}/
+    |
+    v
+[3] STEP 2: Fan-out: One generator per chapter (PARALLEL)
     |
     +---> For each chapter:
           |
           Task: notebook-generator
-          Prompt: "Generate .ipynb notebooks for Chapter {N}:
+          Prompt: "Generate markdown analysis documents for Chapter {N}:
                    {chapter_plan_content}
 
-                   Output to: {output_dir}/chapter{N}_{slug}/"
+                   Output to: {output_dir}/chapter{N}_{slug}/
+                   Use hybrid prose + fenced pseudocode format.
+                   Required sections: Goal, Statistical Approach,
+                   Prerequisites, Analysis Steps, Expected Outputs,
+                   Notes and Caveats."
           Timeout: 7 min per chapter
     |
     v
-[3] Fan-in: Collect generation results
+[4] Fan-in: Collect generation results
     |
     +---> Track success/failure per chapter
     |
     v
-[4] Validate generated notebooks
+[5] Validate generated analysis documents
     |
-    +---> For each .ipynb:
-          python3 -c "
-          import nbformat
-          nb = nbformat.read('{path}', as_version=4)
-          nbformat.validate(nb)
-          "
-    |
-    v
-[5] Copy to session directory (backup)
+    +---> For each .md file:
+          - Check required sections present (Goal, Statistical Approach,
+            Analysis Steps, Expected Outputs)
+          - Check at least one fenced code block exists
+          - Check balanced code fences
     |
     v
-[6] Handle partial failures
+[6] Copy to session directory (backup in analyses/)
+    |
+    v
+[7] Handle partial failures
     |
     +---> If some chapters failed:
           AskUserQuestion:
           "{M} of {N} chapters generated successfully.
           Failed: {list}
 
-          (A) Proceed with available notebooks
+          (A) Proceed with available analysis documents
           (B) Retry failed chapters
           (C) Abort"
     |
     v
-[7] Update session state
+[8] Update session state
     |
-    +---> Record outputs.notebooks
+    +---> Record outputs.analyses and outputs.strategy_overview
     |
     v
 END Phase 5 -> Quality Gate 5
 ```
 
-### Notebook Generation Details
+### Analysis Document Generation Details
+
+Each analysis document is generated as a markdown file with this structure:
+
+```markdown
+# Analysis Title
+
+<!-- Generated by: scientific-analysis-architect v2.0.0 -->
+<!-- Session: {session_id} -->
+<!-- Chapter: {N}, Analysis: {M} -->
+
+## Goal
+Prose description of what this analysis achieves.
+
+## Statistical Approach
+Method, justification, assumptions, and corrections.
+
+## Prerequisites
+- Input data and format
+- Required libraries
+- Upstream dependencies
+
+## Analysis Steps
+
+### Step 1: [Name]
+Prose explanation of what this step does and why.
 
 ```python
-# Generate valid .ipynb structure
-import nbformat
-
-notebook = nbformat.v4.new_notebook()
-
-# Add metadata
-notebook.metadata['kernelspec'] = {
-    'display_name': 'Python 3',
-    'language': 'python',
-    'name': 'python3'
-}
-
-# Add title cell
-notebook.cells.append(nbformat.v4.new_markdown_cell(
-    f"# {notebook_title}\n\n## Goal\n{analysis_goal}"
-))
-
-# Add code cells with pseudocode
-for cell in pseudocode_cells:
-    code = f"# {cell['type'].upper()}\n"
-    code += f"# {cell['pseudocode']}\n"
-    code += "# TODO: Implement\n"
-    notebook.cells.append(nbformat.v4.new_code_cell(code))
-
-# Validate before saving
-nbformat.validate(notebook)
-
-# Write to file
-with open(notebook_path, 'w') as f:
-    nbformat.write(notebook, f)
+# Pseudocode for step 1
+# TODO: Implement
 ```
+
+### Step 2: [Name]
+...
+
+## Expected Outputs
+- Output files/objects, format, characteristics
+
+## Notes and Caveats
+- Assumptions, limitations, alternatives
+```
+
+**Code Block Formatting Rules**:
+- Use triple backticks with `python` language identifier
+- Never nest fenced code blocks
+- If pseudocode contains triple-quoted strings, use single-quoted triple quotes in comments
+- For multi-line string literals, use comment notation
 
 ### Quality Gate 5 Criteria
 
-- [ ] All notebooks created (or partial with user approval)
-- [ ] All notebooks pass nbformat validation
-- [ ] Backup copies exist in session directory
-- [ ] File naming follows convention
+- [ ] All analysis documents created (or partial with user approval)
+- [ ] Each document has required sections (Goal, Statistical Approach, Analysis Steps, Expected Outputs)
+- [ ] Each document has at least one fenced code block
+- [ ] Balanced code fences in all documents
+- [ ] Master strategy overview exists with required sections
+- [ ] Backup copies exist in session directory (analyses/)
+- [ ] File naming follows convention (analysis{N}_{M}_{slug}.md)
 
 ---
 
@@ -556,7 +571,7 @@ with open(notebook_path, 'w') as f:
 START Phase 6
     |
     v
-[1] Read all generated notebooks
+[1] Read all generated analysis documents
     |
     v
 [2] Analyze for statistical concerns
@@ -614,11 +629,20 @@ START Phase 6
 
     Apply all accepted corrections now? [yes/no]"
     |
-    +---> If yes: Regenerate affected notebooks
+    +---> If yes: Apply corrections to affected analysis documents
     +---> If no: Save manifest for later
     |
     v
-[9] Update session state
+[9] Post-Interview: If corrections applied, refresh overview
+    |
+    +---> Read all corrected analysis documents
+    +---> Regenerate analysis-strategy-overview.md
+    +---> Update Consolidated Methods table
+    +---> Update affected Chapter Summaries
+    +---> Validate overview against Gate 5 overview criteria
+    |
+    v
+[10] Update session state
     |
     +---> Set status: "completed"
     |
@@ -632,3 +656,4 @@ END Phase 6 -> Workflow Complete
 - [ ] User approved correction application decision
 - [ ] Statistical review report generated
 - [ ] Corrections manifest saved
+- [ ] If corrections applied: overview refreshed and validated

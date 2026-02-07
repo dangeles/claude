@@ -73,9 +73,10 @@ Line counts:
 
 ## Related Commits
 
-- (pending): feat(scientific-analysis-architect): Apply anti-resistance pattern
-- (pending): feat(programming-pm): Apply anti-resistance pattern
-- (pending): feat(lit-pm): Apply anti-resistance pattern (Stage-adapted)
+- 27d90c0: feat(scientific-analysis-architect): Apply anti-resistance pattern
+- 3778b4a: feat(programming-pm): Apply anti-resistance pattern
+- fb53b0b: feat(lit-pm): Apply anti-resistance pattern (Stage-adapted)
+- 7268a50: docs(planning): Add anti-resistance pattern application planning entry
 
 ## Next Steps
 

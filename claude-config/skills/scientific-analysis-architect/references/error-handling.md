@@ -12,8 +12,8 @@ Comprehensive error handling specification for the scientific-analysis-architect
 | 1 | 15 min | Birds-eye planning |
 | 2 | 20 min | Subsection planning (includes consultant fan-out) |
 | 3 | 10 min | Structure review |
-| 4 | 15 min | Notebook review (parallel) |
-| 5 | 20 min | Notebook generation (parallel) |
+| 4 | 15 min | Plan review (parallel) |
+| 5 | 20 min | Document generation (parallel) |
 | 6 | 30 min | Statistical fact-checking (interview mode) |
 
 ### Per-Agent Timeouts
@@ -136,12 +136,12 @@ Comprehensive error handling specification for the scientific-analysis-architect
 **For mathematician-consultant (Optional)**:
 1. Retry once
 2. If retry fails, proceed with warning
-3. Log gap in notebook plans
+3. Log gap in analysis plans
 
 **For programmer-consultant (Optional)**:
 1. Retry once
 2. If retry fails, proceed with warning
-3. Log gap in notebook plans
+3. Log gap in analysis plans
 
 **Compensation for analysis-planner failure**:
 1. Save partial chapter plans
@@ -160,7 +160,7 @@ Comprehensive error handling specification for the scientific-analysis-architect
 - Proceed to Phase 4 with "unreviewed" flag
 - Structure approval gate shows warning
 
-### Phase 4 Failure: Notebook Review
+### Phase 4 Failure: Plan Review
 
 **Trigger**: notebook-reviewer timeout or failure
 
@@ -173,18 +173,18 @@ Comprehensive error handling specification for the scientific-analysis-architect
 - Per-chapter retry option
 - Proceed with partial reviews
 
-### Phase 5 Failure: Notebook Generation
+### Phase 5 Failure: Document Generation
 
 **Trigger**: notebook-generator timeout or failure
 
 **Compensation**:
-1. Preserve successfully generated notebooks
+1. Preserve successfully generated analysis documents
 2. Mark failed chapters in session state
 3. Offer per-chapter regeneration
 
 **Recovery**:
 - Retry failed chapters only
-- Manual notebook creation instructions
+- Manual document creation instructions
 - Proceed to Phase 6 with partial (user choice)
 
 ### Phase 6 Failure: Statistical Fact-Checking
@@ -380,12 +380,12 @@ When degraded workflow completes, show summary:
 Workflow Complete (with degradation)
 
 Warnings:
-- Chapter 3 notebooks generated without mathematician input
+- Chapter 3 analysis documents generated without mathematician input
 - Chapter 4 not statistically reviewed
 
 Generated outputs:
 - 3 of 4 chapters complete
-- 8 of 11 planned notebooks
+- 8 of 11 planned analysis documents
 
 Recommendation: Manually review Chapter 3 algorithms and Chapter 4 statistics.
 ```

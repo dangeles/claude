@@ -33,7 +33,7 @@ Statistical Review Complete
 No statistical concerns identified.
 
 Justification:
-- {N} notebooks reviewed
+- {N} analysis documents reviewed
 - {M} statistical methods examined
 - All tests match data types correctly
 - Multiple testing corrections present where needed
@@ -81,57 +81,54 @@ Enter choice [A/B/C/D/E]:
 ```
 Statistical Concern {current} of {total}
 
-Notebook: {notebook_path}
-Cell: {cell_number}
+Document: {document_path}
+Section: {section_path}
+Code Block: {code_block_index}
 Severity: {Critical|Standard|Minor}
 
 Issue: {issue_description}
 
-Current pseudocode:
-```
-{current_code}
-```
+Current:
+{current_content}
 
 Concern: {detailed_explanation}
 
 Recommendation:
-```
 {recommended_fix}
-```
 
 Accept? [yes/no/skip/explain]
 ```
+
+Section paths use hierarchical notation to disambiguate duplicate headings:
+`"Analysis Steps > Step 4: Differential Expression"`
 
 ### Example Concern
 
 ```
 Statistical Concern 1 of 7
 
-Notebook: chapter1_data-atlas/notebook1_2_differential-expression.ipynb
-Cell: 5
+Document: chapter1_data-atlas/analysis1_2_differential-expression.md
+Section: Analysis Steps > Step 4: Differential Expression
+Code Block: 0
 Severity: Critical
 
 Issue: Multiple testing correction missing
 
-Current pseudocode:
-```python
+Current:
 # Run t-test for each gene
 # p_values = [ttest(group1, group2) for gene in genes]
 # significant = p_values < 0.05
-```
 
 Concern: Testing 20,000+ genes without correction will produce
 ~1,000 false positives at alpha=0.05. This could lead to
 incorrect biological conclusions.
 
 Recommendation:
-```python
 # Run t-test for each gene
 # p_values = [ttest(group1, group2) for gene in genes]
 # Apply Benjamini-Hochberg correction
 # adjusted_p = multipletests(p_values, method='fdr_bh')[1]
 # significant = adjusted_p < 0.05
-```
 
 Accept? [yes/no/skip/explain]
 ```
@@ -337,11 +334,11 @@ Summary:
 - {Z} corrections skipped
 
 Accepted corrections:
-1. [{severity}] {brief_description} (notebook {path})
-2. [{severity}] {brief_description} (notebook {path})
+1. [{severity}] {brief_description} (document {path})
+2. [{severity}] {brief_description} (document {path})
 ...
 
-Notebooks affected: {list}
+Documents affected: {list}
 
 Apply all accepted corrections now? [yes/no]
 ```
@@ -350,44 +347,42 @@ Apply all accepted corrections now? [yes/no]
 
 ```python
 def apply_corrections(session_state: dict):
-    """Apply accepted corrections to notebooks."""
+    """Apply accepted corrections to analysis documents."""
 
     accepted = session_state["corrections"]["accepted"]
 
-    # Group by notebook
-    by_notebook = group_corrections_by_notebook(accepted)
+    # Group by document
+    by_document = group_corrections_by_document(accepted)
 
-    for notebook_path, corrections in by_notebook.items():
-        print(f"Updating {notebook_path}...")
+    for doc_path, corrections in by_document.items():
+        print(f"Updating {doc_path}...")
 
-        # Load notebook
-        with open(notebook_path) as f:
-            nb = nbformat.read(f, as_version=4)
+        with open(doc_path) as f:
+            content = f.read()
 
-        # Apply each correction
         for correction in corrections:
-            cell_index = correction["cell_number"]
-            new_code = correction["recommendation"]
+            section_path = correction["section_path"]
+            code_block_index = correction.get("code_block_index")
+            current_content = correction["current_content"]
+            new_content = correction["recommendation"]
 
-            # Update cell
-            nb.cells[cell_index].source = new_code
+            # Locate section by hierarchical path
+            # Verify current_content matches (guard against stale references)
+            if current_content in content:
+                content = content.replace(current_content, new_content, 1)
+                # Prepend correction comment
+                content = content.replace(
+                    new_content,
+                    f"<!-- CORRECTED: {correction['issue']} -->\n{new_content}",
+                    1
+                )
 
-            # Add correction comment
-            nb.cells[cell_index].source = (
-                f"# CORRECTED: {correction['issue']}\n" +
-                nb.cells[cell_index].source
-            )
-
-        # Validate
-        nbformat.validate(nb)
-
-        # Save
-        with open(notebook_path, "w") as f:
-            nbformat.write(nb, f)
+        with open(doc_path, "w") as f:
+            f.write(content)
 
         print(f"  Applied {len(corrections)} corrections")
 
-    print(f"\nTotal: {len(accepted)} corrections applied to {len(by_notebook)} notebooks")
+    print(f"\nTotal: {len(accepted)} corrections applied to {len(by_document)} documents")
 ```
 
 ### Correction Manifest
@@ -408,8 +403,9 @@ Save all decisions to `corrections-manifest.json`:
     "accepted": [
       {
         "id": 1,
-        "notebook": "chapter1/notebook1_2.ipynb",
-        "cell": 5,
+        "document": "chapter1/analysis1_2_differential-expression.md",
+        "section_path": "Analysis Steps > Step 4: Differential Expression",
+        "code_block_index": 0,
         "severity": "critical",
         "issue": "Multiple testing correction missing",
         "recommendation": "# Apply BH correction...",
@@ -420,8 +416,9 @@ Save all decisions to `corrections-manifest.json`:
     "rejected": [
       {
         "id": 3,
-        "notebook": "chapter2/notebook2_1.ipynb",
-        "cell": 3,
+        "document": "chapter2/analysis2_1_differential-expression.md",
+        "section_path": "Analysis Steps > Step 3: Run DE",
+        "code_block_index": 0,
         "severity": "standard",
         "issue": "Consider Mann-Whitney instead of t-test",
         "rejection_reason": "Data confirmed to be normally distributed"
@@ -430,8 +427,9 @@ Save all decisions to `corrections-manifest.json`:
     "skipped": [
       {
         "id": 7,
-        "notebook": "chapter3/notebook3_2.ipynb",
-        "cell": 8,
+        "document": "chapter3/analysis3_2_gene-regulatory-networks.md",
+        "section_path": "Analysis Steps > Step 5: Network Inference",
+        "code_block_index": 0,
         "severity": "minor",
         "issue": "Effect size not reported"
       }

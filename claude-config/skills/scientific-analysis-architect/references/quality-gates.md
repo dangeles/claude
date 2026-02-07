@@ -11,7 +11,6 @@ Definitions and criteria for all quality gates in the scientific-analysis-archit
 **Type**: Automated
 
 **Pass Criteria**:
-- [ ] nbformat Python package available
 - [ ] Session directory created successfully
 - [ ] Session directory is writable (test file created and deleted)
 - [ ] Output directory exists and is writable
@@ -21,12 +20,6 @@ Definitions and criteria for all quality gates in the scientific-analysis-archit
 ```python
 def validate_gate_0(session_state: dict) -> bool:
     """Validate initialization gate."""
-
-    # Check nbformat
-    try:
-        import nbformat
-    except ImportError:
-        return False, "nbformat not installed"
 
     # Check session directory
     session_dir = session_state["config"]["session_directory"]
@@ -127,12 +120,12 @@ def validate_gate_1(session_dir: str) -> tuple:
 **Pass Criteria**:
 - [ ] All chapter{N}-notebook-plans.md files exist
 - [ ] Each chapter plan has:
-  - [ ] At least 1 notebook defined
-  - [ ] Statistical approach for each notebook
+  - [ ] At least 1 analysis defined
+  - [ ] Statistical approach for each analysis
   - [ ] No unresolved critical conflicts
 - [ ] Data flow is consistent:
-  - [ ] Outputs defined for each notebook
-  - [ ] Inputs available from upstream notebooks or user data
+  - [ ] Outputs defined for each analysis
+  - [ ] Inputs available from upstream analyses or user data
 
 **Validation Code**:
 ```python
@@ -149,14 +142,14 @@ def validate_gate_2(session_dir: str, num_chapters: int) -> tuple:
         with open(plan_path) as f:
             plan = parse_chapter_plan(f.read())
 
-        # At least one notebook
-        if not plan.get("notebooks"):
-            return False, f"Chapter {i} has no notebooks"
+        # At least one analysis
+        if not plan.get("analyses"):
+            return False, f"Chapter {i} has no analyses"
 
         # Statistical approach required
-        for nb in plan["notebooks"]:
-            if not nb.get("statistical_approach"):
-                return False, f"Chapter {i} notebook {nb['number']} missing statistical approach"
+        for analysis in plan["analyses"]:
+            if not analysis.get("statistical_approach"):
+                return False, f"Chapter {i} analysis {analysis['number']} missing statistical approach"
 
         # Check for unresolved conflicts
         if plan.get("unresolved_conflicts"):
@@ -167,18 +160,18 @@ def validate_gate_2(session_dir: str, num_chapters: int) -> tuple:
     # Validate data flow
     available_outputs = set(["user_data"])
     for plan in plans:
-        for nb in plan["notebooks"]:
+        for analysis in plan["analyses"]:
             # Check inputs available
-            for input_req in nb.get("data_requirements", {}).get("inputs", []):
+            for input_req in analysis.get("data_requirements", {}).get("inputs", []):
                 if input_req not in available_outputs:
                     return False, f"Input not available: {input_req}"
 
             # Add outputs to available
-            for output in nb.get("data_requirements", {}).get("outputs", []):
+            for output in analysis.get("data_requirements", {}).get("outputs", []):
                 available_outputs.add(output)
 
-    total_notebooks = sum(len(p["notebooks"]) for p in plans)
-    return True, f"Gate 2 passed: {total_notebooks} notebooks across {num_chapters} chapters"
+    total_analyses = sum(len(p["analyses"]) for p in plans)
+    return True, f"Gate 2 passed: {total_analyses} analyses across {num_chapters} chapters"
 ```
 
 **Fail Action**: Return to Phase 2 with specific feedback
@@ -197,7 +190,7 @@ Structure Review Complete
 
 Summary:
 - {N} chapters planned
-- {M} notebooks total
+- {M} analyses total
 - {K} issues identified (X critical, Y major, Z minor)
 
 Critical Issues:
@@ -230,11 +223,11 @@ Approve / Request changes / Reject? [A/c/r]
 
 **Presentation**:
 ```
-Notebook Review Complete
+Plan Review Complete
 
 Per-Chapter Summary:
-- Chapter 1: {N} notebooks, {K} issues
-- Chapter 2: {N} notebooks, {K} issues
+- Chapter 1: {N} analyses, {K} issues
+- Chapter 2: {N} analyses, {K} issues
 ...
 
 Critical Issues:
@@ -253,58 +246,109 @@ Approve / Request changes / Reject? [A/c/r]
 
 ---
 
-### Quality Gate 5: Notebook Validation
+### Quality Gate 5: Analysis Document Validation
 
 **Phase**: 5
-**Owner**: notebook-generator
+**Owner**: Orchestrator + notebook-generator
 **Type**: Automated
 
 **Pass Criteria**:
-- [ ] All expected notebooks created
-- [ ] Each notebook passes nbformat validation
-- [ ] Each notebook has required metadata
-- [ ] Backup copies exist in session directory
+- [ ] All expected analysis documents created
+- [ ] Each document has required sections (Goal, Statistical Approach, Analysis Steps, Expected Outputs)
+- [ ] Each document has at least one fenced code block
+- [ ] Balanced code fences in all documents
+- [ ] Master strategy overview exists with required sections
+- [ ] Backup copies exist in session directory (analyses/)
 
 **Validation Code**:
 ```python
+import os
+import re
+
+REQUIRED_SECTIONS = {
+    "goal": [r'^##\s+(Goal|Objective|Goals)\b'],
+    "statistical_approach": [r'^##\s+(Statistical Approach|Statistical Method|Methods)\b'],
+    "analysis_steps": [r'^##\s+(Analysis Steps|Steps|Workflow Steps)\b'],
+    "expected_outputs": [r'^##\s+(Expected Outputs|Outputs|Results)\b']
+}
+
+def validate_analysis_document(path: str) -> tuple:
+    """Validate markdown analysis document structure."""
+    if not os.path.exists(path):
+        return False, f"Document not found: {path}"
+
+    with open(path) as f:
+        content = f.read()
+
+    if len(content.strip()) == 0:
+        return False, f"Empty file: {path}"
+
+    # Check required sections
+    missing = []
+    for section_name, patterns in REQUIRED_SECTIONS.items():
+        found = any(
+            re.search(p, content, re.MULTILINE | re.IGNORECASE)
+            for p in patterns
+        )
+        if not found:
+            missing.append(section_name)
+
+    if missing:
+        return False, f"Missing sections in {path}: {missing}"
+
+    # Check for at least one fenced code block
+    if '```' not in content:
+        return False, f"No code blocks found in {path}"
+
+    # Check balanced fences
+    fence_count = content.count('```')
+    if fence_count % 2 != 0:
+        return False, f"Unbalanced code fences in {path} ({fence_count} backtick markers)"
+
+    return True, f"Valid: {path}"
+
 def validate_gate_5(session_state: dict) -> tuple:
-    """Validate notebook generation gate."""
-
-    import nbformat
-
-    expected = session_state["outputs"].get("notebooks", [])
+    """Validate markdown analysis document generation (Gate 5)."""
+    expected = session_state["outputs"].get("analyses", [])
     if not expected:
-        return False, "No notebooks generated"
+        return False, "No analysis documents generated"
 
-    valid_count = 0
-    for notebook_path in expected:
-        # File exists
-        if not os.path.exists(notebook_path):
-            return False, f"Notebook not found: {notebook_path}"
+    for doc_path in expected:
+        valid, msg = validate_analysis_document(doc_path)
+        if not valid:
+            return False, msg
 
-        # nbformat validation
-        try:
-            with open(notebook_path) as f:
-                nb = nbformat.read(f, as_version=4)
-            nbformat.validate(nb)
-        except Exception as e:
-            return False, f"Invalid notebook {notebook_path}: {e}"
+    # Check master overview
+    overview_path = os.path.join(
+        session_state["config"]["output_directory"],
+        "analysis-strategy-overview.md"
+    )
+    if not os.path.exists(overview_path):
+        return False, "Master strategy overview not found"
 
-        # Metadata check
-        if "scientific_analysis_architect" not in nb.metadata:
-            return False, f"Missing provenance metadata: {notebook_path}"
+    # Check overview required sections
+    OVERVIEW_SECTIONS = [
+        r'^##\s+Project Objective',
+        r'^##\s+Strategy at a Glance',
+        r'^##\s+Chapter Summaries',
+        r'^##\s+Data Flow',
+        r'^##\s+Execution Order'
+    ]
+    with open(overview_path) as f:
+        overview_content = f.read()
+    for pattern in OVERVIEW_SECTIONS:
+        if not re.search(pattern, overview_content, re.MULTILINE):
+            return False, f"Master overview missing section: {pattern}"
 
-        valid_count += 1
-
-    # Check backups
+    # Check backup directory
     backup_dir = os.path.join(
         session_state["config"]["session_directory"],
-        "notebooks"
+        "analyses"
     )
     if not os.path.exists(backup_dir):
         return False, "Backup directory not found"
 
-    return True, f"Gate 5 passed: {valid_count} valid notebooks"
+    return True, f"Gate 5 passed: {len(expected)} valid analysis documents + master overview"
 ```
 
 **Fail Action**:
@@ -322,7 +366,8 @@ def validate_gate_5(session_state: dict) -> tuple:
 **Pass Criteria**:
 - [ ] All concerns reviewed (accepted, rejected, or skipped)
 - [ ] User confirmed correction application decision
-- [ ] If corrections applied: notebooks re-validated
+- [ ] If corrections applied: analysis documents re-validated
+- [ ] If corrections applied: master overview refreshed and validated
 
 **Validation Code**:
 ```python
@@ -342,15 +387,17 @@ def validate_gate_6(session_state: dict) -> tuple:
     if total < expected:
         return False, f"Not all concerns reviewed: {total}/{expected}"
 
-    # If corrections applied, verify notebooks
+    # If corrections applied, verify analysis documents
     if corrections.get("applied"):
-        for notebook_path in session_state["outputs"]["notebooks"]:
-            try:
-                with open(notebook_path) as f:
-                    nb = nbformat.read(f, as_version=4)
-                nbformat.validate(nb)
-            except Exception as e:
-                return False, f"Corrected notebook invalid: {notebook_path}: {e}"
+        for doc_path in session_state["outputs"]["analyses"]:
+            valid, msg = validate_analysis_document(doc_path)
+            if not valid:
+                return False, f"Corrected document invalid: {msg}"
+
+        # Verify overview was refreshed
+        overview_path = session_state["outputs"].get("strategy_overview")
+        if overview_path and not os.path.exists(overview_path):
+            return False, "Master overview not refreshed after corrections"
 
     return True, "Gate 6 passed: Statistical review complete"
 ```
@@ -379,9 +426,9 @@ These thresholds cannot be bypassed:
 |-----------|-------|-----------|
 | Minimum chapters | 3 | Ensures meaningful analysis structure |
 | Maximum chapters | 7 | Prevents scope creep |
-| Notebooks per chapter | >= 1 | Each chapter must produce output |
+| Analysis documents per chapter | >= 1 | Each chapter must produce output |
 | Statistical approach | Required | Core purpose of skill |
-| nbformat validation | Required | Ensures usable output |
+| Markdown structure validation | Required | Ensures usable output |
 
 ## Quality Gate Flow Diagram
 

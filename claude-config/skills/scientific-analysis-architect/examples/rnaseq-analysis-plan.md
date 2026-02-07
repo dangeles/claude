@@ -18,13 +18,9 @@ understand aging effects.
 
 **Duration**: 1 minute
 
-### Dependency Check
+### Session Setup
 
 ```
-Checking dependencies...
-  nbformat: OK
-  jupytext: OK (optional features enabled)
-
 Creating session directory...
   Primary location: /Users/researcher/projects/aging-brain/.scientific-analysis-session/
   Session ID: session-20260204-143022-12345
@@ -246,12 +242,12 @@ Remove technical variation while preserving biological signal.
 
 ### Chapters 2-4
 
-Similar consultant fan-out and notebook plan generation for remaining chapters.
+Similar consultant fan-out and analysis plan generation for remaining chapters.
 
 ### Quality Gate 2: PASSED
 
 - All 4 chapter plans generated
-- Each notebook has statistical approach
+- Each analysis has statistical approach
 - No unresolved conflicts
 
 ---
@@ -267,7 +263,7 @@ Similar consultant fan-out and notebook plan generation for remaining chapters.
 
 ## Summary
 - Chapters: 4
-- Total notebooks: 11
+- Total analyses: 11
 - Issues identified: 3 (0 critical, 2 major, 1 minor)
 
 ## Issues
@@ -302,7 +298,7 @@ Structure Review Complete
 
 Summary:
 - 4 chapters planned
-- 11 notebooks total
+- 11 analyses total
 - 3 issues identified (0 critical, 2 major, 1 minor)
 
 Major Issues:
@@ -315,12 +311,12 @@ Approve / Request changes / Reject? [A/c/r]
 **User enters**: A (Approve)
 
 ```
-Structure approved. Proceeding to notebook review.
+Structure approved. Proceeding to plan review.
 ```
 
 ---
 
-## Phase 4: Notebook Review
+## Phase 4: Plan Review
 
 **Duration**: 8 minutes (parallel)
 
@@ -356,10 +352,10 @@ Issues:
 Notebook Review Complete
 
 Per-Chapter Summary:
-- Chapter 1: 4 notebooks, 2 issues
-- Chapter 2: 3 notebooks, 1 issue
-- Chapter 3: 2 notebooks, 1 issue
-- Chapter 4: 2 notebooks, 0 issues
+- Chapter 1: 4 analyses, 2 issues
+- Chapter 2: 3 analyses, 1 issue
+- Chapter 3: 2 analyses, 1 issue
+- Chapter 4: 2 analyses, 0 issues
 
 Critical Issues: None
 
@@ -370,36 +366,45 @@ Approve / Request changes / Reject? [A/c/r]
 
 ---
 
-## Phase 5: Notebook Generation
+## Phase 5: Document Generation
 
-**Duration**: 6 minutes (parallel)
+**Duration**: 8 minutes (Step 1: overview + Step 2: parallel generation)
 
-### Generated Notebooks
+### Step 1: Master Strategy Overview
 
 ```
-Generating notebooks...
+Generating master strategy overview...
+  Reading research-structure.md and 4 chapter plans...
+  Writing analysis-strategy-overview.md ... OK
+```
+
+### Step 2: Generated Analysis Documents
+
+```
+Generating analysis documents...
 
 Chapter 1:
-  notebook1_1_quality-control.ipynb ... OK
-  notebook1_2_normalization.ipynb ... OK
-  notebook1_3_batch-correction.ipynb ... OK
-  notebook1_4_clustering.ipynb ... OK
+  analysis1_1_quality-control.md ... OK
+  analysis1_2_normalization.md ... OK
+  analysis1_3_batch-correction.md ... OK
+  analysis1_4_clustering.md ... OK
 
 Chapter 2:
-  notebook2_1_de-wt-aging.ipynb ... OK
-  notebook2_2_gsea-wt.ipynb ... OK
-  notebook2_3_composition-wt.ipynb ... OK
+  analysis2_1_de-wt-aging.md ... OK
+  analysis2_2_gsea-wt.md ... OK
+  analysis2_3_composition-wt.md ... OK
 
 Chapter 3:
-  notebook3_1_de-mut-aging.ipynb ... OK
-  notebook3_2_gsea-mut.ipynb ... OK
+  analysis3_1_de-mut-aging.md ... OK
+  analysis3_2_gsea-mut.md ... OK
 
 Chapter 4:
-  notebook4_1_interaction-analysis.ipynb ... OK
-  notebook4_2_pathway-interaction.ipynb ... OK
+  analysis4_1_interaction-analysis.md ... OK
+  analysis4_2_pathway-interaction.md ... OK
 
-Validating notebooks...
-  All 11 notebooks pass nbformat validation.
+Validating analysis documents...
+  All 11 documents have required sections and valid structure.
+  Master strategy overview validated.
 
 Copying to session directory...
   Backup complete.
@@ -407,8 +412,9 @@ Copying to session directory...
 
 ### Quality Gate 5: PASSED
 
-- 11/11 notebooks generated
-- All pass nbformat validation
+- 11/11 analysis documents generated
+- All have required sections (Goal, Statistical Approach, Analysis Steps, Expected Outputs)
+- Master strategy overview present with required sections
 - Backups created
 
 ---
@@ -424,8 +430,9 @@ Copying to session directory...
 ```
 Statistical Concern 1 of 4
 
-Notebook: chapter2_aging-wt/notebook2_1_de-wt-aging.ipynb
-Cell: 5
+Document: chapter2_aging-wt/analysis2_1_de-wt-aging.md
+Section: Analysis Steps > Step 3: Run Differential Expression
+Code Block: 0
 Severity: Critical
 
 Issue: Multiple testing correction method not specified
@@ -470,8 +477,9 @@ Correction accepted. (3 remaining)
 ```
 Statistical Concern 2 of 4
 
-Notebook: chapter4_interaction/notebook4_1_interaction-analysis.ipynb
-Cell: 3
+Document: chapter4_interaction/analysis4_1_interaction-analysis.md
+Section: Analysis Steps > Step 2: Interaction Model
+Code Block: 0
 Severity: Critical
 
 Issue: Interaction test methodology unclear
@@ -562,10 +570,10 @@ Summary:
 - 0 corrections skipped
 
 Accepted corrections:
-1. [Critical] Explicit multiple testing in DE (notebook 2.1)
-2. [Critical] Pseudobulk for interaction test (notebook 4.1)
-3. [Standard] Add effect size filter to DE (notebook 2.1)
-4. [Standard] Clarify clustering resolution selection (notebook 1.4)
+1. [Critical] Explicit multiple testing in DE (analysis 2.1)
+2. [Critical] Pseudobulk for interaction test (analysis 4.1)
+3. [Standard] Add effect size filter to DE (analysis 2.1)
+4. [Standard] Clarify clustering resolution selection (analysis 1.4)
 
 Apply all accepted corrections now? [yes/no]
 ```
@@ -574,12 +582,15 @@ Apply all accepted corrections now? [yes/no]
 
 ```
 Applying corrections...
-  notebook2_1_de-wt-aging.ipynb ... updated
-  notebook4_1_interaction-analysis.ipynb ... updated
-  notebook1_4_clustering.ipynb ... updated
+  analysis2_1_de-wt-aging.md ... updated
+  analysis4_1_interaction-analysis.md ... updated
+  analysis1_4_clustering.md ... updated
 
-Validating updated notebooks...
-  All notebooks pass validation.
+Refreshing master strategy overview...
+  analysis-strategy-overview.md ... updated
+
+Validating updated documents...
+  All analysis documents pass validation.
 
 Statistical review complete.
 ```
@@ -598,28 +609,30 @@ Duration: 52 minutes
 
 Generated Files:
   /Users/researcher/projects/aging-brain/
-  ├── chapter1_data-atlas/
-  │   ├── notebook1_1_quality-control.ipynb
-  │   ├── notebook1_2_normalization.ipynb
-  │   ├── notebook1_3_batch-correction.ipynb
-  │   └── notebook1_4_clustering.ipynb
-  ├── chapter2_aging-wt/
-  │   ├── notebook2_1_de-wt-aging.ipynb (corrected)
-  │   ├── notebook2_2_gsea-wt.ipynb
-  │   └── notebook2_3_composition-wt.ipynb
-  ├── chapter3_aging-mut/
-  │   ├── notebook3_1_de-mut-aging.ipynb
-  │   └── notebook3_2_gsea-mut.ipynb
-  └── chapter4_interaction/
-      ├── notebook4_1_interaction-analysis.ipynb (corrected)
-      └── notebook4_2_pathway-interaction.ipynb
+  +-- analysis-strategy-overview.md
+  +-- chapter1_data-atlas/
+  |   +-- analysis1_1_quality-control.md
+  |   +-- analysis1_2_normalization.md
+  |   +-- analysis1_3_batch-correction.md
+  |   +-- analysis1_4_clustering.md
+  +-- chapter2_aging-wt/
+  |   +-- analysis2_1_de-wt-aging.md (corrected)
+  |   +-- analysis2_2_gsea-wt.md
+  |   +-- analysis2_3_composition-wt.md
+  +-- chapter3_aging-mut/
+  |   +-- analysis3_1_de-mut-aging.md
+  |   +-- analysis3_2_gsea-mut.md
+  +-- chapter4_interaction/
+      +-- analysis4_1_interaction-analysis.md (corrected)
+      +-- analysis4_2_pathway-interaction.md
 
 Session artifacts saved to:
   .scientific-analysis-session/
 
 Next steps:
-1. Review generated notebooks
-2. Implement pseudocode in each notebook
-3. Run analyses in order (Chapter 1 -> 2 -> 3 -> 4)
-4. Consider using programming-pm for implementation assistance
+1. Review analysis-strategy-overview.md for the full plan
+2. Review individual analysis documents
+3. Implement pseudocode from each .md file
+4. Run analyses in order (Chapter 1 -> 2 -> 3 -> 4)
+5. Consider using programming-pm for implementation assistance (provide .md files as input)
 ```
