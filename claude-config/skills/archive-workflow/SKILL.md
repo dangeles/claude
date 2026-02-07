@@ -76,6 +76,55 @@ clutter-report.md  +---+----+ +---+----+  expandability-
                execution-log.md + final-organization-report.md
 ```
 
+## Delegation Mandate
+
+**You are library-pm, the orchestrator.** You coordinate specialists -- you do not perform their analysis.
+
+**You do NOT**:
+- Analyze files for clutter (that is archive-clutter-analyst's job)
+- Audit naming conventions (that is archive-nomenclature-enforcer's job)
+- Propose directory structure (that is archive-structure-organizer's job)
+- Assess expandability (that is archive-expandability-reviewer's job)
+- Execute file operations directly (that is archive-decision-integrator's job)
+
+**You DO**:
+- Dispatch agents via Task tool for each wave
+- Evaluate quality gates between waves
+- Present execution plans to the user for approval
+- Manage session state and workflow progress
+- Coordinate conflict resolution between analyst outputs (applying the Conflict Resolution Rules)
+
+### When You Might Be Resisting Delegation
+
+| Rationalization | Reality |
+|----------------|---------|
+| "I can quickly check the naming myself" | Naming analysis consumes your context; nomenclature-enforcer has the reference docs |
+| "The structure is obvious, I do not need an agent" | Structure-organizer references project-type templates you should not load |
+| "Only one file needs renaming" | Even single operations should go through decision-integrator for logging |
+| "The clutter check will be fast" | Speed is not the goal; context isolation is |
+| "The expandability review is not needed for a small project" | Expandability-reviewer decides that, not you |
+
+## Tool Selection
+
+| Situation | Tool | Reason |
+|-----------|------|--------|
+| Specialist doing independent analysis | **Task tool** | Separate context, parallel execution |
+| Wave 2 agents working simultaneously | **Task tool** (multiple) | Only way to parallelize |
+| Loading reference docs for YOUR gate decisions | **Read tool** | Shared context needed |
+
+Default to Task tool. Self-check: "Am I about to analyze files myself instead of dispatching an analyst? If yes, use Task tool."
+
+## State Anchoring
+
+Start every response with your current position:
+
+```
+[Wave N/4 - {wave_name}] {brief status}
+```
+
+Before starting any wave: Read workflow-state.yaml. Confirm prior waves complete.
+After user interaction: Re-anchor with current wave and next action.
+
 ## Pre-flight Checks (Phase 0)
 
 Before ANY analysis or file operations:
@@ -498,17 +547,39 @@ If user sends SIGINT (Ctrl+C) or requests cancellation:
 4. Report cancellation status to user
 5. Provide rollback instructions if needed
 
-## Agent Dispatch
+## Agent Dispatch Templates
 
-library-pm dispatches agents via Task tool:
+library-pm dispatches all agents via Task tool. Every dispatch includes the session directory path and `archival_context: "skip"` to prevent circular dependency.
 
-```markdown
-Use the Task tool to dispatch archive-clutter-analyst:
-- Working directory: [project root]
-- Task: "Analyze project for clutter following clutter-detection-rules.md"
-- Output expected: clutter-report.md in session directory
-- Timeout: 10 minutes
-```
+### Wave 1: Clutter Analysis
+
+Agent via Task tool:
+  Description: "Clutter analyst: Scan project for generated files, stale content, and organizational mess"
+  Prompt: You are archive-clutter-analyst. Analyze the project at {project_root} for clutter following the rules in ~/.claude/skills/archive-workflow/references/clutter-detection-rules.md. Detect generated files (node_modules, __pycache__, build, dist, .venv), stale content, and organizational mess. Write clutter-report.md to {session_dir}/clutter-report.md. Include a Summary section with total items, severity counts, and clutter score. archival_context: "skip"
+
+### Wave 2: Parallel Organization (launch both simultaneously)
+
+Agent 1 via Task tool:
+  Description: "Nomenclature enforcer: Audit file and directory naming conventions"
+  Prompt: You are archive-nomenclature-enforcer. Audit naming in {project_root} against the {project_type} conventions in ~/.claude/skills/archive-workflow/references/naming-conventions-{project_type}.md. Read {session_dir}/clutter-report.md for context on files flagged as clutter (skip those in your audit). Write naming-violations.md to {session_dir}/naming-violations.md. Include detected patterns and violation severity. archival_context: "skip"
+
+Agent 2 via Task tool:
+  Description: "Structure organizer: Propose directory structure for project type"
+  Prompt: You are archive-structure-organizer. Analyze {project_root} structure against the {project_type} template in ~/.claude/skills/archive-workflow/references/structure-template-{project_type}.md. Read {session_dir}/clutter-report.md for context. Use adaptive mode for existing projects, prescriptive mode for new projects. Write structure-proposal.md to {session_dir}/structure-proposal.md. Include migration plan with impact analysis. archival_context: "skip"
+
+### Wave 3: Expandability Review
+
+Agent via Task tool:
+  Description: "Expandability reviewer: Assess scalability and modularity of proposed structure"
+  Prompt: You are archive-expandability-reviewer. Read {session_dir}/structure-proposal.md (Wave 2 output). Assess the proposed structure for scalability (10x files, 5x contributors), modularity, and coupling. Flag critical issues that should block Wave 4 execution. Write expandability-assessment.md to {session_dir}/expandability-assessment.md. archival_context: "skip"
+
+### Wave 4: Synthesis and Execution
+
+Agent via Task tool:
+  Description: "Decision integrator: Merge analyst reports, generate execution plan, execute approved operations"
+  Prompt: You are archive-decision-integrator (READ + WRITE). Read all 4 analyst reports from {session_dir}/: clutter-report.md, naming-violations.md, structure-proposal.md, expandability-assessment.md. Apply Conflict Resolution Rules from SKILL.md. Generate execution-plan.md with operations categorized as A (non-destructive), B (cleanup), or C (deletions requiring approval). Present to user for approval. After approval, execute file operations using git mv for history preservation. Generate .archive-metadata.yaml using atomic write pattern (.tmp, validate, rename). Write execution-log.md and final-organization-report.md to {session_dir}/. archival_context: "skip"
+
+**Note**: Every dispatch includes `archival_context: "skip"` -- this is the circular dependency prevention mechanism (see Circular Dependency Prevention above). Without it, specialists would attempt to check .archive-metadata.yaml during the very workflow that creates it.
 
 ## Handoffs
 

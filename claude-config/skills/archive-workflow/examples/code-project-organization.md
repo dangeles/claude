@@ -58,6 +58,14 @@ Quality Gate 1: PASS - Project type detected
 
 ### Wave 1: Clutter Analysis (clutter-analyst)
 
+```
+[Wave 1/4 - Clutter Analysis] Dispatching clutter-analyst via Task tool...
+
+Task tool:
+  Description: "Clutter analyst: Scan project for generated files, stale content, and mess"
+  archival_context: "skip"
+```
+
 **Output: clutter-report.md**
 
 ```markdown
@@ -103,6 +111,18 @@ Quality Gate 2: PASS - Clutter report complete
 ```
 
 ### Wave 2: Parallel Analysis
+
+```
+[Wave 2/4 - Parallel Organization] Dispatching nomenclature-enforcer and structure-organizer simultaneously...
+
+Task tool (Agent 1):
+  Description: "Nomenclature enforcer: Audit file and directory naming conventions"
+  archival_context: "skip"
+
+Task tool (Agent 2):
+  Description: "Structure organizer: Propose directory structure for code project"
+  archival_context: "skip"
+```
 
 **Output: naming-violations.md**
 
@@ -185,6 +205,14 @@ Quality Gate 3: PASS - Both reports complete
 
 ### Wave 3: Expandability Review (expandability-reviewer)
 
+```
+[Wave 3/4 - Expandability Review] Dispatching expandability-reviewer...
+
+Task tool:
+  Description: "Expandability reviewer: Assess scalability and modularity of proposed structure"
+  archival_context: "skip"
+```
+
 **Output: expandability-assessment.md**
 
 ```markdown
@@ -222,6 +250,14 @@ Quality Gate 4: PASS - Expandability assessment complete
 ```
 
 ### Wave 4: Execution (decision-integrator)
+
+```
+[Wave 4/4 - Synthesis & Execution] Dispatching decision-integrator...
+
+Task tool:
+  Description: "Decision integrator: Merge analyst reports, execute approved operations"
+  archival_context: "skip"
+```
 
 **Pre-Execution: execution-plan.md**
 
