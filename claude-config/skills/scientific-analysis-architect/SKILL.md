@@ -162,6 +162,16 @@ Corrected notebooks (final)
    - Create `session-state.json`
    - Set status: "initialized"
 
+5. **Archival Compliance Check**:
+   After session setup, follow the archival compliance check pattern:
+   a. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
+   b. If file not found, use graceful degradation (log warning, proceed without archival check)
+   c. Apply the 5-step pattern to all file creation operations
+   - Store guidelines in session state (`session-state.json`)
+   - When creating Jupyter notebooks and analysis directories, validate proposed
+     paths against archival conventions
+   - Pass archival_context to all downstream agent dispatches
+
 **Quality Gate 0**: Session directory created, output directory validated, nbformat available.
 
 **Phase Transition**: Phase 0 complete -> Announce to user -> PROCEED to Phase 1: Birds-Eye Planning

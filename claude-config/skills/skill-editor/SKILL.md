@@ -114,6 +114,23 @@ echo "✓ Git working directory is clean"
 pwd
 # Should be repo root: /Users/davidangelesalbores/repos/claude
 
+# Archival Awareness Check
+# After git safety checks, detect archival guidelines for awareness (not enforcement).
+# skill-editor writes to claude-config/skills/, which is typically not covered by
+# archival guidelines. This check provides awareness so the request-refiner agent
+# can factor archival conventions into the specification if relevant.
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+ARCHIVE_METADATA="${REPO_ROOT}/.archive-metadata.yaml"
+if [ -f "$ARCHIVE_METADATA" ]; then
+  echo "Archival guidelines detected (.archive-metadata.yaml present)"
+  echo "These will be available to the request-refiner for specification context"
+  # Reference: ~/.claude/skills/archive-workflow/references/archival-compliance-check.md
+  # Step 1 (detection) applied; Steps 2-5 not enforced for skill-editor output
+  ARCHIVAL_GUIDELINES_PRESENT=true
+else
+  ARCHIVAL_GUIDELINES_PRESENT=false
+fi
+
 # Add trap for graceful interrupt handling
 trap 'echo ""; echo "Session paused. Resume with: /skill-editor"; jq ".status = \"paused\"" "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.tmp.json" && mv "${SESSION_DIR}/session-state.tmp.json" "${SESSION_DIR}/session-state.json"; exit 130' INT TERM
 

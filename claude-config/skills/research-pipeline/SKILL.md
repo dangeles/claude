@@ -105,6 +105,28 @@ OUTPUT
 - Identify any constraints (time, page count, specific focus areas)
 - Generate workflow_id for tracking
 
+### Archival Compliance Check
+Before creating the pipeline context, follow the archival compliance check pattern:
+1. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
+2. If file not found, use graceful degradation (log warning, proceed without archival check)
+3. Apply the 5-step pattern to all file creation operations
+
+Store archival guidelines in the pipeline context:
+```yaml
+pipeline:
+  archival:
+    guidelines_present: true/false
+    naming_convention: "{from YAML}"
+    output_directory_override: "{if archival says docs go elsewhere}"
+    enforcement_mode: "advisory"
+```
+
+When setting the output location (`docs/literature/{topic}/`):
+- Validate against archival structure guidelines
+- If violation detected, present batch advisory options
+- Record the user's choice in the pipeline context
+- Pass archival_context to all downstream stages via handoff
+
 **Create initial context**:
 ```yaml
 pipeline:
