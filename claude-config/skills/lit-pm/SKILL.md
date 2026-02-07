@@ -134,72 +134,70 @@ Before Stage 0 begins, verify all required skills exist:
 **Duration**: 2-5 minutes
 **Session Setup**: Creates `/tmp/lit-pm-session-{YYYYMMDD-HHMMSS}-{PID}/`
 
-Initialize workflow session and extract archival guidelines from project CLAUDE.md.
+Initialize workflow session and extract archival guidelines, preferring `.archive-metadata.yaml` over CLAUDE.md.
 
 **Process**:
 1. **Create session directory**: `/tmp/lit-pm-session-$(date +%Y%m%d-%H%M%S)-$$/`
-2. **Read project CLAUDE.md** (if exists in working directory or parent)
-3. **Extract archival guidelines**:
+2. **Store session path** in workflow state for downstream agents
+
+### Primary Source: .archive-metadata.yaml
+1. Follow the archival compliance check pattern:
+   a. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
+   b. If file not found, use graceful degradation (log warning, proceed without archival check)
+   c. Apply the 5-step pattern to all file creation operations
+2. Read `.archive-metadata.yaml` from the repo root
+3. Extract naming conventions, directory structure, and project type
+4. Include the archival_context block in all downstream stage handoffs
+
+### Fallback: CLAUDE.md (Deprecated)
+If `.archive-metadata.yaml` is not found:
+1. WARN: "Archival guidelines read from CLAUDE.md (fallback). Run archive-workflow
+   to generate .archive-metadata.yaml for structured guidelines."
+2. Check if `.archive-metadata.yaml` previously existed:
+   - Look for `docs/organization/final-organization-report.md`
+   - If found: WARN "Archival metadata was previously present but is now missing.
+     Re-run archive-workflow."
+3. Read CLAUDE.md and extract guidelines using existing prose extraction logic:
    - Repository organization (directory structure)
    - Naming conventions (review-, analysis-, reference-, etc.)
    - Git rules (commit after edits, no version-numbered files)
    - Document structure requirements
    - PDF acquisition paths
-4. **Write archival summary** to session directory: `archival-guidelines-summary.md`
-5. **Store session path** in workflow state for downstream agents
+4. Produce archival-guidelines-summary.md as before
 
-**Output**:
+### Output
+Write archival-guidelines-summary.md to the session directory with:
+- Source: ".archive-metadata.yaml" or "CLAUDE.md (fallback)"
+- Project type, naming conventions, directory structure
+- Enforcement mode (from YAML, or "advisory" default)
+
 ```yaml
 session_setup:
   session_dir: "/tmp/lit-pm-session-{timestamp}-{pid}/"
   archival_summary_path: "{session_dir}/archival-guidelines-summary.md"
   guidelines_found: boolean
-  guidelines_source: string  # Path to CLAUDE.md or "defaults"
+  guidelines_source: string  # ".archive-metadata.yaml" or "CLAUDE.md" or "defaults"
+  enforcement_mode: string   # "advisory" | "soft-mandatory" | "hard-mandatory"
 ```
 
-**Archival Summary Format**:
-```markdown
-# Archival Guidelines Summary
-Generated: {timestamp}
-Source: {CLAUDE.md path or "project defaults"}
+### Downstream Handoff
+Include archival_context block in all specialist dispatches (per the standard
+archival context block defined in archival-compliance-check.md):
 
-## Directory Structure
-- Literature reviews: `docs/literature/<topic>/`
-- PDF storage: `docs/literature/<topic>/pdfs/`
-- Analysis documents: `docs/reports/` or `docs/literature/<topic>/`
-
-## File Naming Conventions
-| Type | Prefix | Example |
-|------|--------|---------|
-| Literature review | `review-` | `review-topic-name.md` |
-| Analysis | `analysis-` | `analysis-topic-name.md` |
-| Reference | `reference-` | `reference-topic-name.md` |
-| Paper notes | `<author>-<year>-` | `smith-2024-findings.md` |
-
-## Document Structure
-1. Title
-2. Metadata (version, date, sources)
-3. Executive Summary
-4. Table of Contents (3+ sections)
-5. Body (numbered hierarchically)
-6. Key Parameters Table
-7. Gaps/Limitations
-8. References
-9. Revision History
-
-## Git Rules
-- Commit after every edit to docs/ or modules/
-- No version-numbered files (use git history)
-- Edit in place
-
-## Citation Format
-- Nature-style inline citations (superscript numbers)
-- Full bibliography at end with DOIs
+```yaml
+archival_context:
+  guidelines_present: true/false
+  source: ".archive-metadata.yaml"  # or "CLAUDE.md" or "defaults"
+  naming_convention: "kebab-case"
+  output_directory: "docs/literature/{topic}/"
+  enforcement_mode: "advisory"
+  user_override: null
 ```
 
 **Quality Gate**: Session directory created, archival summary written.
 
 **Failure Handling**:
+- `.archive-metadata.yaml` malformed: Treat as missing, fall back to CLAUDE.md
 - CLAUDE.md not found: Use sensible defaults, log warning
 - Session directory creation fails: ABORT (cannot proceed without session isolation)
 

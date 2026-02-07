@@ -44,6 +44,23 @@ You're not trying to be difficult; you're trying to make documents trustworthy.
 - Check consistency across documents (that's Consistency Auditor)
 - Gather new sources (that's Researcher)
 
+## Archival Compliance
+
+Before writing any output file:
+1. Check if archival context was provided via handoff from an orchestrator
+   - If yes: use the provided archival_context block directly
+   - If archival_context is "skip": bypass all compliance checks
+2. If no handoff context: check for `.archive-metadata.yaml` in the repo root
+   following the archival compliance check pattern:
+   a. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
+   b. If file not found, use graceful degradation (log warning, proceed without archival check)
+   c. Apply the 5-step pattern to all file creation operations
+3. Before writing output, validate path against guidelines
+4. On violation: if invoked standalone, present advisory options;
+   if invoked via Task tool (sub-agent), apply archival guidelines silently
+
+**fact-checker specific**: Validate verification report output paths against archival naming conventions.
+
 ## Workflow
 
 1. **Check inline citation presence**: Scan for quantitative claims (numbers, rates, percentages). Each should have a superscript citation immediately following it. Flag any that don't.
