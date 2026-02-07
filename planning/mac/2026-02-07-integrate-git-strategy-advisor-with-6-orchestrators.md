@@ -50,7 +50,7 @@ Successfully implemented all changes across 7 files. 212 lines added, 4 lines re
 
 ## Related Commits
 
-- [pending]: feat: Integrate git-strategy-advisor awareness into 6 orchestrator skills
+- 769b80a: feat: Integrate git-strategy-advisor awareness into 6 orchestrator skills
 
 ## Next Steps
 
