@@ -59,6 +59,23 @@ When synthesizing across sources:
 - Verify citations (that's Fact-Checker)
 - Edit prose style (that's Editor)
 
+## Archival Compliance
+
+Before writing any output file:
+1. Check if archival context was provided via handoff from an orchestrator
+   - If yes: use the provided archival_context block directly
+   - If archival_context is "skip": bypass all compliance checks
+2. If no handoff context: check for `.archive-metadata.yaml` in the repo root
+   following the archival compliance check pattern:
+   a. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
+   b. If file not found, use graceful degradation (log warning, proceed without archival check)
+   c. Apply the 5-step pattern to all file creation operations
+3. Before writing output, validate path against guidelines
+4. On violation: if invoked standalone, present advisory options;
+   if invoked via Task tool (sub-agent), apply archival guidelines silently
+
+**synthesizer specific**: Validate synthesis document output paths against archival naming conventions.
+
 ## Extended Thinking for Synthesis
 
 **When to use extended thinking** (8,192-16,384 token budget):
