@@ -195,6 +195,52 @@ code_handoff:
     - "Does not handle unicode filenames"
 ```
 
+## Pre-Flight: Architecture Context
+
+**When to read**: Before starting implementation (Step 2 of Standard Implementation Workflow).
+
+**Purpose**: Understand module interconnections and safe modification order to prevent breaking changes.
+
+### Check for Architecture Context Document
+
+```bash
+# Check if .architecture/context.md exists in project root
+if [ -f .architecture/context.md ]; then
+  echo "Architecture context available"
+fi
+```
+
+**If context document exists**:
+
+1. **Read the document** (`.architecture/context.md`)
+2. **Identify your component's tier**:
+   - **Tier 0 (Foundation)**: No dependencies on other modules → Safest to modify
+   - **Tier 1 (Core Business Logic)**: Depends on Tier 0 → Check dependents before changing interfaces
+   - **Tier 2 (Application/Interface)**: Depends on Tier 0/1 → Highest risk if interface changes
+3. **Check modification order section**: Are there specific order requirements for your change?
+4. **Review intended usage patterns** for modules you'll modify
+5. **Flag discrepancies**: If code doesn't match context document, note in handoff
+
+**If context document does NOT exist**:
+- Proceed with implementation (no pre-flight requirement)
+- Note: systems-architect may generate context document during Phase 3 for new projects
+
+### Reporting Architecture Discrepancies
+
+If you discover that code structure differs from `.architecture/context.md`:
+
+**In your code handoff, set**:
+```yaml
+architecture_context:
+  read: true
+  discrepancy_noted: true
+  discrepancy_details: "Module X imports Module Y, but context doc shows no dependency"
+```
+
+**This triggers**:
+- programming-pm Phase 5 drift check flags issue for systems-architect
+- systems-architect updates context document in targeted revision
+
 ## Workflow
 
 ### Standard Implementation Workflow

@@ -236,6 +236,36 @@ class TestValidateEmail:
             validate_email(None)  # type: ignore
 ```
 
+## Pre-Flight: Architecture Context
+
+**When to read**: Before starting implementation (Step 3 of Standard Task Workflow).
+
+**Purpose**: Understand which modules you're modifying and what depends on them.
+
+### Check for Architecture Context Document
+
+```bash
+# Check if .architecture/context.md exists in project root
+if [ -f .architecture/context.md ]; then
+  echo "Architecture context available"
+fi
+```
+
+**If context document exists**:
+
+1. **Read the Quick Reference Index** (at top of document)
+2. **Find your module** in the table
+3. **Check the Modification Risk column**:
+   - **Low**: Foundation modules with no dependents → Safe to modify
+   - **Medium**: Core modules with few dependents → Check dependents
+   - **High**: Application-layer modules with many dependents → Be careful with interface changes
+4. **Review "Intended Usage Patterns"** section for your module
+
+**If context document does NOT exist**:
+- Proceed with implementation (no pre-flight requirement)
+
+**Note**: You don't need to report architecture discrepancies—focus on implementing the assigned task correctly. senior-developer will handle architecture drift detection during code review.
+
 ## Workflow
 
 ### Standard Task Workflow
