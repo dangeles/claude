@@ -1,13 +1,25 @@
 ---
 name: perspective-swarm
-description: Multi-perspective brainstorming via 5 parallel agents with confidence-weighted synthesis
+description: Protocol specification for multi-perspective brainstorming via 5 parallel agents with confidence-weighted synthesis. Executed by brainstorming-pm orchestrator.
 version: 1.0.0
 tags: [brainstorming, multi-agent, synthesis, parallel, decision-support]
+orchestrator: brainstorming-pm
 ---
 
 # perspective-swarm
 
 Enable rapid multi-perspective brainstorming through parallel agent execution, producing a confidence-weighted synthesis that surfaces convergent insights and divergent alternatives.
+
+## Protocol Status
+
+**Document type**: Protocol specification
+**Orchestrator**: `brainstorming-pm/SKILL.md`
+
+This document defines the perspective-swarm protocol: the stages, archetypes, state machine, quality gates, and operational parameters for multi-perspective brainstorming. It is a declarative specification, not an executable skill.
+
+For orchestration and execution, see `brainstorming-pm/SKILL.md`, which handles session management, tool selection, agent delegation, model selection, and user interaction.
+
+Handoff metadata (discovery, categories, payload schema) is defined in the brainstorming-pm skill, which is the discoverable entry point for this workflow.
 
 ## When to Use
 
@@ -96,7 +108,7 @@ Enable rapid multi-perspective brainstorming through parallel agent execution, p
 
 **State**: DIVERGING
 
-Launch 5 parallel agents. Each agent:
+The orchestrator launches 5 parallel agents via Task tool. Each agent:
 
 1. **Adopts archetype lens** (Optimist, Critic, Analyst, Innovator, Pragmatist)
 
@@ -126,7 +138,7 @@ Launch 5 parallel agents. Each agent:
 
 **Minimum agents required**: 4 of 5
 
-**On < 4 agents**: Present user options:
+**On < 4 agents**: The orchestrator presents user options:
 ```
 PERSPECTIVE GENERATION INCOMPLETE: Only {N} of 5 agents completed
 
@@ -143,9 +155,11 @@ Options:
 
 **State**: CONVERGING
 
-1. **Collect all perspective outputs**
+During Stage 3, the orchestrator executes two parallel tracks: (A) convergence analysis (primary), and (B) workflow discovery (secondary, non-blocking). See `references/workflow-discovery.md` for parallel execution details.
 
-2. **Identify convergent insights**:
+1. **The orchestrator collects all perspective outputs**
+
+2. **The convergence analysis identifies convergent insights**:
    - Themes appearing in 2+ perspectives
    - Apply confidence weighting (see references/convergence-algorithm.md)
 
@@ -162,12 +176,11 @@ Options:
    | Innovator | Note potentially conservative recommendations |
    | Pragmatist | Flag implementation feasibility as uncertain |
 
-5. **Resolve conflicts**:
-   - Present all sides neutrally
-   - Note evidence strength for each
-   - Do NOT force artificial consensus
+5. **Conflicts are presented neutrally**:
+   - All sides shown with evidence strength noted
+   - No forced artificial consensus
 
-6. **Generate synthesis document**: `stage-3-synthesis.md`
+6. **The orchestrator generates the synthesis document**: `stage-3-synthesis.md`
 
 **Quality Gate**:
 - [ ] All available perspectives incorporated
@@ -180,9 +193,9 @@ Options:
 
 **State**: AWAITING_USER
 
-**Pre-requisite**: Run workflow discovery (see references/workflow-discovery.md)
+**Pre-requisite**: Discovery results available from Stage 3 (cached in `available-workflows.yaml`). If Stage 3 discovery did not complete, the orchestrator runs discovery synchronously (5-second timeout) before presenting options.
 
-Present synthesis to user with options:
+The orchestrator presents synthesis to user with options:
 
 ```
 ## Synthesis Complete
@@ -301,7 +314,7 @@ fallback_behavior:
 
 ### Session Recovery
 
-On skill invocation, check for existing sessions:
+On invocation, the orchestrator checks for existing sessions:
 ```
 Found incomplete session from {timestamp}: {original_prompt}
 Session state: {stage} - {status}
@@ -357,6 +370,24 @@ resource_limits:
 - `programming-pm` - Software implementation [implementation]
 - `pov-expansion` - Cross-domain perspectives [creative, analysis]
 
+## Orchestration
+
+This protocol is designed to be executed by the `brainstorming-pm` orchestrator skill. See `brainstorming-pm/SKILL.md` for:
+- Execution instructions and stage-by-stage orchestration
+- Tool selection (Task tool for Stage 2, inline for Stage 3)
+- Model selection guidance
+- Delegation patterns and quality gate evaluation
+
+## Model Selection
+
+Model selection guidance for each workflow component is documented in `brainstorming-pm/references/model-selection.md`. Summary:
+
+| Component | Current | Target |
+|-----------|---------|--------|
+| Orchestrator | Inherited | Claude Opus 4.5 |
+| Perspective Agents | Inherited | Claude Sonnet 4.5 |
+| LLM Grouping | Inherited (inline) | Claude Haiku 4.5 |
+
 ## Notes
 
 - **Parallel Independence**: Perspective agents MUST NOT see each other's outputs during Stage 2. This preserves diversity and prevents premature convergence (research-validated).
@@ -374,6 +405,8 @@ resource_limits:
 - [workflow-state-schema.md](references/workflow-state-schema.md) - Session state format
 - [handoff-schema.md](references/handoff-schema.md) - Generic handoff payload format (v2.0)
 - [workflow-discovery.md](references/workflow-discovery.md) - Handoff target discovery algorithm
+- [brainstorming-pm/SKILL.md](../brainstorming-pm/SKILL.md) - Orchestrator skill
+- [model-selection.md](../brainstorming-pm/references/model-selection.md) - Model selection guidance
 
 ## Examples
 

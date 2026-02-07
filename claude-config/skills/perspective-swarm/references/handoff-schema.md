@@ -121,7 +121,7 @@ handoff:
 |-------|------|-------------|
 | `handoff.version` | string | Must be "2.0" |
 | `handoff.timestamp` | ISO8601 | Must be valid ISO8601 |
-| `handoff.source.skill` | string | Must be "perspective-swarm" |
+| `handoff.source.skill` | string | Must be the source skill name (e.g., "brainstorming-pm") |
 | `handoff.source.session_path` | string | Must exist and be readable |
 | `handoff.target.skill` | string | Must be non-empty |
 | `handoff.context.original_prompt` | string | Must be non-empty |
@@ -145,7 +145,7 @@ handoff:
 
 ## Handoff Lifecycle
 
-### Phase 1: Discovery (Stage 1, cached for Stage 4)
+### Phase 1: Discovery (Stage 3, parallel with convergence, cached for Stage 4)
 
 ```
 1. DISCOVERY - Scan for eligible skills (see workflow-discovery.md)
@@ -199,7 +199,7 @@ handoff:
   expires_at: "2026-02-04T20:30:00Z"
 
   source:
-    skill: perspective-swarm
+    skill: brainstorming-pm
     workflow_id: swarm-session-20260204-183000-a1b2c3d4
     session_path: /tmp/swarm-session-20260204-183000-a1b2c3d4/
 

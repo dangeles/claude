@@ -58,7 +58,23 @@ stages:
     completed_at: ISO8601
     convergent_count: integer
     divergent_count: integer
+    grouping_method: enum        # llm_primary | llm_retry | jaccard_fallback
+    grouping_latency_ms: integer # milliseconds for grouping step
     error: string
+    discovery:                   # workflow discovery status (parallel with convergence)
+      status: enum               # pending | in_progress | complete | failed | skipped
+      started_at: ISO8601
+      completed_at: ISO8601
+      workflows_found: integer
+      cache_file: string         # available-workflows.yaml
+      error: string
+    # discovery.status values:
+    # - pending: discovery not yet started
+    # - in_progress: discovery running
+    # - complete: discovery finished successfully
+    # - failed: discovery encountered an error
+    # - skipped: both parallel and synchronous discovery attempts failed/timed out,
+    #            or no discovery was attempted
 
   stage_4:
     status: enum
@@ -137,7 +153,19 @@ stages:
         validation_warnings: []
 
   stage_3:
-    status: pending
+    status: complete
+    started_at: 2026-02-04T18:45:23Z
+    completed_at: 2026-02-04T18:51:45Z
+    convergent_count: 2
+    divergent_count: 3
+    grouping_method: llm_primary
+    grouping_latency_ms: 1250
+    discovery:
+      status: complete
+      started_at: 2026-02-04T18:45:25Z
+      completed_at: 2026-02-04T18:45:26Z
+      workflows_found: 3
+      cache_file: available-workflows.yaml
 
   stage_4:
     status: pending

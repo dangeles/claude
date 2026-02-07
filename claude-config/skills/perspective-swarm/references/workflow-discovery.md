@@ -184,7 +184,9 @@ When multiple candidates have the same relevance score:
 
 ### Session-Scoped Cache
 
-Discovery runs **once** at Stage 1 (after framing), results cached for Stage 4.
+Discovery runs during **Stage 3** (in parallel with convergence analysis), results cached for Stage 4.
+
+Running discovery during Stage 3 rather than Stage 1 has two benefits: (1) discovery results are fresher when presented in Stage 4 (minutes old, not 10-15 minutes old), and (2) the brainstorming-pm orchestrator is otherwise coordinating convergence analysis, making this a natural parallel execution slot. See `../brainstorming-pm/SKILL.md` (Stage 3) for orchestrator-side parallel execution details.
 
 **Cache file**: `{session_path}/available-workflows.yaml`
 
@@ -211,12 +213,26 @@ workflows:
     relevance_score: null
 ```
 
+### Parallel Execution with Convergence
+
+During Stage 3, the brainstorming-pm orchestrator runs two parallel tracks:
+
+- **Track A**: Convergence analysis (primary, blocking for stage completion)
+- **Track B**: Workflow discovery (secondary, non-blocking with respect to Track A)
+
+Track B is non-blocking with respect to Track A: convergence analysis proceeds regardless of discovery status. At the Stage 3/4 transition, if discovery has not completed, the orchestrator waits up to 30 seconds. If discovery still has not completed after 30 seconds, the orchestrator proceeds to Stage 4 without cached results and runs discovery synchronously (with a 5-second timeout) before presenting handoff options.
+
+If discovery completes before convergence: results are cached in `available-workflows.yaml`, ready for Stage 4 with no additional wait.
+
+If discovery fails entirely: proceed to Stage 4 with "No handoff-eligible workflows detected" message (same as the standard no-workflows-found behavior defined in EC-01 below).
+
 ### Cache Invalidation
 
 Cache is invalidated if:
 1. TTL (30 minutes) exceeded
 2. User explicitly requests re-scan
 3. Session is resumed from a checkpoint
+4. Stage 3 loops back due to user refinement -- re-run discovery only if cache TTL (30 minutes) has expired
 
 ## Error Handling
 
@@ -331,7 +347,7 @@ WARNING: {target_skill} already appears in the handoff chain for this session.
 
 ### Important Clarification
 
-The `handoff_chain` is **not** used during discovery (Stage 1). It is only relevant at handoff time (Stage 4) when a user has selected a specific target. This is because:
+The `handoff_chain` is **not** used during discovery (Stage 3). It is only relevant at handoff time (Stage 4) when a user has selected a specific target. This is because:
 
 - Discovery happens before any handoff has occurred
 - The chain is session-specific, not skill-specific

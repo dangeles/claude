@@ -53,6 +53,83 @@ if keyword_overlap_jaccard(i, j) > 0.3:
     group_together(i, j)
 ```
 
+### Step 2a: LLM Grouping Implementation
+
+The LLM grouping call is performed inline by the brainstorming-pm orchestrator during Stage 3 convergence analysis. This is not delegated to a separate agent because it requires cross-perspective access to all insight outputs simultaneously.
+
+See `../brainstorming-pm/references/model-selection.md` for full model selection rationale and fallback chain details.
+
+**JSON Schema for Grouping Output**:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "theme_id": { "type": "string" },
+          "theme_description": { "type": "string" },
+          "insight_ids": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["theme_id", "theme_description", "insight_ids"]
+      }
+    }
+  },
+  "required": ["themes"]
+}
+```
+
+Each `insight_id` maps to `{archetype}_insight` (e.g., `optimist_insight`, `critic_insight`). After grouping, verify that all returned `insight_ids` match the expected `{archetype}_insight` format and that every active archetype's insight appears exactly once across all themes. On mismatch, retry with explicit ID format instruction before falling back to Jaccard.
+
+**Refined Prompt Template**:
+
+```
+Analyze these {N} insights and group them by thematic similarity.
+Return ONLY valid JSON matching the schema below. No preamble or explanation.
+
+Schema: {json_schema}
+
+Rules:
+- Each insight must appear in exactly one theme
+- Insights with no thematic overlap should be in a single-member theme
+- Use the exact insight_ids provided
+
+Insights:
+{formatted_insights}
+```
+
+**Fallback Trigger Conditions**:
+
+The following conditions trigger a fallback from LLM-based grouping to the Jaccard keyword overlap method:
+
+1. **Invalid JSON**: LLM returns invalid JSON after 2 retries -> Jaccard fallback
+2. **Degenerate grouping (collapsed)**: 0 themes returned, or all insights placed in a single theme -> Jaccard fallback
+3. **Latency exceeded**: LLM response takes > 30 seconds -> Jaccard fallback
+4. **Model unavailable**: API error or service unavailability -> Jaccard fallback
+5. **Degenerate grouping (fragmented)**: All themes are singletons (each containing exactly 1 insight, no grouping occurred) -> Jaccard fallback
+
+On any fallback: log `grouping_method: jaccard_fallback` in `workflow-state.yaml` under the `stage_3` entry. This enables post-hoc analysis of grouping reliability.
+
+**Fallback Escalation Chain**:
+
+Current (Task tool inherits model):
+```
+Orchestrator model inline (primary)
+  -> retry with orchestrator model (1x, 5-second delay)
+  -> Jaccard keyword overlap (deterministic)
+```
+
+Target (when Task tool supports model selection):
+```
+Haiku 4.5 (primary)
+  -> retry Haiku 4.5 (1x, 5-second delay)
+  -> Sonnet 4.5 (1x escalation)
+  -> Jaccard keyword overlap (deterministic)
+```
+
 ### Step 3: Convergence Scoring
 
 For each theme group:
