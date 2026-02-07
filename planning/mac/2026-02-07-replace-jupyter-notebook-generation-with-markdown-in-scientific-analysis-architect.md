@@ -73,7 +73,8 @@ All 10 files modified successfully:
 
 ## Related Commits
 
-- [pending]: feat(scientific-analysis-architect): Replace Jupyter notebook generation with markdown deliverables
+- 0916e03: refactor(scientific-analysis-architect): Apply anti-resistance pattern and switch to markdown output
+- 4fa06e8: docs(planning): Add planning entry for scientific-analysis-architect markdown migration
 
 ## Next Steps
 
