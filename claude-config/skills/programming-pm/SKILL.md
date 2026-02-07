@@ -197,6 +197,7 @@ artifacts:
   requirements: "/path/to/requirements.md"
   pre_mortem: "/path/to/pre-mortem.md"
   architecture: "/path/to/architecture.md"
+  architecture_context: "/path/to/.architecture/context.md"  # Optional, generated in Phase 3
   implementation: []
 
 exceptions:
@@ -614,6 +615,19 @@ Before starting Phase 3: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Co
 1. Invoke `systems-architect` with requirements and risk assessment
 2. Review architecture for completeness
 3. Present architecture to user for approval
+4. Generate Architecture Context Document
+
+#### Architecture Context Document
+
+After architecture approval, systems-architect generates `.architecture/context.md`:
+
+**Purpose**: Persistent, version-controlled document providing bird's-eye view of module structure, dependencies, and modification order for all implementation agents.
+
+**Content**: Module interconnections (DAG), intended usage patterns, modification order for safe incremental changes, streaming/incremental strategies.
+
+**Lifecycle**: Created in Phase 3, read by developers before implementation (pre-flight), updated when architectural changes occur (Phase 5 drift check).
+
+See `systems-architect/references/architecture-context-template.md` for template details.
 
 **Quality Gate 3: Architecture Approval**:
 - Type: Human judgment (programming-pm + user review)
@@ -623,6 +637,7 @@ Before starting Phase 3: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Co
   - [ ] Technology choices justified (libraries, frameworks)
   - [ ] Component interfaces defined
   - [ ] Testing strategy outlined
+  - [ ] Architecture Context Document generated (`.architecture/context.md` exists)
 - Override: User can approve partial architecture for proof-of-concept
 
 **Handoff Validation** (Phase 3 → Phase 4):
@@ -723,6 +738,10 @@ task:
   estimated_duration: "2h"
   acceptance_criteria: []
   handoff_format: "See handoff-schema.md"
+  architecture_context:
+    path: "/path/to/.architecture/context.md"  # Absolute path if document exists
+    component: "module_name"  # Component/module being implemented
+    tier: 0  # 0=foundation, 1=core, 2=application (extracted from context doc)
 ```
 
 #### Step 2: Wave-Based Parallel Execution
@@ -985,6 +1004,26 @@ Before starting Phase 5: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Co
 3. If deliverables include notebooks: invoke `notebook-writer` to verify reproducibility standards, Jupytext format compliance, environment documentation, and session info
 4. Have `senior-developer` review all code (especially junior-developer outputs)
 5. Address feedback and re-run checks
+6. Check for architecture drift and update context document if needed
+
+#### Architecture Drift Check
+
+If `.architecture/context.md` exists, check whether implementation introduced structural changes that require context update:
+
+**Drift detection heuristics** (narrow scope to reduce false positives):
+- New files in `src/` or `modules/` directories
+- Deleted module directories
+- Changes to `__init__.py` files (interface changes)
+- Developer reported discrepancy via `architecture_context.discrepancy_noted: true` in code handoff
+
+**Action on drift detected**:
+1. Invoke `systems-architect` for **targeted update** (<10 minutes)
+2. Update specific sections of `.architecture/context.md` (not full regeneration)
+3. Commit context update with implementation changes
+
+**Action on NO drift**: Proceed to Quality Gate 4.
+
+**Note**: This is a lightweight check. Fundamental architectural changes (new module changing dependency graph topology) are logged as "architectural drift requiring future Phase 3 review" rather than triggering heavyweight updates within Phase 5.
 
 **Quality Gate 4: Code Review Approval**:
 - Type: Human judgment (senior-developer review)
