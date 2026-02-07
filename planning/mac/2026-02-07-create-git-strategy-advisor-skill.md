@@ -56,7 +56,7 @@ All four files created and synced to ~/.claude/skills/ successfully. The skill a
 
 ## Related Commits
 
-- [pending]: feat(git-strategy-advisor): Create git strategy advisory skill
+- 22360a6: feat(git-strategy-advisor): Create git strategy advisory skill
 
 ## Next Steps
 
