@@ -647,7 +647,7 @@ START Phase 6
     +---> Set status: "completed"
     |
     v
-END Phase 6 -> Workflow Complete
+END Phase 6 -> Quality Gate 6 -> Phase 7
 ```
 
 ### Quality Gate 6 Criteria (User Approval)
@@ -657,3 +657,90 @@ END Phase 6 -> Workflow Complete
 - [ ] Statistical review report generated
 - [ ] Corrections manifest saved
 - [ ] If corrections applied: overview refreshed and validated
+
+---
+
+## Phase 7: Audience Document Generation
+
+**Duration**: ~5 minutes
+**Owner**: Orchestrator
+**Timeout**: 15 minutes
+
+### Workflow Steps
+
+```
+START Phase 7
+    |
+    v
+[1] Pre-flight validation
+    |
+    +---> Verify Tier 1 artifacts exist (analysis-strategy-overview.md, research-structure.md, session-state.json)
+    +---> If corrections-manifest.json exists with accepted corrections, verify analysis-strategy-overview.md was modified after it
+    +---> Abort with clear error if critical artifacts missing
+    |
+    v
+[2] Create directory
+    |
+    +---> Create {output_dir}/.research-architecture/ if not exists
+    |
+    v
+[3] Generate researcher plan
+    |
+    +---> Read Tier 1 sources: analysis-strategy-overview.md, research-structure.md
+    +---> Read Tier 2 sources: chapter{N}-notebook-plans.md
+    +---> Write {output_dir}/researcher-plan.md (Template A)
+    +---> Prose-only, no code blocks, domain language
+    |
+    v
+[4] Generate architect handoff
+    |
+    +---> Read Tier 1 sources + session-state.json
+    +---> Read Tier 4 sources (if exist): review reports, corrections-manifest.json
+    +---> Write {output_dir}/.research-architecture/architect-handoff.md (Template B)
+    +---> Design rationale, method log, current state, open questions
+    |
+    v
+[5] Generate engineering translation
+    |
+    +---> Read Tier 1 and Tier 2 sources
+    +---> Read Tier 3 sources per-chapter (selective, as needed)
+    +---> Write {output_dir}/.research-architecture/engineering-translation.md (Template C)
+    +---> System overview, pipeline architecture, data specs, processing stages
+    |
+    v
+[6] Create backup copies
+    |
+    +---> Create {session_dir}/audience-documents/ if not exists
+    +---> Copy all three documents to backup location
+    |
+    v
+[7] Update session state
+    |
+    +---> Set current_phase: 7
+    +---> Add 7 to completed_phases
+    +---> Record paths in outputs.audience_documents
+    +---> Set status: "completed"
+    |
+    v
+END Phase 7 -> Quality Gate 7 -> Workflow Complete
+```
+
+### On Resume
+
+Before regenerating documents:
+1. Check which audience documents already exist
+2. Validate existing documents against Gate 7 section requirements
+3. Skip re-generation for documents that pass validation
+4. Only regenerate missing or invalid documents
+
+### Quality Gate 7 Criteria
+
+- [ ] `{output_dir}/researcher-plan.md` exists and is non-empty (> 500 bytes)
+- [ ] `{output_dir}/.research-architecture/architect-handoff.md` exists and is non-empty
+- [ ] `{output_dir}/.research-architecture/engineering-translation.md` exists and is non-empty
+- [ ] Researcher plan has required sections (case-insensitive): Research Overview, Research Questions, Expected Outcomes, Decision Points
+- [ ] Architect handoff has required sections: Design Rationale, Current State, Open Questions, Continuation Guidance
+- [ ] Engineering translation has required sections: System Overview, Pipeline Architecture, Data Specifications, Processing Stages, Resource Requirements, Dependencies
+- [ ] No fenced code blocks (```) in researcher-plan.md
+- [ ] Backup copies exist in `{session_dir}/audience-documents/`
+- [ ] All three documents include provenance metadata (HTML comments with session ID)
