@@ -1,6 +1,29 @@
 ---
 name: skill-editor
 description: Use when creating, modifying, or refactoring Claude Code skills that require structured multi-agent review and quality validation
+
+# Handoff metadata (custom extension -- see workflow-coordinator/references/frontmatter-metadata-standard.md)
+handoff:
+  accepts_from:
+    - "*"
+  provides_to:
+    - programming-pm
+    - technical-pm
+  schema_version: "3.0"
+  schema_type: universal
+
+categories:
+  - skill-development
+  - workflow-creation
+
+input_requirements:
+  - specification
+  - skill-request
+
+output_types:
+  - skill
+  - agent-configuration
+  - documentation
 ---
 
 # Skill Editor

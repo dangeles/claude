@@ -2,18 +2,44 @@
 name: programming-pm
 description: Use when coordinating software development projects requiring multiple specialists (architect, developers, mathematician, statistician, notebook-writer) with quality gates for archival setup, requirements, architecture, pre-mortem, code review, testing, and version control integration.
 
+# v3.0 universal handoff metadata (see workflow-coordinator/references/frontmatter-metadata-standard.md)
 handoff:
-  accepts_handoff: true
-  handoff_categories: [implementation, architecture]
-  handoff_description: "Software development with 7-phase pipeline (2-8 hours)"
+  accepts_from:
+    - "*"
+  provides_to:
+    - senior-developer
+    - junior-developer
+    - systems-architect
+    - requirements-analyst
+    - mathematician
+    - statistician
+    - skill-editor
+  schema_version: "3.0"
+  schema_type: universal
+  # Legacy fields preserved for perspective-swarm v2.0 backward compatibility
   handoff_trigger: "--handoff {payload_path}"
-  protocol_version: "2.0"
   requires:
     - context.original_prompt
     - context.problem_type
   optional_consumes:
     - context.synthesis_summary
     - insights.convergent
+
+categories:
+  - implementation
+  - architecture
+  - project-management
+
+input_requirements:
+  - specification
+  - requirements
+  - architecture-decision
+
+output_types:
+  - implementation
+  - code
+  - tests
+  - documentation
 ---
 
 # Programming Project Manager
