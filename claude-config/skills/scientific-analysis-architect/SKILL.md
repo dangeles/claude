@@ -41,7 +41,7 @@ Default to Task tool when in doubt. Self-check: "Am I about to load specialist i
 
 ## State Anchoring
 
-Start every response with: "[Phase N/6 - {phase_name}] {brief status}"
+Start every response with: "[Phase N/7 - {phase_name}] {brief status}"
 
 Before starting any phase (Phase 1 onward): Read `{session_dir}/session-state.json`. Confirm `current_phase` and `completed_phases` match expectations.
 
@@ -125,9 +125,20 @@ analysis-strategy-overview.md
      |
 Corrected analysis docs (final)
 + Refreshed overview (if corrections applied)
+     |
++----v--------------------+
+| Phase 7: Audience        | ~5 min
+| Document Generation      |
+| [orchestrator]           |
++----+--------------------+
+     |
+researcher-plan.md +
+.research-architecture/
+  architect-handoff.md +
+  engineering-translation.md
 ```
 
-**Estimated Runtime**: 56-76 minutes for 3 chapters
+**Estimated Runtime**: 61-81 minutes for 3 chapters
 
 ## Phase 0: Initialization
 
@@ -420,6 +431,66 @@ This is **advisory only**. If `git-strategy-advisor` is not available or returns
 error, skip this step. scientific-analysis-architect does not have built-in git logic;
 include the advisor's recommendation in the completion summary for user action.
 
+## Phase 7: Audience Document Generation
+
+Before starting Phase 7: Read `{session_dir}/session-state.json`. Confirm Phases 0-6 are complete.
+
+**Owner**: Orchestrator
+**Duration**: ~5 minutes
+**Timeout**: 15 minutes
+
+This phase generates three audience-targeted documents from the finalized analysis artifacts. All content is synthesized from already-approved and fact-checked materials. No new analyses or methods are introduced.
+
+**Input artifacts** (read by orchestrator, tiered):
+- Tier 1 (always read): `analysis-strategy-overview.md`, `research-structure.md`, `session-state.json`
+- Tier 2 (per-chapter): `chapter{N}-notebook-plans.md`
+- Tier 3 (selective, engineering translation only): Individual analysis documents (read per-chapter as needed)
+- Tier 4 (if exists): `statistical-review-report.md`, `corrections-manifest.json`, review reports
+
+**Content Sourcing Protocol**: Generate documents one at a time. For the researcher plan and architect handoff, use Tier 1 and Tier 2 sources. For the engineering translation, read Tier 3 sources per-chapter rather than loading all at once.
+
+### Steps
+
+1. **Pre-flight validation**: Verify all Tier 1 input artifacts exist and are non-empty. If `corrections-manifest.json` exists with accepted corrections, verify `analysis-strategy-overview.md` was modified after it. If critical artifacts are missing, abort with a clear error.
+
+2. **Create directory**: Create `{output_dir}/.research-architecture/` if it does not exist.
+
+3. **Generate researcher plan**: Write `{output_dir}/researcher-plan.md` -- see [audience-document-templates.md](references/audience-document-templates.md) Template A.
+
+4. **Generate architect handoff**: Write `{output_dir}/.research-architecture/architect-handoff.md` -- see Template B.
+
+5. **Generate engineering translation**: Write `{output_dir}/.research-architecture/engineering-translation.md` -- see Template C.
+
+6. **Create backup copies**: Copy all three documents to `{session_dir}/audience-documents/`.
+
+7. **Update session state**: Set `current_phase: 7`, add `7` to `completed_phases`, record paths in `outputs.audience_documents`, set `status: "completed"`.
+
+**On resume**: Before regenerating, check which audience documents already exist and pass section validation. Skip re-generation for valid documents.
+
+**Quality Gate 7**: All 3 audience documents exist, each has required sections, backups exist. See [quality-gates.md](references/quality-gates.md).
+
+**Phase Transition**: Phase 7 complete -> Quality Gate 7 -> Announce deliverables -> Workflow Complete
+
+**Completion Announcement**:
+```
+Audience Documents Generated
+
+Three audience-targeted documents have been created:
+
+1. Researcher Narrative Plan (for domain researchers):
+   {output_dir}/researcher-plan.md
+
+2. Architect Handoff (for analysis architects):
+   {output_dir}/.research-architecture/architect-handoff.md
+
+3. Engineering Translation (for systems engineers):
+   {output_dir}/.research-architecture/engineering-translation.md
+
+Backup copies saved to: {session_dir}/audience-documents/
+
+Workflow complete.
+```
+
 ## Session Management
 
 ### Session Directory Structure
@@ -441,6 +512,10 @@ include the advisor's recommendation in the completion summary for user action.
 |   |   +-- analysis1_2_normalization.md
 |   +-- chapter2_hypothesis-testing/
 |       +-- analysis2_1_differential-expression.md
++-- audience-documents/            # Phase 7 output (backup)
+|   +-- researcher-plan.md
+|   +-- architect-handoff.md
+|   +-- engineering-translation.md
 +-- logs/
     +-- workflow.log
 ```
@@ -481,6 +556,7 @@ See [error-handling.md](references/error-handling.md) for complete specification
 | 4 | 15 min | Proceed with available reviews |
 | 5 | 20 min | Proceed with partial, offer retry |
 | 6 | 30 min | Pass with uncertainty note |
+| 7 | 15 min | Proceed with available documents, warn user |
 
 ### Retry Protocol
 
@@ -505,6 +581,7 @@ See [error-handling.md](references/error-handling.md) for complete specification
 | 4 | 4 | User | Approve analysis plans |
 | 5 | 5 | Orchestrator + notebook-generator | Valid .md analysis documents (structure validated), master overview present |
 | 6 | 6 | User | Interview complete, corrections applied |
+| 7 | 7 | Orchestrator | All 3 audience documents exist, required sections present, backups exist |
 
 ## Dependencies
 
@@ -519,6 +596,7 @@ See [error-handling.md](references/error-handling.md) for complete specification
 - [phase-workflows.md](references/phase-workflows.md)
 - [interview-protocol.md](references/interview-protocol.md)
 - [notebook-templates.md](references/notebook-templates.md)
+- [audience-document-templates.md](references/audience-document-templates.md)
 - [session-schema.md](references/session-schema.md)
 - [error-handling.md](references/error-handling.md)
 - [quality-gates.md](references/quality-gates.md)
