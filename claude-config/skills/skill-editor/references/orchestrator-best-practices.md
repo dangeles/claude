@@ -80,23 +80,15 @@ Patterns are classified into 4 evidence-based tiers:
 ## Delegation Mandate
 
 You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
-
 **You ARE the coordinator who ensures** [actions] happen through delegation.
 **You are NOT** a [specialist]. You do not [specialist actions].
-
-**Orchestrator-owned tasks** (you DO perform these yourself):
-- Session setup, state management
-- Quality gate evaluation
-- User communication
-- Workflow routing
+**Orchestrator-owned tasks**: Session setup, state management, quality gate evaluation, user communication, workflow routing.
 
 ### When You Might Be Resisting Delegation
-
 | Rationalization | Reality |
 |----------------|---------|
 | "This is too simple to delegate" | Simple tasks still consume context window. Delegate. |
 | "I can do it faster myself" | Speed is not the goal; context isolation is. |
-| "The agent will just repeat what I know" | The agent provides independent verification. |
 
 **Self-check**: "Am I about to load specialist instructions into my context? If yes, use Task tool."
 ```
@@ -247,20 +239,9 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 
 ```markdown
 ## Session Management
-
-### Session Directory
-- Location: `/tmp/{skill-name}-session/`
-- State file: `session-state.json`
-
-### Interrupt Handling
-- Trap SIGINT/SIGTERM
-- Persist current state before exit
-- Session artifacts preserved for resume
-
-### Resume Protocol
-- On invocation: Check for existing session
-- Offer resume from last completed phase
-- If declined: Start new session
+- **Session Directory**: `/tmp/{skill-name}-session/` with `session-state.json`
+- **Interrupt Handling**: Persist current state before exit; session artifacts preserved for resume
+- **Resume Protocol**: On invocation, check for existing session; offer resume from last completed phase
 ```
 
 **Applicability**: All orchestrator skills with workflows longer than 10 minutes. Skip for quick single-pass orchestrators.
@@ -277,25 +258,7 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 
 **Evidence**: Structured handoffs reduce information loss between phases. However, no direct outcome data comparing structured vs. unstructured handoffs.
 
-**Template**:
-
-```yaml
-handoff:
-  version: "1.0"
-  from_phase: int
-  to_phase: int
-  producer: skill_name
-  consumer: skill_name
-  timestamp: ISO8601
-  deliverable:
-    location: "/path/to/file"
-  context:
-    focus_areas: []
-    known_gaps: []
-  quality:
-    status: "complete" | "partial"
-    confidence: "high" | "medium" | "low"
-```
+**Template**: YAML schema with fields: version, from_phase, to_phase, producer, consumer, timestamp, deliverable (location), context (focus_areas, known_gaps), quality (status, confidence). See programming-pm Handoff Schema section for the most mature example.
 
 ---
 
@@ -307,24 +270,7 @@ handoff:
 
 **Evidence**: Catches missing dependencies before workflow starts, preventing late-stage failures. Strong evidence despite low adoption.
 
-**Template**:
-
-```bash
-# Required skills - abort if missing
-for skill in required-skill-1 required-skill-2; do
-  if [ ! -f ~/.claude/skills/$skill/SKILL.md ]; then
-    echo "ABORT: Required skill missing: $skill"
-    exit 1
-  fi
-done
-
-# Optional skills - warn and continue
-for skill in optional-skill-1; do
-  if [ ! -f ~/.claude/skills/$skill/SKILL.md ]; then
-    echo "WARN: Optional skill missing: $skill"
-  fi
-done
-```
+**Template**: Check required skill dependencies (abort if missing) and optional dependencies (warn and continue). See programming-pm Pre-Flight Validation section for full bash example.
 
 ---
 
@@ -351,20 +297,7 @@ done
 
 **Note**: This pattern may have propagated from programming-pm rather than being independently discovered. All three implementations share similar structure.
 
-**Template**:
-
-```yaml
-handoff:
-  accepts_handoff: true
-  handoff_categories: [category1, category2]
-  handoff_description: "Brief description of handoff capabilities"
-  handoff_trigger: "--handoff {payload_path}"
-  protocol_version: "2.0"
-  requires:
-    - context.original_prompt
-  optional_consumes:
-    - context.synthesis_summary
-```
+**Template**: YAML frontmatter block with fields: accepts_handoff, handoff_categories, handoff_description, handoff_trigger, protocol_version, requires, optional_consumes. See programming-pm frontmatter for the canonical example.
 
 ---
 
