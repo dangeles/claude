@@ -15,6 +15,7 @@ Comprehensive error handling specification for the scientific-analysis-architect
 | 4 | 15 min | Plan review (parallel) |
 | 5 | 20 min | Document generation (parallel) |
 | 6 | 30 min | Statistical fact-checking (interview mode) |
+| 7 | 15 min | Audience document generation |
 
 ### Per-Agent Timeouts
 
@@ -201,6 +202,29 @@ Comprehensive error handling specification for the scientific-analysis-architect
 - Skip remaining concerns (user accepts risk)
 - Pass without statistical review (warning logged)
 
+### Phase 7 Failure: Audience Document Generation
+
+**Trigger**: Document generation timeout or failure
+
+**Compensation**:
+1. Preserve any successfully generated audience documents
+2. Mark failed documents in session state
+3. Log failure to session state errors array
+
+**Recovery options**:
+- Retry failed documents (up to 2 retries per document)
+- Proceed without failed documents (warn user)
+- Abort Phase 7 (Phase 0-6 outputs are unaffected)
+
+**For individual document failure**:
+- Retry once with same inputs
+- If retry fails: mark as skipped, proceed with remaining documents
+- All three documents are independent; failure of one does not affect others
+
+**For total failure (all three documents fail)**:
+- Escalate to user with Template 1
+- Options: retry all, proceed without audience documents, abort
+
 ## Escalation Prompt Templates
 
 ### Template 1: Critical Agent Failure (Single)
@@ -371,6 +395,7 @@ If more than 50% of parallel agents in a fan-out fail:
 2. **Partial consultant** (optional consultants fail, statistician succeeds)
 3. **Partial chapters** (some chapters fail generation/review)
 4. **No statistical review** (fact-checker fails, user accepts risk)
+5. **No audience documents** (Phase 7 fails, user accepts)
 
 ### Degradation Warnings
 

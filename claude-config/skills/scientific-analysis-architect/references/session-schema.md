@@ -16,7 +16,7 @@ Complete specification for session state management and resume capability.
     "version": {
       "type": "string",
       "description": "Schema version",
-      "enum": ["1.0", "2.0"]
+      "enum": ["1.0", "2.0", "2.1"]
     },
     "session_id": {
       "type": "string",
@@ -41,15 +41,15 @@ Complete specification for session state management and resume capability.
     "current_phase": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 6,
-      "description": "Currently executing phase (0-6)"
+      "maximum": 7,
+      "description": "Currently executing phase (0-7)"
     },
     "completed_phases": {
       "type": "array",
       "items": {
         "type": "integer",
         "minimum": 0,
-        "maximum": 6
+        "maximum": 7
       },
       "description": "List of successfully completed phases"
     },
@@ -125,6 +125,24 @@ Complete specification for session state management and resume capability.
         "corrections_manifest": {
           "type": "string",
           "description": "Path to corrections-manifest.json"
+        },
+        "audience_documents": {
+          "type": "object",
+          "description": "Audience-targeted document references (Phase 7)",
+          "properties": {
+            "researcher_plan": {
+              "type": "string",
+              "description": "Path to researcher-plan.md"
+            },
+            "architect_handoff": {
+              "type": "string",
+              "description": "Path to architect-handoff.md"
+            },
+            "engineering_translation": {
+              "type": "string",
+              "description": "Path to engineering-translation.md"
+            }
+          }
         }
       }
     },
@@ -417,10 +435,11 @@ def rollback_to_phase(target_phase: int, session_state: dict):
         3: ["structure_review"],
         4: ["notebook_review"],
         5: ["analyses", "strategy_overview"],
-        6: ["statistical_review", "corrections_manifest"]
+        6: ["statistical_review", "corrections_manifest"],
+        7: ["audience_documents"]
     }
 
-    for phase in range(target_phase, 7):
+    for phase in range(target_phase, 8):
         for output_key in phase_outputs.get(phase, []):
             session_state["outputs"][output_key] = None
 
