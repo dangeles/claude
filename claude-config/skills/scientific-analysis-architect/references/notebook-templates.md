@@ -533,3 +533,13 @@ Date: {date}
 - Chapter summaries: 2-4 sentences each (what and why, not how)
 - For projects with <= 4 chapters: omit Execution Order if linear
 - For projects with >= 6 chapters: include a dependency graph
+
+---
+
+## Audience Document Templates (Phase 7)
+
+For audience-targeted documents generated in Phase 7 (researcher narrative plan, architect handoff, engineering translation), see:
+
+[audience-document-templates.md](audience-document-templates.md)
+
+These templates serve different audiences (domain researchers, analysis architects, systems engineers) and are generated from the finalized analysis artifacts after Phase 6 fact-checking.
