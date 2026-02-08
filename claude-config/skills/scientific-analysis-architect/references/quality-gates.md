@@ -406,6 +406,118 @@ def validate_gate_6(session_state: dict) -> tuple:
 
 ---
 
+### Quality Gate 7: Audience Document Validation
+
+**Phase**: 7
+**Owner**: Orchestrator
+**Type**: Automated
+
+**Pass Criteria**:
+- [ ] `{output_dir}/researcher-plan.md` exists and is non-empty (> 500 bytes)
+- [ ] `{output_dir}/.research-architecture/architect-handoff.md` exists and is non-empty
+- [ ] `{output_dir}/.research-architecture/engineering-translation.md` exists and is non-empty
+- [ ] Researcher plan has required sections (case-insensitive): Research Overview, Research Questions, Expected Outcomes, Decision Points
+- [ ] Architect handoff has required sections: Design Rationale, Current State, Open Questions, Continuation Guidance
+- [ ] Engineering translation has required sections: System Overview, Pipeline Architecture, Data Specifications, Processing Stages, Resource Requirements, Dependencies
+- [ ] No fenced code blocks (```) in researcher-plan.md
+- [ ] Backup copies exist in `{session_dir}/audience-documents/`
+- [ ] All three documents include provenance metadata (HTML comments with session ID)
+
+**Validation Code**:
+```python
+import re
+import os
+
+RESEARCHER_SECTIONS = {
+    "research_overview": [r'^##\s+Research Overview'],
+    "research_questions": [r'^##\s+Research Questions'],
+    "expected_outcomes": [r'^##\s+Expected Outcomes'],
+    "decision_points": [r'^##\s+Decision Points']
+}
+
+ARCHITECT_SECTIONS = {
+    "design_rationale": [r'^##\s+Design Rationale'],
+    "current_state": [r'^##\s+Current State'],
+    "open_questions": [r'^##\s+Open Questions'],
+    "continuation": [r'^##\s+Continuation Guidance']
+}
+
+ENGINEERING_SECTIONS = {
+    "system_overview": [r'^##\s+System Overview'],
+    "pipeline_architecture": [r'^##\s+Pipeline Architecture'],
+    "data_specifications": [r'^##\s+Data Specifications'],
+    "processing_stages": [r'^##\s+Processing Stages'],
+    "resource_requirements": [r'^##\s+Resource Requirements'],
+    "dependencies": [r'^##\s+Dependencies']
+}
+
+def validate_gate_7(output_dir: str, session_dir: str) -> tuple:
+    """Validate audience document gate."""
+
+    researcher_plan = os.path.join(output_dir, "researcher-plan.md")
+    architect_handoff = os.path.join(output_dir, ".research-architecture", "architect-handoff.md")
+    engineering_translation = os.path.join(output_dir, ".research-architecture", "engineering-translation.md")
+
+    # Check existence and minimum size
+    for path, name in [(researcher_plan, "researcher plan"),
+                       (architect_handoff, "architect handoff"),
+                       (engineering_translation, "engineering translation")]:
+        if not os.path.exists(path):
+            return False, f"{name} does not exist"
+        if os.path.getsize(path) < 500:
+            return False, f"{name} is too small (< 500 bytes)"
+
+    # Read contents
+    with open(researcher_plan) as f:
+        researcher_content = f.read()
+    with open(architect_handoff) as f:
+        architect_content = f.read()
+    with open(engineering_translation) as f:
+        engineering_content = f.read()
+
+    # Check sections (case-insensitive)
+    for content, sections, name in [
+        (researcher_content, RESEARCHER_SECTIONS, "researcher plan"),
+        (architect_content, ARCHITECT_SECTIONS, "architect handoff"),
+        (engineering_content, ENGINEERING_SECTIONS, "engineering translation")
+    ]:
+        for section_key, patterns in sections.items():
+            found = False
+            for pattern in patterns:
+                if re.search(pattern, content, re.MULTILINE | re.IGNORECASE):
+                    found = True
+                    break
+            if not found:
+                return False, f"{name} missing section: {section_key}"
+
+    # Check no code blocks in researcher plan
+    if '```' in researcher_content:
+        return False, "researcher plan contains code blocks (must be prose-only)"
+
+    # Check backups
+    backup_dir = os.path.join(session_dir, "audience-documents")
+    for filename in ["researcher-plan.md", "architect-handoff.md", "engineering-translation.md"]:
+        backup_path = os.path.join(backup_dir, filename)
+        if not os.path.exists(backup_path):
+            return False, f"backup copy missing: {filename}"
+
+    # Check provenance metadata
+    for content, name in [(researcher_content, "researcher plan"),
+                          (architect_content, "architect handoff"),
+                          (engineering_content, "engineering translation")]:
+        if "Session:" not in content:
+            return False, f"{name} missing provenance metadata"
+
+    return True, "Gate 7 passed: All audience documents validated"
+```
+
+**Fail Action**:
+- If document generation fails: Retry failed documents (up to 2 attempts per document)
+- If backup fails but documents exist: Retry backup only, warn if still fails
+- If total failure: Proceed without audience documents, warn user, mark Phase 7 as "degraded"
+
+---
+
 ## Pass/Fail Actions Summary
 
 | Gate | On Pass | On Fail |
@@ -416,7 +528,8 @@ def validate_gate_6(session_state: dict) -> tuple:
 | 3 | Proceed to Phase 4 | Handle user choice |
 | 4 | Proceed to Phase 5 | Handle user choice |
 | 5 | Proceed to Phase 6 | Partial proceed or retry |
-| 6 | Complete workflow | Resume interview |
+| 6 | Proceed to Phase 7 | Resume interview |
+| 7 | Complete workflow | Retry documents or proceed without |
 
 ## Minimum Thresholds
 
@@ -492,12 +605,21 @@ Phase 6
   COMPLETE
   |
   v
+Phase 7
+  |
+  v
+[Gate 7] --PARTIAL--> Proceed with available documents, warn user
+  |      --TOTAL FAIL--> Proceed without audience documents (degraded)
+  |
+  PASS
+  |
+  v
 Workflow Complete
 ```
 
 ## Bypassing Gates
 
-Gates 0, 1, 2, and 5 cannot be bypassed (automated validation).
+Gates 0, 1, 2, 5, and 7 cannot be bypassed (automated validation).
 
 Gates 3, 4, and 6 can be "bypassed" by user choice:
 - Gate 3: User can approve with known issues
