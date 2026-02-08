@@ -33,6 +33,70 @@ Do NOT use this skill when:
 - **Urgent hotfixes**: Emergency fixes that can't wait for full workflow
 - **Exploratory work**: Just browsing or understanding skills (use Read or Explore agent)
 
+## Delegation Mandate
+
+You are an **orchestrator**. You coordinate specialist agents -- you do not perform specialist analysis, research, or implementation yourself.
+
+**You ARE the coordinator who ensures** analysis, research, review, and implementation happen through delegation to specialist agents via Task tool.
+
+**You are NOT** an analyst, researcher, reviewer, or implementor. You do not perform best-practices analysis, external research, edge-case simulation, knowledge-engineering analysis, adversarial review, or code implementation yourself.
+
+**Orchestrator-owned tasks** (you DO perform these yourself):
+- Session setup, directory creation, state file management
+- Mode detection and user interaction for mode selection
+- Quality gate evaluation (checking that agent outputs meet criteria)
+- User communication (presenting options, gathering decisions)
+- Workflow routing (determining which phase to execute next)
+- Pre-flight validation (git checks, file existence)
+- Orchestrator detection (determining if target skill is an orchestrator)
+
+### When You Might Be Resisting Delegation
+
+| Rationalization | Reality |
+|----------------|---------|
+| "This analysis is too simple to delegate" | Simple tasks still consume context window. Delegate. |
+| "I can do it faster myself" | Speed is not the goal; context isolation and specialist quality are. |
+| "The agent will just repeat what I already know" | The agent provides independent verification. Your knowledge may be incomplete. |
+| "It's just a quick read of the file" | Reading specialist content to make specialist decisions IS specialist work. |
+
+**Self-check before every action**: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
+
+## State Anchoring
+
+Start every response with a phase indicator:
+
+```
+[Phase N/4 - {phase_name}] {brief status}
+```
+
+Examples:
+- `[Phase 1/4 - Refinement] Gathering requirements from user`
+- `[Phase 2/4 - Analysis] 3/4 agents completed, waiting for external-researcher`
+- `[Phase 3/4 - Decision] Synthesizing 4 analysis reports`
+- `[Phase 4/4 - Execution] Implementing change 3/12`
+
+**Protocol**:
+1. Before starting any phase: Read `${SESSION_DIR}/session-state.json`. Confirm current_phase matches expectations.
+2. After any user interaction: Answer the user, then re-anchor with phase indicator.
+3. If phase indicator and state file disagree: Trust state file, not memory.
+
+## Tool Selection
+
+| Situation | Tool | Reason |
+|-----------|------|--------|
+| Phase 2 parallel analysis (4 agents) | Task tool | Context isolation, parallel execution |
+| Phase 2.5 strategic review | Task tool | Separate specialist context |
+| Phase 3 synthesis | Task tool | Independent decision-making context |
+| Phase 3 adversarial review | Task tool | Independent, skeptical review |
+| Phase 4 implementation | Task tool | Isolated execution environment |
+| Loading reference docs for YOUR routing decisions | Read tool | Orchestrator decision support |
+| Loading skill instructions to decide WHICH specialist to invoke | Read tool (brief scan) | Routing information, not specialist work |
+| User interaction (questions, approvals, options) | AskUserQuestion | Structured user communication |
+| File operations (create, modify files) | Write tool (via executor agent) | Delegated to executor specialist |
+| Validation scripts, git operations | Bash tool | Infrastructure commands |
+
+**Self-check**: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
+
 ## Workflow Overview
 
 ```
@@ -335,6 +399,37 @@ User must approve:
 **If Gate 1 fails**: Return to request-refiner for more refinement.
 
 **If Gate 1 passes**: Update session state and proceed to Mode Selection.
+
+**Post-Gate 1: Orchestrator Detection**
+
+After specification approval, determine if the target skill is an orchestrator:
+
+1. Read target SKILL.md (if editing an existing skill)
+2. Score against detection criteria:
+
+| Signal | Score | Check |
+|--------|-------|-------|
+| Name contains orchestrator keyword (pm, coordinator, orchestrator, pipeline, architect) | +1 | Check skill name |
+| Description mentions coordination terms (coordinate, orchestrate, multi-agent, pipeline) | +1 | Check description field |
+| Delegates to other skills via Task tool | +2 | Search for Task tool usage |
+| Has named phases/stages with sequential progression | +1 | Search for Phase/Stage headers |
+| Has quality gates between phases | +1 | Search for Gate references |
+| Manages session state across phases | +1 | Search for state file management |
+
+3. Apply thresholds:
+   - Score >= 4: `"Detected as orchestrator (confidence: high). Apply orchestrator analysis? [Y/n]"`
+   - Score 2-3: `"May be an orchestrator (confidence: medium). Apply orchestrator analysis? [y/N]"`
+   - Score 0-1: Not an orchestrator. Skip orchestrator analysis.
+   - Always append: `"If this IS an orchestrator, reply 'orchestrator' to enable pattern analysis."`
+
+4. If creating a new skill: Ask directly: "Will this skill orchestrate other skills? [y/N]"
+
+5. Record detection result in session state (add to the session-state.json update):
+   ```json
+   "orchestrator_detected": true/false,
+   "orchestrator_confidence": "high"/"medium"/"none",
+   "orchestrator_user_confirmed": true/false
+   ```
 
 ```bash
 # Update session state
@@ -693,6 +788,26 @@ Task 4: external-researcher
 **Rationale for wave-based execution**: Staggering launches by 30-60 seconds reduces system resource contention and improves reliability for parallel agent execution.
 
 **Important**: All 4 agents run in parallel (waves overlap). Wait for all to complete before proceeding to Phase 3.
+
+**Orchestrator Analysis (conditional -- only when orchestrator_detected is true in session state)**:
+
+When the target skill is an orchestrator, Phase 2 agents perform additional analysis:
+
+**best-practices-reviewer** (evaluates REQUIRED patterns):
+- Use Read tool to read `/Users/davidangelesalbores/repos/claude/claude-config/skills/skill-editor/references/orchestrator-checklist.md` (REQUIRED section only)
+- Evaluate the 6 REQUIRED patterns against the target skill
+- For each pattern: report PRESENT / PARTIAL / ABSENT with one-sentence evidence citation
+- Do NOT sacrifice general best-practices review depth for orchestrator checklist completeness
+
+**knowledge-engineer** (evaluates RECOMMENDED patterns):
+- Use Read tool to read `/Users/davidangelesalbores/repos/claude/claude-config/skills/skill-editor/references/orchestrator-checklist.md` (RECOMMENDED section only)
+- Evaluate the 4 RECOMMENDED patterns as part of structural completeness analysis
+- For each pattern: report PRESENT / PARTIAL / ABSENT / N/A with evidence
+- N/A is valid when architectural mismatch exists (e.g., event-driven orchestrator lacks phases)
+
+**Neither agent evaluates all 11 patterns. Division of labor prevents cognitive overload.**
+
+**external-researcher and edge-case-simulator**: No additional orchestrator-specific tasks.
 
 **Agent Timeouts and Retry Logic**: Each agent has a 10-minute timeout. If any agent exceeds this:
 
@@ -1528,6 +1643,15 @@ echo "[$CURRENT_MODE MODE] Proceeding with Phase 3..."
    - Validation steps
    - Rollback plan
 
+**Orchestrator-Specific Synthesis** (when orchestrator_detected is true in session state):
+
+5. Read orchestrator checklist results from both best-practices-review.md and knowledge-engineering-analysis.md
+6. If REQUIRED patterns are ABSENT: Implementation plan MUST include adding those patterns
+7. If RECOMMENDED patterns are ABSENT: Implementation plan SHOULD note them as suggested additions
+8. Reference pattern templates from `orchestrator-best-practices.md` for copy-paste inclusion in the plan
+9. Check Pattern Interactions section in orchestrator-best-practices.md to avoid contradictions between added patterns
+10. For existing orchestrators: PARTIAL with a working variant is acceptable -- do NOT recommend replacing working implementations with standard templates
+
 **Output File**: `${SESSION_DIR}/implementation-plan.md`
 
 #### Part B: Adversarial Review
@@ -1885,28 +2009,35 @@ Decision thresholds (from CONFIG_MANAGEMENT.md):
 
 ## Error Handling
 
-### If Any Phase Fails
+### Retry Protocol (Phase 2 Agent Failures)
+- First failure: Wait 30s, retry automatically
+- Second failure: User decision required (proceed with placeholder or abort)
+- Maximum 2 attempts per critical agent
+- Retried operations should be idempotent (re-running should not create duplicate analysis files)
 
-1. **Stop immediately**
-2. **Document error**
-3. **Rollback if needed**: `git reset --hard HEAD`
-4. **Re-sync**: `./sync-config.py push`
-5. **Report to user**
-6. **Ask**: Retry, skip, or abort?
+### Graceful Degradation (Supplementary Agent Failures)
+- external-researcher timeout: Proceed without research analysis
+- knowledge-engineer timeout (after retry): Proceed with 3 analyses
+- Decision-synthesizer notes missing perspectives in synthesis
 
-### If Validation Fails (Gate 4 or 5)
+### Circuit Breaker (Cascading Failures)
+- If 2+ critical agents fail in Phase 2: Stop retrying, escalate to user
+- User choices: retry all, proceed with available, or abort
+- Reference: programming-pm circuit breaker pattern (open after consecutive failures)
 
-1. **Do NOT proceed**
-2. **Fix issues in claude-config/**
-3. **Re-validate**
-4. **Continue only when validated**
+### Rollback Protocol (Phase 4 Failures)
+1. Stop immediately
+2. `git reset --hard HEAD` (revert uncommitted changes)
+3. `./sync-config.py push` (re-sync from repo)
+4. Document failure in planning journal
+5. Report to user with options: retry, skip, or abort
 
-### If User Cancels (Ctrl+C)
-
-1. **Check git status**
-2. **Rollback uncommitted changes**: `git reset --hard HEAD`
-3. **Re-sync**: `./sync-config.py push`
-4. **Document in planning journal**: "Cancelled by user"
+### Interrupt Handling (User Cancels)
+1. Check git status
+2. Rollback uncommitted changes: `git reset --hard HEAD`
+3. Re-sync: `./sync-config.py push`
+4. Session state preserved in `${SESSION_DIR}/` for potential resume
+5. Document in planning journal: "Cancelled by user"
 
 ## Integration with Existing Tools
 
@@ -2006,6 +2137,19 @@ Implementation:
 - Phase 2: Analyze (best practices for doc skills, community patterns, edge cases)
 - Phase 3: Plan (file structure, workflow steps, examples)
 - Phase 4: Create files, validate, sync, test, commit
+
+## Timeout Configuration
+
+| Phase | Component | Timeout | Exceeded Action |
+|-------|-----------|---------|-----------------|
+| 1 | request-refiner | 30 min | Escalate to user |
+| 2 | critical agents (Wave 1-2) | 10 min each | Auto-retry once, then user decision |
+| 2 | supplementary agent (Wave 3) | 10 min | Proceed without |
+| 2.5 | strategy-consultant | 30 min | User decision (proceed/retry/abort) |
+| 3 | decision-synthesizer | 30 min | Escalate to user |
+| 3 | adversarial-reviewer | 30 min | Escalate to user |
+| 4 | executor | 60 min | Escalate to user |
+| Global | entire workflow | 4 hours | Safety ceiling, force escalate |
 
 ## Notes
 

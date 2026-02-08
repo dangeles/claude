@@ -112,7 +112,7 @@ Refined Specification:
   - Boundary conditions tested
   - Error handling paths specified
 
-- [ ] All 3 parallel agents completed
+- [ ] All 4 parallel agents completed
   - best-practices-reviewer finished
   - external-researcher finished
   - edge-case-simulator finished
@@ -121,6 +121,22 @@ Refined Specification:
   - Agents don't contradict each other
   - Inconsistencies resolved
   - Consensus approach identified
+
+### Orchestrator-Specific Checks (SOFT -- if target is orchestrator)
+
+These checks are non-blocking. Failure produces warnings, not gate failures.
+
+- [ ] (SOFT) Orchestrator checklist REQUIRED section completed by best-practices-reviewer
+  - 6 REQUIRED patterns evaluated with evidence citations
+- [ ] (SOFT) Orchestrator checklist RECOMMENDED section completed by knowledge-engineer
+  - 4 RECOMMENDED patterns evaluated with evidence citations
+- [ ] (SOFT) Coverage score calculated (N/6 required, M/4 recommended)
+- [ ] (SOFT) Missing REQUIRED patterns flagged for implementation plan
+
+**SOFT check failure handling**:
+- Log warning: "Orchestrator analysis incomplete -- [specific check]"
+- Gate 2 still passes if all HARD checks pass
+- Decision-synthesizer notified: "Synthesize without orchestrator-specific input"
 
 **Validation Commands:**
 

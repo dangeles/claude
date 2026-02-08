@@ -26,7 +26,7 @@ skills/
 ```yaml
 ---
 name: skill-name
-description: Brief one-line description (max 100 chars)
+description: Brief one-line description (max 1024 chars)
 author: Author Name <email@example.com> (OPTIONAL)
 version: 1.0.0 (OPTIONAL)
 tags: [tag1, tag2, tag3] (OPTIONAL)
@@ -171,8 +171,8 @@ def validate_frontmatter(skill_file):
         raise ValueError(f"Invalid name format: {name}")
 
     # Validate description length
-    if len(frontmatter['description']) > 100:
-        raise ValueError("Description exceeds 100 characters")
+    if len(frontmatter['description']) > 1024:
+        raise ValueError("Description exceeds 1024 characters")
 
     return True
 ```
@@ -280,6 +280,47 @@ This skill requires:
 - One purpose per skill
 - Compose smaller, focused skills
 - Provide realistic examples
+
+## Orchestrator Skill Requirements
+
+Orchestrator skills coordinate other skills or agents to accomplish complex, multi-phase work. They have additional requirements beyond standard skills.
+
+### Detection Criteria
+
+A skill qualifies as an orchestrator when it scores 4+ on the detection algorithm (see `orchestrator-best-practices.md` for the complete scoring system). Key signals include: delegates to other skills via Task tool, has named phases/stages, manages session state, and has quality gates between phases.
+
+### REQUIRED Sections (for new orchestrator skills)
+
+These sections MUST be present. Evaluated by Phase 2 best-practices-reviewer.
+
+1. **Delegation Mandate**: Explicit "you ARE / you are NOT" section defining orchestrator vs. specialist boundaries
+2. **State Anchoring**: Response prefix format, state file read before each phase, re-anchor after interaction
+3. **Tool Selection Table**: Explicit table mapping situations to tools (Task vs. Read) with self-check
+4. **Error Handling (Structured)**: Named patterns (retry, circuit breaker, saga, graceful degradation)
+5. **Timeout Configuration**: Per-phase timeout table with exceeded-action for each
+6. **Session Management**: Session directory, state file, interrupt handling
+
+### RECOMMENDED Sections (for orchestrator skills)
+
+These sections SHOULD be present when applicable. Evaluated by Phase 2 knowledge-engineer. Missing RECOMMENDED sections are noted but do not fail quality gates.
+
+7. **Handoff Schema**: Structured YAML handoff between phases with validation
+8. **Pre-Flight Validation**: Check skill dependencies before workflow starts
+9. **Mode Selection / Complexity Detection**: Three-tier detection with user override
+10. **Handoff Frontmatter**: YAML frontmatter declaring handoff capabilities
+
+### OPTIONAL Sections
+
+11. **Quality Gate Override Protocol**: Severity-based override with logging (single-implementation pattern)
+
+### Forward-Looking Note
+
+These requirements apply to NEW orchestrator skills created via skill-editor and serve as RECOMMENDED guidance for existing orchestrators. They are not retroactive mandates.
+
+### References
+
+- Pattern templates and detection checklists: `orchestrator-best-practices.md`
+- Evaluation framework: `orchestrator-checklist.md`
 
 ## Version Control
 
