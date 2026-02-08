@@ -68,7 +68,7 @@ Key metrics:
 
 ## Related Commits
 
-- [pending]: feat(skill-editor): Integrate orchestrator best practices
+- ce7446f: feat(skill-editor): Integrate orchestrator best practices
 
 ## Next Steps
 
