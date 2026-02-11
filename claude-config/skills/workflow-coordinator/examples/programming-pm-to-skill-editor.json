@@ -1,0 +1,102 @@
+{
+  "handoff": {
+    "version": "3.0",
+    "schema_type": "universal",
+    "timestamp": "2026-02-08T10:15:00Z",
+    "trace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+
+    "source": {
+      "skill": "programming-pm",
+      "workflow_id": "session-20260208-091500-67890",
+      "session_path": "/tmp/programming-pm-session/session-20260208-091500-67890",
+      "phase": "Phase 2: Requirements Analysis"
+    },
+
+    "target": {
+      "skill": "skill-editor",
+      "invocation": "/skill skill-editor",
+      "category": "skill-development"
+    },
+
+    "context": {
+      "summary": "During requirements analysis, identified need for a new data-validation skill to handle input sanitization across multiple endpoints.",
+      "original_prompt": "Build a REST API for the inventory management system with input validation.",
+      "problem_type": "implementation",
+      "focus_areas": [
+        "Create a reusable data-validation skill for input sanitization",
+        "Support JSON Schema-based validation rules",
+        "Include common validators: email, URL, date, numeric range"
+      ],
+      "known_gaps": [
+        "Exact validation rule format not yet decided",
+        "Performance requirements for validation throughput unknown"
+      ],
+      "success_criteria": [
+        "data-validation skill created with SKILL.md and references",
+        "Skill handles JSON Schema validation rules",
+        "Integration tested with programming-pm workflow"
+      ]
+    },
+
+    "payload": {
+      "working": {
+        "skill_request": {
+          "name": "data-validation",
+          "type": "utility-skill",
+          "description": "Reusable input validation using JSON Schema rules",
+          "integration_point": "programming-pm Phase 3 (Architecture)"
+        },
+        "requirements_excerpt": {
+          "endpoints_needing_validation": 12,
+          "common_patterns": ["email", "url", "iso-date", "positive-integer", "uuid"]
+        }
+      },
+
+      "references": {
+        "files": [
+          {
+            "path": "/tmp/programming-pm-session/session-20260208-091500-67890/requirements.md",
+            "description": "Full requirements document with validation rules",
+            "relevance": "critical"
+          }
+        ],
+        "urls": []
+      }
+    },
+
+    "meta": {
+      "token_count": 800,
+      "confidence": "medium",
+      "handoff_chain": ["programming-pm"],
+      "handoff_reason": "programming-pm identified need for reusable validation skill during requirements analysis",
+      "user_approved": true
+    },
+
+    "tracing": {
+      "events": [
+        {
+          "timestamp": "2026-02-08T09:15:00Z",
+          "event_type": "created",
+          "workflow": "programming-pm",
+          "details": {
+            "phase": "Phase 1: Requirements"
+          }
+        },
+        {
+          "timestamp": "2026-02-08T10:15:00Z",
+          "event_type": "transmitted",
+          "workflow": "programming-pm",
+          "details": {
+            "target": "skill-editor",
+            "validation": "passed"
+          }
+        }
+      ],
+      "parent_span_id": null,
+      "tags": {
+        "project": "inventory-management-api",
+        "priority": "medium"
+      }
+    }
+  }
+}

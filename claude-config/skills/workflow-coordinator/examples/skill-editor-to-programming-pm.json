@@ -1,0 +1,147 @@
+{
+  "handoff": {
+    "version": "3.0",
+    "schema_type": "universal",
+    "timestamp": "2026-02-07T18:30:00Z",
+    "expires_at": "2026-02-08T18:30:00Z",
+    "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+
+    "source": {
+      "skill": "skill-editor",
+      "workflow_id": "session-20260207-183000-12345",
+      "session_path": "/tmp/skill-editor-session/session-20260207-183000-12345",
+      "phase": "Phase 3: Decision & Review"
+    },
+
+    "target": {
+      "skill": "programming-pm",
+      "invocation": "/skill programming-pm",
+      "category": "implementation",
+      "expected_phase": "Phase 4: Implementation"
+    },
+
+    "context": {
+      "summary": "Implement coordination system for multi-workflow handoffs. Strategic review confirmed hybrid distributed pattern. User approved plan.",
+      "original_prompt": "I am beginning to have a lot of different workflows, and ideally these workflows should be able to coordinate handoffs amongst them.",
+      "problem_type": "implementation",
+      "focus_areas": [
+        "Implement universal handoff schema v3.0 with JSON Schema validation",
+        "Add distributed tracing support (trace_id propagation)",
+        "Create handoff registry for workflow discovery"
+      ],
+      "known_gaps": [
+        "Migration strategy for existing workflows not yet finalized",
+        "Observability dashboard deferred to future work"
+      ],
+      "success_criteria": [
+        "Any workflow can hand off to any other using universal schema",
+        "Token limits enforced (2000 token max per handoff)",
+        "Distributed tracing tracks multi-hop handoffs via trace_id"
+      ]
+    },
+
+    "payload": {
+      "working": {
+        "key_decisions": {
+          "pattern": "Hybrid distributed orchestration",
+          "foundation": "Extend perspective-swarm v2.0 to universal v3.0",
+          "migration_approach": "Additive - existing workflows continue working"
+        },
+        "architecture_highlights": {
+          "tiered_context": "working (<500t) + session (<1000t) + references (<500t)",
+          "distributed_tracing": "trace_id (UUID) propagated through all handoffs",
+          "validation": "JSON Schema + token counting",
+          "discovery": "Frontmatter metadata + optional registry file"
+        },
+        "files_to_create": [
+          "claude-config/skills/workflow-coordinator/SKILL.md",
+          "claude-config/skills/workflow-coordinator/references/universal-handoff-schema-v3.0.json"
+        ]
+      },
+
+      "session": {
+        "artifacts": [
+          {
+            "name": "Implementation Plan",
+            "path": "/tmp/skill-editor-session/session-20260207-183000-12345/implementation-plan.md",
+            "type": "specification",
+            "description": "Detailed implementation plan for universal handoff coordination system"
+          },
+          {
+            "name": "Strategic Review",
+            "path": "/tmp/skill-editor-session/session-20260207-183000-12345/strategic-review.md",
+            "type": "analysis",
+            "description": "Phase 2.5 strategic architectural assessment"
+          }
+        ],
+        "state": {
+          "workflow_mode": "STANDARD",
+          "phase": "3",
+          "quality_gates_passed": [1, 2, 3]
+        }
+      },
+
+      "references": {
+        "files": [
+          {
+            "path": "claude-config/skills/programming-pm/references/handoff-schema.md",
+            "description": "Current programming-pm handoff schema v1.2",
+            "relevance": "important"
+          },
+          {
+            "path": "claude-config/skills/perspective-swarm/references/handoff-payload.schema.json",
+            "description": "perspective-swarm v2.0 schema (foundation for v3.0)",
+            "relevance": "critical"
+          }
+        ],
+        "urls": []
+      }
+    },
+
+    "meta": {
+      "token_count": 1283,
+      "confidence": "high",
+      "handoff_chain": ["skill-editor"],
+      "handoff_reason": "skill-editor Phase 3 complete, implementation approved, ready for programming-pm to execute",
+      "payload_hash": "sha256:d6a5e4f3b2c1a098765432100fedcba0987654321fedcba0987654321fedcba0",
+      "payload_size_bytes": 2400,
+      "user_approved": true
+    },
+
+    "tracing": {
+      "events": [
+        {
+          "timestamp": "2026-02-07T15:00:00Z",
+          "event_type": "created",
+          "workflow": "skill-editor",
+          "details": {
+            "phase": "Phase 1: Refinement"
+          }
+        },
+        {
+          "timestamp": "2026-02-07T18:00:00Z",
+          "event_type": "processed",
+          "workflow": "skill-editor",
+          "details": {
+            "phase": "Phase 3: Decision & Review",
+            "result": "GO"
+          }
+        },
+        {
+          "timestamp": "2026-02-07T18:30:00Z",
+          "event_type": "transmitted",
+          "workflow": "skill-editor",
+          "details": {
+            "target": "programming-pm",
+            "validation": "passed"
+          }
+        }
+      ],
+      "parent_span_id": null,
+      "tags": {
+        "project": "workflow-coordination-system",
+        "priority": "high"
+      }
+    }
+  }
+}

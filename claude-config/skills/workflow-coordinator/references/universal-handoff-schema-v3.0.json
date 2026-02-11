@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude.ai/skills/universal-handoff-schema.json",
+  "title": "Universal Workflow Handoff Schema v3.0",
+  "description": "Universal schema for workflow-to-workflow handoffs. Extends perspective-swarm v2.0 with distributed tracing, tiered context, and token limits.",
+  "type": "object",
+  "required": ["handoff"],
+  "properties": {
+    "handoff": {
+      "type": "object",
+      "required": ["version", "schema_type", "timestamp", "trace_id", "source", "target", "context", "payload", "meta"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "const": "3.0",
+          "description": "Schema version"
+        },
+        "schema_type": {
+          "type": "string",
+          "const": "universal",
+          "description": "Identifies this as universal handoff (vs workflow-specific)"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+          "description": "ISO8601 UTC timestamp of handoff creation. MUST use UTC with Z suffix."
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+          "description": "Optional: ISO8601 UTC timestamp when payload expires (default: no expiration)"
+        },
+        "trace_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Distributed tracing UUID v4. Generated at workflow start and propagated through all handoffs."
+        },
+        "source": {
+          "type": "object",
+          "required": ["skill", "workflow_id", "session_path", "phase"],
+          "properties": {
+            "skill": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Source skill name (e.g., 'skill-editor', 'programming-pm')"
+            },
+            "workflow_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Unique workflow identifier (e.g., session ID)"
+            },
+            "session_path": {
+              "type": "string",
+              "description": "Absolute path to session directory (for artifact access). Note: /tmp/ paths are ephemeral and may not exist at reception time."
+            },
+            "phase": {
+              "type": "string",
+              "description": "Source workflow phase (e.g., 'Phase 3', 'Stage 4', 'Analysis')"
+            }
+          }
+        },
+        "target": {
+          "type": "object",
+          "required": ["skill"],
+          "properties": {
+            "skill": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Target skill name"
+            },
+            "invocation": {
+              "type": "string",
+              "description": "How to invoke the target skill (e.g., '/skill-editor', 'Skill: programming-pm')"
+            },
+            "category": {
+              "type": "string",
+              "description": "Primary category of target skill. Core: research, implementation, analysis, architecture, verification, creative. Extensible: any custom category."
+            },
+            "expected_phase": {
+              "type": "string",
+              "description": "Optional: Which phase of target workflow to enter (e.g., 'Phase 4: Implementation')"
+            }
+          }
+        },
+        "context": {
+          "type": "object",
+          "required": ["summary", "problem_type"],
+          "properties": {
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "description": "Concise summary of handoff purpose (max 500 chars, ~100 tokens)"
+            },
+            "original_prompt": {
+              "type": "string",
+              "description": "User's original question or request"
+            },
+            "problem_type": {
+              "type": "string",
+              "enum": ["decision", "creative", "analytical", "strategic", "implementation", "research", "verification"],
+              "description": "Type of problem being handed off"
+            },
+            "focus_areas": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "What recipient should emphasize or pay attention to"
+            },
+            "known_gaps": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "What's incomplete, uncertain, or out of scope"
+            },
+            "success_criteria": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "How to determine if handoff objective is met"
+            }
+          }
+        },
+        "payload": {
+          "type": "object",
+          "required": ["working"],
+          "description": "Tiered context structure to prevent bloat. Total size must not exceed 2000 tokens.",
+          "properties": {
+            "working": {
+              "type": "object",
+              "description": "Immediate working context (<500 tokens). Required for handoff.",
+              "additionalProperties": true
+            },
+            "session": {
+              "type": "object",
+              "description": "Session-level context and artifacts (<1000 tokens). Optional.",
+              "properties": {
+                "artifacts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "path", "type"],
+                    "properties": {
+                      "name": {"type": "string"},
+                      "path": {"type": "string", "description": "Absolute file path or relative to session_path"},
+                      "type": {"type": "string", "enum": ["specification", "analysis", "code", "documentation", "data", "model", "report"]},
+                      "description": {"type": "string"},
+                      "checksum": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+                    }
+                  }
+                },
+                "state": {
+                  "type": "object",
+                  "description": "Session state variables",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "references": {
+              "type": "object",
+              "description": "File paths for on-demand loading (<500 tokens, paths only). Recipient loads if needed.",
+              "properties": {
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["path"],
+                    "properties": {
+                      "path": {"type": "string"},
+                      "description": {"type": "string"},
+                      "relevance": {"type": "string", "enum": ["critical", "important", "optional"]}
+                    }
+                  }
+                },
+                "urls": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["url"],
+                    "properties": {
+                      "url": {"type": "string", "format": "uri"},
+                      "description": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": ["token_count", "confidence"],
+          "properties": {
+            "token_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000,
+              "description": "Total token count of handoff payload. MUST NOT exceed 2000 tokens."
+            },
+            "confidence": {
+              "type": "string",
+              "enum": ["high", "medium", "low"],
+              "description": "Source's confidence in handoff content"
+            },
+            "handoff_chain": {
+              "type": "array",
+              "items": {"type": "string"},
+              "minItems": 1,
+              "description": "Track handoff history: ['workflow-a', 'workflow-b', 'workflow-c']. Built from session history."
+            },
+            "handoff_reason": {
+              "type": "string",
+              "description": "Why this handoff is happening"
+            },
+            "payload_hash": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$",
+              "description": "SHA256 hash of payload for integrity verification"
+            },
+            "payload_size_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Payload size in bytes"
+            },
+            "user_approved": {
+              "type": "boolean",
+              "description": "Whether user explicitly approved this handoff"
+            }
+          }
+        },
+        "tracing": {
+          "type": "object",
+          "description": "Distributed tracing and observability data",
+          "properties": {
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["timestamp", "event_type", "workflow"],
+                "properties": {
+                  "timestamp": {"type": "string", "format": "date-time"},
+                  "event_type": {"type": "string", "enum": ["created", "validated", "transmitted", "received", "processed", "error"]},
+                  "workflow": {"type": "string"},
+                  "details": {"type": "object", "additionalProperties": true}
+                }
+              }
+            },
+            "parent_span_id": {
+              "type": ["string", "null"],
+              "description": "Parent span ID for nested handoffs (OpenTelemetry style). Null for root spans."
+            },
+            "tags": {
+              "type": "object",
+              "additionalProperties": {"type": "string"},
+              "description": "Custom tracing tags"
+            }
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    }
+  },
+  "unevaluatedProperties": false,
+  "$comment": "Version History: v1.0 (programming-pm internal), v2.0 (perspective-swarm generic), v3.0 (universal with tracing + tiered context + token limits)"
+}
