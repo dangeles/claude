@@ -83,6 +83,21 @@ output.
 
 ---
 
+## Score Normalization
+
+The SEO score uses a 1-100 scale while all other dimensions use 1-10. To compute the Overall score:
+
+1. **Normalize SEO**: Divide by 10. Example: 62/100 becomes 6.2/10.
+2. **Compute Overall**: Arithmetic mean of all non-N/A dimension scores (Design, Portfolio, normalized SEO, Narrative Coherence, Visual Coherence).
+3. **Round** to one decimal place.
+4. **Display**: In the Scores table, always show SEO as `[N]/100` to preserve the original scale. Show normalized value only in the Overall calculation.
+5. **N/A handling**: If a dimension is N/A (e.g., Visual Coherence with only 1 visual site), exclude it from the average and note in the table: `N/A (excluded from overall)`.
+
+Example: Design 7, Portfolio 6, SEO 62 (normalized 6.2), Narrative 7, Visual 8
+Overall = (7 + 6 + 6.2 + 7 + 8) / 5 = 6.8/10
+
+---
+
 ## Deliverable A: action-items.md
 
 Synthesize all findings into a prioritized action list with three tiers.
@@ -237,23 +252,21 @@ Recommended next review: [next month]. Key items to track:
 
 ## Output Contracts
 
-These sections are consumed by Phase 5 for user presentation:
+Phase 5 searches for these exact heading strings. Use them verbatim:
 
-- **action-items.md "Must Do" list** is presented to the user for approval
-  of which changes to implement now.
-- **audit-report.md "Scores" table** is used for the headline summary
-  presented at the start of Phase 5.
-- **audit-report.md "Priority Matrix"** guides the user's decision-making
-  about which actions to take.
+- **action-items.md**: Section `## Must Do (this month)` -- presented to user for approval
+- **audit-report.md**: Section `## Scores` -- used for headline summary at start of Phase 5
+- **audit-report.md**: Section `## Priority Matrix` -- guides user decision-making
+- **audit-report.md**: Section `## Executive Summary` -- opening presentation
 
 Ensure these sections are always present, well-formatted, and actionable.
-Phase 5 depends on them.
+Phase 5 depends on them. Do not rename or restructure these headings.
 
 ---
 
 ## Tool Usage
 
 - Use **Read tool** for: all Phase 2 and Phase 3 output files, previous audit report
-- Use **Write tool** for: writing the three deliverable files to the session directory
+- Use **Write tool** for: writing the three deliverable files to the session `outputs/` directory (paths provided in your delegation prompt)
 - Do NOT use Bash, WebSearch, Glob, or Grep. You are synthesizing existing outputs, not performing new analysis.
 - Do NOT modify site files. You produce deliverables only.

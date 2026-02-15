@@ -14,6 +14,9 @@ gates, deployment pipeline, and rollback procedures.
 |-------|---------|----------------|
 | git installed | `which git` | ABORT: "git is required. Install git and retry." |
 | git push access per repo | `git ls-remote {repo-url}` for each site in registry | ABORT per-repo: "Cannot access [repo]. Check SSH keys or credentials. Offer: skip this repo, abort." |
+
+**Limitation**: `git ls-remote` verifies read access, not write access. Push access is verified at push time in Phase 5. If a push fails due to insufficient permissions, it will be caught and handled by the Phase 5 error handling protocol.
+
 | Session directory writable | `mkdir -p /tmp/web-presence-session/review-YYYY-MM/` | ABORT: "Cannot create session directory. Check /tmp permissions." |
 
 ### Soft Requirements (warn and continue)
@@ -22,7 +25,7 @@ gates, deployment pipeline, and rollback procedures.
 |-------|---------|----------------|
 | Jekyll installed | `which bundle && bundle exec jekyll --version` | WARN: "Jekyll not found. Build validation for Jekyll sites will be skipped. Pushes to Jekyll sites will proceed without build verification (user accepts risk)." |
 | LaTeX installed | `which pdflatex` | WARN: "pdflatex not found. CV compilation validation will be skipped." |
-| WebSearch available | Check tool availability | WARN: "WebSearch unavailable. SEO keyword research and live indexing checks will be limited." |
+| WebSearch available | (Cannot be pre-checked; SEO Manager handles unavailability gracefully per its instruction file) | N/A -- SEO Manager contains explicit WebSearch fallback protocol |
 | Disk space | `df -h /tmp` (check available space) | WARN if < 1GB: "Low disk space in /tmp. Session may fail for large repos." |
 
 ---
@@ -33,12 +36,19 @@ gates, deployment pipeline, and rollback procedures.
 
 ```
 /tmp/web-presence-session/review-YYYY-MM/
-  repos/           -- cloned repositories go here
-  outputs/         -- sub-function reports written here
-  brand-reference.md  -- extracted by Coherence Manager
+  repos/              -- cloned repositories go here
+  outputs/            -- ALL sub-function reports written here:
+    design-review.md    -- from Website Designer
+    portfolio-review.md -- from Portfolio Manager
+    seo-audit.md        -- from SEO Manager
+    brand-reference.md  -- from Coherence Manager
+    coherence-audit.md  -- from Coherence Manager
+    action-items.md     -- from Suggestion Engine
+    content-calendar.md -- from Suggestion Engine
+    audit-report.md     -- from Suggestion Engine
   session-state.json  -- phase tracking and status
   rollback-info.json  -- pre-push SHAs (created in Phase 5)
-  .lock              -- concurrent session prevention
+  .lock               -- concurrent session prevention
 ```
 
 ### Step 2: Check for Existing Session
@@ -57,27 +67,29 @@ If `/tmp/web-presence-session/review-YYYY-MM/` already exists:
 
 If `.lock` file exists:
 
-1. Read PID from lock file.
-2. Check if process is still running.
-3. If running: "Another review session is active (PID [N]). Cannot run
-   concurrently. Wait for it to finish or manually remove the lock file."
-4. If not running (stale lock): "Found stale lock file. Previous session may
-   have crashed. Removing lock and proceeding."
+1. Read the lock file (JSON format: `{"locked_at": "ISO-8601", "session_id": "review-YYYY-MM"}`).
+2. Check timestamp age against 120-minute global ceiling.
+3. If lock is younger than 120 minutes: "Another review session is active (started [timestamp], session [ID]). Cannot run concurrently. Wait for it to finish or manually remove the lock file."
+4. If lock is older than 120 minutes (stale): "Found stale lock file from [timestamp]. Previous session likely crashed or timed out. Removing lock and proceeding."
 
-Create lock file with current PID.
+Create lock file:
+```bash
+echo '{"locked_at": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "session_id": "review-YYYY-MM"}' > .lock
+```
 
 ### Step 4: Clone Repositories
 
 For each site in the registry:
 
 ```bash
-git clone --depth 1 --single-branch --branch {branch} \
+git clone --depth 25 --single-branch --branch {branch} \
   git@github.com:{repo}.git \
   /tmp/web-presence-session/review-YYYY-MM/repos/{repo-name}/
 ```
 
-Use shallow clones (`--depth 1`) to save disk space and time. Record clone
-status in session-state.json per repo.
+Use shallow clones (`--depth 25`) to save disk space while providing enough
+history for Portfolio Manager's `git log --oneline -20` and rollback operations.
+Record clone status in session-state.json per repo.
 
 If a clone fails: record the error, continue with remaining repos. The
 orchestrator will offer partial review or abort after all clones are attempted.
@@ -189,10 +201,12 @@ ask whether to proceed with partial review or abort.
 ### Gate 2: Phase 2 -> Phase 3
 
 Pass criteria:
-- [ ] At least 2 of 3 Phase 2 reports exist in session directory
-- [ ] Each existing report contains > 200 words (not placeholder/empty)
-- [ ] Reports contain expected section headers (verify at least one expected
-      heading per report)
+- [ ] At least 2 of 3 Phase 2 reports exist in `outputs/`
+- [ ] Each existing report contains the required section headers:
+  - `design-review.md`: "Current Assessment" AND "Accessibility Check"
+  - `portfolio-review.md`: "Current State" AND "Updates Needed"
+  - `seo-audit.md`: "Plugin Stack Status" AND "Critical Issues"
+- [ ] No report consists solely of error messages or placeholder text
 
 Failure action: If 1 report missing, proceed with warning passed to Coherence
 Manager. If 2+ reports missing: pause and ask user whether to proceed (limited
@@ -231,6 +245,21 @@ Pass criteria:
 Failure action: Block push for this repo. Report the failing check. Offer:
 fix the issue, skip this repo, or abort remaining pushes.
 
+### Output Contract Map
+
+Traces data flow between producers and consumers. Gate checks validate required sections.
+
+| Producer | Output File | Required Sections | Consumer(s) |
+|----------|------------|-------------------|-------------|
+| Website Designer | `outputs/design-review.md` | Current Assessment, Accessibility Check, Quick Wins, Recommendations | Coherence Manager, Suggestion Engine |
+| Portfolio Manager | `outputs/portfolio-review.md` | Current State, Updates Needed, Consistency Check | Coherence Manager, Suggestion Engine |
+| SEO Manager | `outputs/seo-audit.md` | Plugin Stack Status, Critical Issues, Structured Data Check, Canonical URL Check | Suggestion Engine |
+| Coherence Manager | `outputs/coherence-audit.md` | Narrative Coherence Score, Visual Coherence Score | Suggestion Engine |
+| Coherence Manager | `outputs/brand-reference.md` | Visual Identity, Narrative Identity | (reference only) |
+| Suggestion Engine | `outputs/action-items.md` | Must Do (this month), Should Do, Backlog | Orchestrator (Phase 5) |
+| Suggestion Engine | `outputs/audit-report.md` | Executive Summary, Scores, Priority Matrix | Orchestrator (Phase 5) |
+| Suggestion Engine | `outputs/content-calendar.md` | Blog Post Ideas, Portfolio Updates | Orchestrator (Phase 5) |
+
 ---
 
 ## Phase 5 Deployment Pipeline
@@ -266,12 +295,11 @@ For each repo with approved changes:
    EOF
    )"
    ```
-4. **Run build validation** (dispatch by site type):
-   - `jekyll`: `bundle exec jekyll build` (if available)
-   - `latex`: `pdflatex main.tex` (if available)
-   - `custom`: run the `build_command` from site registry
-   - `github-readme`: no build step needed
-   - `none`: skip validation
+4. **Run build validation** using the `build_command` from site registry for each site:
+   - If `build_validation` is `required`: build MUST pass. Block push on failure.
+   - If `build_validation` is `optional`: build failure produces a WARNING but push proceeds.
+   - If `build_validation` is `none` or `build_command` is `none`: skip validation.
+   - For LaTeX: consider using `latexmk -pdf {file}` instead of raw `pdflatex` for proper multi-pass compilation.
 5. **Show diff to user**: `git diff HEAD~1` for this repo.
 6. **Get per-repo push confirmation**: "Push these changes to [repo]? (y/n)"
 7. **Push**: `git push origin {branch}`
@@ -286,10 +314,15 @@ After all pushes complete:
 
 ### Step 5f: Save Audit Report
 
-Copy `audit-report.md` to persistent location:
-`~/.web-presence-audits/audit-YYYY-MM.md`
+Save audit to persistent location:
 
-Create the directory if it does not exist.
+```bash
+mkdir -p ~/.web-presence-audits/
+cp /tmp/web-presence-session/review-YYYY-MM/outputs/audit-report.md \
+   ~/.web-presence-audits/audit-YYYY-MM.md
+```
+
+Note: The `mkdir -p` is essential on first run -- without it, the copy fails silently and trend tracking is permanently broken.
 
 ---
 
@@ -383,6 +416,8 @@ Reviewed-by: web-presence-manager monthly audit (YYYY-MM)
 | `content` | Updating bio, descriptions, text content |
 | `seo` | Meta tags, structured data, sitemap, robots.txt |
 | `docs` | README updates, documentation improvements |
+
+**Note**: The `content` and `seo` types are custom additions for this workflow. If the target repository uses commitlint or similar tools that enforce standard conventional commit types, use `chore(content)` or `chore(seo)` as fallback types.
 
 ### Scopes
 

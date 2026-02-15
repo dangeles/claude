@@ -16,7 +16,7 @@ Each site entry MUST include:
 - **content_areas**: List from `[bio, portfolio, blog, cv, services, team]`
 - **applicable_sub_functions**: Which sub-functions analyze this site
 - **build_command**: Command to validate before push (or `none`)
-- **build_validation**: `required` | `optional` | `none`
+- **build_validation**: `required` (block push on failure) | `optional` (warn on failure, allow push) | `none` (no build step)
 
 Optional fields:
 

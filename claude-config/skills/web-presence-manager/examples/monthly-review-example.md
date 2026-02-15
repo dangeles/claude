@@ -27,21 +27,21 @@ Previous audit: Loaded from ~/.web-presence-audits/audit-2026-01.md
 Session state initialized. Proceeding to Phase 2.
 ```
 
-## Phase 2: Parallel Analysis
+## Phase 2: Sequential Analysis
 
 ```
-[Phase 2/5 - Analysis] Launching 3 sub-functions (wave-based, 15s stagger)
+[Phase 2/5 - Analysis] Launching 3 sub-functions sequentially
 
-  T=0s:  Website Designer  -> analyzing dangeles.github.io...
-  T=15s: Portfolio Manager -> analyzing all 3 sites...
-  T=30s: SEO Manager       -> analyzing dangeles.github.io...
+  [1/3] Website Designer  -> analyzing dangeles.github.io...  [DONE]
+  [2/3] Portfolio Manager -> analyzing all 3 sites...         [DONE]
+  [3/3] SEO Manager       -> analyzing dangeles.github.io...  [DONE]
 
 Sub-function results:
-  [DONE] Website Designer:  design-review.md (Design Score: 7/10)
-  [DONE] Portfolio Manager: portfolio-review.md (Portfolio Score: 6/10)
-  [DONE] SEO Manager:       seo-audit.md (SEO Score: 62/100)
+  [DONE] Website Designer:  outputs/design-review.md (Design Score: 7/10)
+  [DONE] Portfolio Manager: outputs/portfolio-review.md (Portfolio Score: 6/10)
+  [DONE] SEO Manager:       outputs/seo-audit.md (SEO Score: 62/100)
 
-Gate 2 validation: 3/3 reports present, all > 200 words. PASS.
+Gate 2 validation: 3/3 reports present, required sections verified. PASS.
 ```
 
 ## Phase 3: Coherence Audit
@@ -150,6 +150,11 @@ No changes for other repositories.
     - SEO score (currently 62, target 80+ after schema addition)
     - Portfolio currency (2 projects still need adding)
     - CV update (user handling manually)
+
+Session cleanup options:
+  (a) Keep audit reports only (delete cloned repos)
+  (b) Keep everything for reference
+  > a
 
 Session cleanup: keeping audit reports, deleting cloned repos.
 ```

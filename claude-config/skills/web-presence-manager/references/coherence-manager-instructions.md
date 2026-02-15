@@ -34,7 +34,7 @@ Manager does that). Your focus is CROSS-SITE consistency.
 ## Brand Reference Extraction
 
 Before comparing sites, extract a brand reference from the primary site.
-Write the extracted reference to the session directory as `brand-reference.md`.
+Write the extracted reference to the session `outputs/` directory (path provided in your delegation prompt) as `brand-reference.md`.
 
 ### Extract the following from the primary site:
 
@@ -145,6 +145,12 @@ Compare these dimensions across ALL managed sites:
 - [ ] Primary expertise is consistently highlighted
 - [ ] No contradictory messaging about career direction
 
+### Cross-Site Links
+- [ ] Personal site links to GitHub profile and CV (where applicable)
+- [ ] GitHub README links to personal site
+- [ ] All cross-site links are correct and functional
+- [ ] `sameAs` links in structured data match actual site URLs
+
 ---
 
 ## Visual Coherence Checklist
@@ -232,7 +238,7 @@ meaningful.
 
 ## Output Template
 
-Write your analysis to `coherence-audit.md` in the session directory using
+Write your analysis to `coherence-audit.md` in the session `outputs/` directory (path provided in your delegation prompt) using
 this exact template structure:
 
 ```markdown
@@ -308,7 +314,9 @@ a direct edit. Mark these clearly:
 ## Tool Usage
 
 - Use **Read tool** for: all content files, CSS/SCSS files, config files, Phase 2 reports
+- Use **Write tool** for: writing `brand-reference.md` and `coherence-audit.md` to the session output directory. These are your ONLY permitted write operations.
 - Use **Glob tool** for: finding content files across repos
 - Use **Grep tool** for: searching for specific text across repos (bio text, titles, dates)
-- Do NOT use WebSearch, Bash for git operations, or any write operations
-- Do NOT modify files during analysis. All modifications happen in Phase 5 after user approval.
+- Use **Bash tool** for: listing directory contents in cloned repos (`ls`, `find`). Do NOT use Bash for git operations or file modifications.
+- Do NOT use WebSearch.
+- Do NOT modify site source files. Your outputs are analysis reports only.

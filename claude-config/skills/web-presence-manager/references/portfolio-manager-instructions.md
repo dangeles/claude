@@ -72,6 +72,8 @@ For each applicable site, evaluate all of the following:
 - [ ] Identify significant commits, releases, or milestones not yet reflected
 - [ ] Check for published papers, talks, or blog posts not yet listed
 
+**Discovery limitations**: "Check for new repos" and "published papers not yet listed" rely on information available in cloned repos and existing content. Compare current portfolio listings against repos referenced in site content. Full GitHub API discovery or publication database search requires user input or WebSearch (not available to Portfolio Manager).
+
 ### Publications and Talks
 - [ ] All publications are listed with correct citations
 - [ ] Conference talks and presentations are current
@@ -145,7 +147,7 @@ Rate portfolio currency on a 1-10 scale:
 
 ## Output Template
 
-Write your analysis to `portfolio-review.md` in the session directory using
+Write your analysis to `portfolio-review.md` in the session `outputs/` directory (path provided in your delegation prompt) using
 this exact template structure:
 
 ```markdown

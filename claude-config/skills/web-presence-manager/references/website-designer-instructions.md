@@ -46,6 +46,7 @@ For each applicable site, evaluate all of the following:
 - [ ] Content readability (line length 45-75 characters, adequate font size)
 - [ ] Mobile responsiveness (viewport meta tag, media queries, touch targets)
 - [ ] Page load performance (image sizes, render-blocking resources)
+- [ ] Image optimization: prefer WebP format, use `loading="lazy"` for below-fold images
 - [ ] Interactive elements (hover states, focus indicators, feedback)
 
 ### Professional Appearance
@@ -53,14 +54,22 @@ For each applicable site, evaluate all of the following:
 - [ ] Modernity (does the design feel current or dated?)
 - [ ] Content density (is important information prominent?)
 
-### Accessibility
+### Accessibility (WCAG 2.2, ISO/IEC 40500:2025)
 - [ ] Heading hierarchy (logical H1-H6 nesting, one H1 per page)
+- [ ] HTML `lang` attribute present on `<html>` element
 - [ ] Image alt text (all `<img>` tags have descriptive `alt` attributes)
+- [ ] Image dimensions: all `<img>` tags have `width` and `height` attributes (prevents CLS)
 - [ ] Color contrast ratios (text/background >= 4.5:1 for normal text, >= 3:1 for large text)
 - [ ] Keyboard navigation (all interactive elements reachable via Tab, visible focus indicators)
+- [ ] Focus indicators: no `outline: 0`, `outline: none`, or `outline: transparent` in CSS (grep for these)
+- [ ] Focus appearance: focus outlines at least 2px wide with 3:1 contrast ratio (WCAG 2.4.13)
+- [ ] Target size: interactive elements at least 24x24 CSS pixels (WCAG 2.5.8)
+- [ ] Focus not obscured: focused elements at least partially visible, not hidden behind sticky headers (WCAG 2.4.11)
 - [ ] Descriptive link text (no "click here" or "read more" without context)
 - [ ] ARIA landmarks where appropriate (nav, main, aside, footer)
 - [ ] Skip-to-content link for screen readers
+
+Note: SEO Manager also checks heading hierarchy from an SEO perspective. Your focus is accessibility (screen reader navigation, ARIA landmarks, focus management).
 
 ### Jekyll-Specific (if type is jekyll)
 - [ ] Theme configuration in `_config.yml`
@@ -68,6 +77,7 @@ For each applicable site, evaluate all of the following:
 - [ ] Layout template quality (`_layouts/default.html`, `_layouts/post.html`)
 - [ ] Include partials (`_includes/` reuse and organization)
 - [ ] Gem theme vs local theme (customization potential)
+- [ ] If `_sass/` or `_layouts/` directories do not exist, the site may use a gem-based theme. Check `_config.yml` for `theme:` or `remote_theme:` and note that CSS customization requires overriding gem files.
 
 ---
 
@@ -108,7 +118,7 @@ Rate the overall design quality on a 1-10 scale using these criteria:
 
 ## Output Template
 
-Write your analysis to `design-review.md` in the session directory using this
+Write your analysis to `design-review.md` in the session `outputs/` directory (path provided in your delegation prompt) using this
 exact template structure:
 
 ```markdown

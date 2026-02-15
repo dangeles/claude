@@ -7,7 +7,7 @@
 ## Mode Detection
 
 ```
-[Mode Detection] Detected targeted invocation.
+[Ad-Hoc: SEO] Mode detection -- Detected targeted invocation.
 
   Trigger phrase: "Check the SEO on my blog"
   Matched pattern: "check [area]" -> ad-hoc targeted mode
@@ -25,10 +25,10 @@
 ## Setup (abbreviated)
 
 ```
-[Setup] Targeted mode -- cloning only relevant repository
+[Ad-Hoc: SEO] Setup -- cloning only relevant repository
 
   Cloning dangeles/dangeles.github.io (shallow)...
-  [OK] dangeles.github.io -> /tmp/web-presence-session/adhoc-seo-2026-02/repos/
+  [OK] dangeles.github.io -> /tmp/web-presence-session/adhoc-seo-2026-02-15/repos/
 
   Pre-flight:
     [PASS] git push access verified
@@ -38,7 +38,7 @@
 ## Targeted Execution
 
 ```
-[Analysis] Running SEO Manager on dangeles.github.io
+[Ad-Hoc: SEO] Analyzing dangeles.github.io
 
   Checking Jekyll SEO plugin stack...
   Analyzing meta tags, heading structure, structured data...
@@ -90,7 +90,7 @@ Would you like to implement any of these fixes?
 > before committing.
 
 ```
-[Execute] Implementing approved changes
+[Ad-Hoc: SEO] Executing approved changes
 
   Adding Person schema JSON-LD to _includes/head.html... done
   Adding jekyll-sitemap to Gemfile... done
@@ -107,13 +107,18 @@ Would you like to implement any of these fixes?
     all canonical URLs, sitemap URLs, and feed URLs site-wide. It is the
     correct value, but verify this matches your actual serving domain.
 
-    Apply this change? (y/n)
+    RISKY changes are recommendations only by default. If you have reviewed
+    the risk and want to proceed, confirm below.
+
+    Apply this RISKY change? (y/n)
 ```
 
 > y, that looks right
 
 ```
-  Updating _config.yml url field... done
+  [RISKY -> MODERATE (user-approved after risk review)] Updating _config.yml url field... done
+
+  Recording pre-push SHA in rollback-info.json... done
 
   Staging files:
     _includes/head.html

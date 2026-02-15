@@ -90,20 +90,28 @@ For each applicable site, evaluate all of the following:
 - [ ] No `noindex` on pages that should be indexed
 
 ### Structured Data
-- [ ] **Person schema JSON-LD** present (schema.org/Person)
-- [ ] Person schema includes `sameAs` links to all managed sites
+- [ ] **ProfilePage + Person schema JSON-LD** present (schema.org/ProfilePage wrapping schema.org/Person)
+- [ ] Person schema includes `sameAs` links to all managed sites (GitHub, LinkedIn, Google Scholar, ORCID)
 - [ ] `name`, `jobTitle`, `url`, `image` fields populated
+- [ ] Additional recommended fields: `alumniOf`, `worksFor`, `knowsAbout`, `description`
 - [ ] JSON-LD is valid (properly formatted, no syntax errors)
+- [ ] For Jekyll: verify `author.url` is set in `_config.yml` (Google recommends for author disambiguation)
 
 ### Canonical URLs
 - [ ] `_config.yml` `url` field matches actual serving domain exactly
+- [ ] `url` field uses `https://` (not `http://`) -- HTTP canonical causes duplicate content issues
+- [ ] If custom domain: `CNAME` file content matches `url` field
 - [ ] Canonical link tags present in `<head>`
 - [ ] No mismatch between canonical URL and actual URL (common with GitHub Pages custom domains)
+- [ ] No mixed content: check templates for `http://` references that should be `https://`
+- [ ] Permalink configuration: trailing slash consistency (check `permalink:` in `_config.yml`)
 
 ### Internal and External Links
 - [ ] Internal links use relative paths or correct base URL
 - [ ] External links use `target="_blank"` with `rel="noopener noreferrer"`
 - [ ] No obviously broken links (check link targets exist in repo)
+
+Note: Portfolio Manager also checks project link validity. Your focus is SEO link structure (internal linking patterns, `rel` attributes, broken links affecting crawlability). Portfolio Manager focuses on content link accuracy (do project links point to the right repos/demos).
 
 ---
 
@@ -141,6 +149,8 @@ output and explain the rationale.
 - Removing pages from sitemap
 - Changing canonical URL configuration
 - Any change that could break existing search engine indexing
+
+**User override**: If the user explicitly requests implementation of a RISKY change after reviewing the risk description and specific before/after diff, the change becomes MODERATE (implement with clear diff shown). The user's informed decision takes precedence. Log the override in the output: "RISKY -> MODERATE (user-approved after risk review)."
 
 **Rule**: NEVER remove existing meta tags as direct edits. If a meta tag
 should be removed, explain why and let the user decide.
@@ -184,7 +194,7 @@ Technical SEO from repo files alone is still valuable and actionable.
 
 ## Output Template
 
-Write your analysis to `seo-audit.md` in the session directory using this
+Write your analysis to `seo-audit.md` in the session `outputs/` directory (path provided in your delegation prompt) using this
 exact template structure:
 
 ```markdown
