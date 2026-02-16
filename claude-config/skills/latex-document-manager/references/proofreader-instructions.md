@@ -43,11 +43,11 @@ For each issue you find, provide:
 | Tool | Use For |
 |------|---------|
 | Read | Source files (.tex) for prose and syntax analysis |
-| Bash | Run `aspell` for spell-check if available (optional) |
+| Bash | Run `aspell` for spell-check if available (optional). Do not run compilation commands or modify files via Bash. |
 
-**You do NOT have**:
-- Write tool (you cannot modify files)
-- Task tool (you cannot delegate further)
+**You MUST NOT use** (behavioral restrictions -- these tools are technically available via Task but using them violates the workflow):
+- Write tool (do not modify files; you are read-only)
+- Task tool (do not delegate further; return your report directly)
 
 ---
 

@@ -1,10 +1,11 @@
 ---
 name: latex-document-manager
-version: "1.0"
 description: >
-  Use when editing, examining, proofreading, or compiling LaTeX documents
-  on macOS. Handles pdfLaTeX, XeLaTeX, and LuaLaTeX projects via latexmk,
-  including multi-file documents with custom classes and biblatex.
+  Use when user asks to examine, edit, proofread, or compile LaTeX documents.
+  Triggers on mentions of .tex files, pdflatex, xelatex, lualatex, latexmk,
+  bibtex, biblatex, CV updates, or LaTeX paper editing on macOS.
+
+# Handoff metadata (custom extension -- see workflow-coordinator/references/frontmatter-metadata-standard.md)
 handoff:
   accepts_from:
     - "*"
@@ -14,21 +15,11 @@ handoff:
     - latex-proofreader
   schema_version: "3.0"
   schema_type: universal
+
 categories:
   - writing
   - latex
   - document-management
-prerequisites:
-  - TeX Live installed on macOS (latexmk, pdflatex at minimum)
-  - LaTeX project with at least one .tex file containing documentclass
-  - macOS (for PDF preview via open command)
-estimated_duration: 5-30 minutes (depending on document size and actions)
-success_criteria:
-  - Project structure correctly detected (main file, modules, packages, bibliography)
-  - Sub-agent reports are structured and actionable
-  - No file modifications without explicit user approval
-  - Post-change compilation detects regressions
-  - PDF preview opens after successful compilation
 ---
 
 # LaTeX Document Manager
@@ -53,6 +44,20 @@ Announce: "I'm using the latex-document-manager skill for LaTeX document managem
 - User wants to design Beamer themes or create complex TikZ diagrams from scratch
 - User wants help with LaTeX concepts without a specific project
 - The document uses a build system other than latexmk (Makefile, arara)
+
+## Prerequisites
+
+- TeX Live installed on macOS (latexmk, pdflatex at minimum)
+- LaTeX project with at least one .tex file containing `\documentclass`
+- macOS (for PDF preview via `open` command)
+
+## Success Criteria
+
+- Project structure correctly detected (main file, modules, packages, bibliography)
+- Sub-agent reports are structured and actionable
+- No file modifications without explicit user approval
+- Post-change compilation detects regressions
+- PDF preview opens after successful compilation
 
 ---
 
@@ -80,6 +85,20 @@ Announce: "I'm using the latex-document-manager skill for LaTeX document managem
 ```
 
 The orchestrator owns all user interaction. Sub-agents receive context via Task tool and return structured reports. Sub-agents never interact with the user directly.
+
+---
+
+## Workflow
+
+1. **Pre-Flight Validation**: Check TeX installation, find main file, detect engine (blocking checks)
+2. **Project Detection**: Enumerate .tex files, map dependencies, identify style and bibliography files
+3. **Action Routing**: Present action menu or auto-route based on user request
+4. **Delegate to Specialist(s)**: Dispatch appropriate sub-agent(s) via Task tool
+5. **Quality Gate Evaluation**: Verify sub-agent output meets criteria
+6. **Present Results**: Show report to user, handle follow-up actions
+7. **Compilation** (if applicable): Build PDF, compare against baseline, present delta
+
+Read `references/latex-compilation-guide.md` (resolved to absolute path) before any compilation step to obtain engine detection rules and log parsing protocol.
 
 ---
 
@@ -157,6 +176,14 @@ Check for latexmk at: (1) PATH, (2) `/Library/TeX/texbin/`, (3) `/usr/local/texl
 
 If NOT FOUND: Report clearly with install link. Offer examination and proofreading only (degraded mode -- no compilation).
 
+If latexmk IS found, verify the engine binary also exists:
+
+```bash
+which pdflatex 2>/dev/null || "${TEX_BIN_DIR}/pdflatex" --version 2>/dev/null
+```
+
+If the engine is not found: Report "latexmk was found but pdflatex is not available. You may have latexmk installed without a full TeX distribution." Offer degraded mode.
+
 **2. Main File Detection**
 
 Find `.tex` files containing `\documentclass` in the target directory.
@@ -186,7 +213,7 @@ Follow the priority order from `references/latex-compilation-guide.md` Section 2
 Create on first invocation:
 
 ```bash
-mkdir -p "/tmp/latex-document-manager-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "/tmp/latex-document-manager-$(date +%Y%m%d-%H%M%S)-$$"
 ```
 
 Store the session directory path for all subsequent operations in this conversation.
@@ -300,11 +327,12 @@ Context:
 - Engine: {engine}
 - Style files: {list of .sty files}
 - Bibliography: {bib_file or "none"}
-- Session directory: {session_dir}
 
-Instructions: Read references/content-examiner-instructions.md for full examination protocol.
-Reference file: {absolute path to content-examiner-instructions.md}
-Compilation guide: {absolute path to latex-compilation-guide.md}
+Instructions: Read the content examiner instructions and the compilation guide. The orchestrator MUST resolve these to absolute paths before dispatching:
+- Content examiner instructions: {skill_dir}/references/content-examiner-instructions.md
+- Compilation guide: {skill_dir}/references/latex-compilation-guide.md
+
+where {skill_dir} is determined by reading this SKILL.md's own absolute path and extracting its directory.
 
 Focus areas: {any specific concerns from the user, or "full examination"}
 
@@ -322,10 +350,9 @@ Context:
 - Document class: {document_class}
 - Target file: {the specific .tex file to modify}
 - Style files: {list of .sty files to read for conventions}
-- Session directory: {session_dir}
 
-Instructions: Read references/writing-expert-instructions.md for full writing protocol.
-Reference file: {absolute path to writing-expert-instructions.md}
+Instructions: Read the writing expert instructions. The orchestrator MUST resolve this to an absolute path before dispatching:
+- Writing expert instructions: {skill_dir}/references/writing-expert-instructions.md
 
 MANDATORY: Complete the Style Learning Protocol before proposing any changes.
 
@@ -343,10 +370,9 @@ Context:
 - Files to proofread: {list of .tex files, or "all content files"}
 - Scope: {errors-only | errors-and-warnings | full-review}
 - ChkTeX results: {summary if available, or "not available"}
-- Session directory: {session_dir}
 
-Instructions: Read references/proofreader-instructions.md for full proofreading protocol.
-Reference file: {absolute path to proofreader-instructions.md}
+Instructions: Read the proofreader instructions. The orchestrator MUST resolve this to an absolute path before dispatching:
+- Proofreader instructions: {skill_dir}/references/proofreader-instructions.md
 
 CRITICAL: Do NOT rewrite content. Flag issues with location, type, and brief correction only.
 
@@ -417,6 +443,18 @@ After applying any approved change:
 | G-PROOF | After proofreading | Report generated with findings | Retry once; if fails, skip with notification |
 | G-COMPILE | After compilation | Exit code 0, log parsed | Present errors, offer diagnosis |
 | G-APPROVE | Before applying file changes | User has reviewed diff and approved | Do not apply; ask for instructions |
+
+### G-WRITE Failure Recovery
+
+If the writing expert's proposed changes introduce compilation errors:
+
+1. Extract relevant error messages from the compilation log (use grep extraction Steps 1-2)
+2. Dispatch a new Task to the writing expert with:
+   - Original task description
+   - The proposed changes that failed
+   - Compilation errors (relevant excerpt)
+   - Instruction: "Revise proposed changes to resolve these compilation errors while preserving the original intent"
+3. Maximum 2 retry cycles before reporting to user: "The writing expert was unable to produce changes that compile cleanly after 2 attempts. Here are the latest proposed changes and the remaining errors."
 
 ---
 
@@ -491,6 +529,23 @@ Before applying ANY file modification:
    b. Then modify referencing files
    c. Compile and verify
 3. If compilation fails: offer to revert ALL changes
+
+### CREATE Action Safety Check
+
+Before executing any CREATE action from the writing expert:
+
+```bash
+test -f "{filepath}" && echo "EXISTS" || echo "NEW"
+```
+
+If the file already exists:
+1. Warn the user: "The file '{filepath}' already exists. The writing expert proposed creating it as a new file."
+2. Offer options: (a) View the existing content first, (b) Overwrite it (backs up original first), (c) Abort this change
+3. If overwriting, store the original content as a rollback point before proceeding
+
+### APPEND Action Handling
+
+APPEND actions from the writing expert are handled as MODIFY operations where the insertion point is at the end of the file or at the line specified in the Line range field. No Before block is required for APPEND -- the After block contains the content to append.
 
 ### Path Handling
 

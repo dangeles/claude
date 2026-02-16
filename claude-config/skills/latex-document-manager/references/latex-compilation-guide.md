@@ -26,6 +26,27 @@ which latexmk 2>/dev/null
 /opt/homebrew/bin/latexmk --version 2>/dev/null
 ```
 
+### Engine Verification
+
+After finding latexmk, verify that the detected engine binary also exists:
+
+```bash
+# After latexmk is found, verify the engine is available
+which pdflatex 2>/dev/null || "${TEX_BIN_DIR}/pdflatex" --version 2>/dev/null
+```
+
+If latexmk is found but the engine binary is not, report:
+
+```
+latexmk was found but pdflatex is not available. You may have latexmk installed
+without a full TeX distribution.
+
+Install TeX Live: https://www.tug.org/mactex/
+Homebrew: brew install --cask mactex
+```
+
+The orchestrator should enter degraded mode (examination and proofreading only).
+
 ### PATH Setup
 
 Once the correct directory is found, prepend it to PATH for the session:
@@ -177,7 +198,7 @@ grep -n "^LaTeX Warning\|^LaTeX Font Warning\|^LaTeX3 Warning" "{logfile}" | hea
 
 **Step 4 -- Package and class warnings**:
 ```bash
-grep -n "^Package\|^Class" "{logfile}" | grep "Warning" | head -50
+grep -n "^Package\|^Class\|^Module" "{logfile}" | grep "Warning" | head -50
 ```
 
 **Step 5 -- Box warnings** (overfull/underfull):
@@ -188,6 +209,21 @@ grep -n "Overfull\|Underfull" "{logfile}" | head -50
 **Step 6 -- Missing references and citations**:
 ```bash
 grep -n "Citation.*undefined\|Reference.*undefined\|multiply defined" "{logfile}" | head -50
+```
+
+**Step 6b -- Emergency stop / Fatal error**:
+```bash
+grep -n "Emergency stop\|Fatal error\|==> Fatal error" "{logfile}" | head -10
+```
+
+**Step 6c -- Missing characters** (font encoding issues):
+```bash
+grep -n "Missing character" "{logfile}" | head -20
+```
+
+**Step 6d -- Backend warnings** (biber/bibtex):
+```bash
+grep -n "^Biber\|^BibTeX" "{logfile}" | head -20
 ```
 
 **Step 7 -- Summary** (last 20 lines contain error/warning counts):

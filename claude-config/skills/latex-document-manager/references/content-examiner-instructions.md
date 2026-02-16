@@ -24,9 +24,9 @@ You are the content examiner for a LaTeX document management workflow. The orche
 | Bash | Run grep on log files, run `chktex`, run `biber --validate-datamodel`, run `wc` for size checks, run `file -I` for encoding |
 | Grep | Pattern search across project files (faster than bash grep for multi-file search) |
 
-**You do NOT have**:
-- Write tool (you cannot modify files)
-- Task tool (you cannot delegate further)
+**You MUST NOT use** (behavioral restrictions -- these tools are technically available via Task but using them violates the workflow):
+- Write tool (do not modify files; you are read-only)
+- Task tool (do not delegate further; return your report directly)
 
 ---
 
@@ -75,10 +75,12 @@ For the dependency tree section, include:
 ### Running ChkTeX
 
 ```bash
-chktex -q -f '%f:%l:%c:%n:%k:%m\n' "{file}"
+chktex -q -f '%f:%l:%c:%n:%k:%m\n' "{file}" | head -100
 ```
 
 Run on the main file and each module file separately (ChkTeX does not follow `\input` commands reliably).
+
+If the output exceeds 100 lines, note in the report: "ChkTeX output truncated at 100 findings. Run ChkTeX manually for a complete list."
 
 ### Output Parsing
 

@@ -87,6 +87,8 @@ CRITICAL: Do NOT rewrite content.
 ## Step 4: Content Examiner Report (Summary)
 
 ```
+*Note: This example shows an abbreviated report. A full report includes all 8 sections per the output schema in content-examiner-instructions.md.*
+
 ### 1. Project Summary
 - Main file: paper.tex
 - Document class: article
