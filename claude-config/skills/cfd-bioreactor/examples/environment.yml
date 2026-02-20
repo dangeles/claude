@@ -1,0 +1,31 @@
+# Conda environment for CFD bioreactor simulation with FEniCSx v0.10
+#
+# Installation:
+#   conda env create -f environment.yml
+#   conda activate cfd-bioreactor
+#
+# Verification:
+#   python -c "import dolfinx; print(dolfinx.__version__)"
+#
+# Note: Uses mpich (not openmpi) for conda compatibility.
+# Channel must be conda-forge exclusively for consistent builds.
+
+name: cfd-bioreactor
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - fenics-dolfinx=0.10.*
+  - mpich
+  - petsc4py
+  - gmsh
+  - python-gmsh
+  - pyvista>=0.42
+  - numpy>=1.24
+  - scipy>=1.10
+  - matplotlib>=3.7
+  - mpi4py>=3.1
+  - psutil
+  - pip
+  - pip:
+    - meshio  # optional, for format conversion if needed
