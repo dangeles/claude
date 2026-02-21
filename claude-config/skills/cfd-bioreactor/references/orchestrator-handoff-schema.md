@@ -1,8 +1,9 @@
 # Orchestrator Handoff Schema
 
 Structured YAML handoff contracts for communication between cfd-bioreactor orchestrator
-and its specialist agents (cfd-mathematician, cfd-reviewer, brainstorming-pm). Adapted
-from the programming-pm handoff schema (version 1.2) with CFD-specific extensions.
+and its specialist agents (cfd-mathematician, cfd-reviewer) and decomposed swarm pipeline
+(perspective + synthesis agents). Adapted from the programming-pm handoff schema
+(version 1.2) with CFD-specific extensions.
 
 **Usage**: Agents copy the exact YAML templates below into their output. The orchestrator
 validates required fields at each quality gate. All communication flows through the
@@ -23,7 +24,7 @@ handoff:
   version: "1.0"
   from_phase: int          # 0-5 (matches orchestrator phase number)
   to_phase: int            # 0-5
-  producer: string         # "cfd-mathematician" | "cfd-reviewer" | "brainstorming-pm" | "cfd-bioreactor"
+  producer: string         # "cfd-mathematician" | "cfd-reviewer" | "cfd-bioreactor" | "cfd-bioreactor-swarm"
   consumer: "cfd-bioreactor"  # Always the orchestrator (hub-and-spoke)
   timestamp: ISO8601       # e.g. "2026-02-21T14:30:00Z"
 
@@ -161,23 +162,40 @@ handoff:
 
   # CFD engineering-review extension
   engineering_review:
+    review_context: "mesh"     # "mesh" | "flow" | "transport" | "code" | "error_diagnosis"
     challenges:
-      - severity: "WARNING"
+      - id: 1
+        severity: "WARNING"
+        title: "Boundary layer near membrane requires refinement"
         description: "Boundary layer near membrane requires refinement"
         impact: "Under-resolved BL may miss concentration gradients"
         suggested_fix: "Add graded refinement with 5 layers, growth ratio 1.2"
-      - severity: "NOTE"
+      - id: 2
+        severity: "NOTE"
+        title: "STEP file units not verified"
         description: "STEP file units not verified"
         impact: "Mesh may be in mm instead of m"
         suggested_fix: "Add unit check: measure bounding box, compare to expected dimensions"
     approval_status: "APPROVED_WITH_WARNINGS"
     blocking_issues: []      # Required if approval_status is REJECTED
+    summary:
+      critical_count: 0
+      warning_count: 1
+      note_count: 1
 ```
 
 ### 2c. swarm-synthesis Handoff
 
-Produced by brainstorming-pm (via its standard synthesis output). The orchestrator
-extracts these fields from the brainstorming-pm synthesis.
+Produced by the orchestrator's decomposed swarm pipeline (FULL mode only). The
+orchestrator spawns perspective agents directly, collects their outputs, and
+spawns a synthesis agent that produces this handoff format. See SKILL.md
+Section 8b for the decomposed pipeline architecture.
+
+NOTE: In v2.0, this handoff is produced directly by the synthesis agent in
+the structured YAML format below. The previous approach of invoking
+brainstorming-pm and extracting fields from its prose output has been replaced.
+See swarm-framing-templates.md Section 5 for the legacy extraction protocol
+(retained for reference).
 
 **Required fields**:
 - `convergent_insights`
@@ -189,7 +207,7 @@ handoff:
   version: "1.0"
   from_phase: 1
   to_phase: 1
-  producer: "brainstorming-pm"
+  producer: "cfd-bioreactor-swarm"
   consumer: "cfd-bioreactor"
   timestamp: "2026-02-21T14:25:00Z"
   deliverable:
@@ -378,7 +396,7 @@ The orchestrator validates handoffs at each quality gate using these rules.
 | Handoff Type | Required Fields | Optional Fields |
 |---|---|---|
 | math-analysis | variational_form, function_spaces, convergence_order, dimensionless_numbers | stability_conditions, solver_strategy, known_risks |
-| engineering-review | challenges, approval_status | blocking_issues (required if REJECTED) |
+| engineering-review | challenges, approval_status | review_context, blocking_issues (required if REJECTED), id (per challenge), title (per challenge), summary |
 | swarm-synthesis | convergent_insights, divergent_alternatives, confidence_score | (none) |
 | mesh-plan | element_type, element_order, refinement_zones, quality_thresholds, memory_estimate_mb | estimated_elements, estimated_dofs |
 | flow-result | solver_used, convergence_achieved, mass_conservation_error, validation_metrics | newton_iterations, output_files |
@@ -432,6 +450,13 @@ in Section 3 is a fallback, not a license to use non-canonical names.
 | `challenges` | list of objects | engineering-review |
 | `approval_status` | enum string | engineering-review |
 | `blocking_issues` | list of strings | engineering-review |
+| `review_context` | enum string | engineering-review |
+| `id` | integer | engineering-review (per challenge) |
+| `title` | string | engineering-review (per challenge) |
+| `summary` | object | engineering-review |
+| `critical_count` | integer | engineering-review (within summary) |
+| `warning_count` | integer | engineering-review (within summary) |
+| `note_count` | integer | engineering-review (within summary) |
 | `convergent_insights` | list of strings | swarm-synthesis |
 | `divergent_alternatives` | list of strings | swarm-synthesis |
 | `confidence_score` | integer (1-5) | swarm-synthesis |
@@ -449,6 +474,17 @@ in Section 3 is a fallback, not a license to use non-canonical names.
 | `species_conservation_error` | number | transport-result |
 | `min_concentration` | number | transport-result |
 | `negative_concentration_warning` | boolean | transport-result |
+
+### Schema Evolution Policy
+
+This schema follows additive-only evolution:
+- **Backward-compatible changes** (adding optional fields): do not require version
+  increment. The orchestrator's lenient parsing (Section 3) handles unknown fields.
+- **Breaking changes** (removing fields, changing types): require version increment
+  to "2.0" and migration notes.
+- **Agent compatibility**: each agent SKILL.md declares which schema version it
+  targets via the `schema_version` field in its frontmatter. The orchestrator
+  validates compatibility at Phase 0 Step 0.2.
 
 ---
 

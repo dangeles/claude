@@ -2,10 +2,9 @@
 name: cfd-bioreactor
 description: >
   Use when user needs to simulate fluid flow through bioprocess cartridges,
-  bioreactor geometries, or membrane devices using FEniCSx. Orchestrates
-  cfd-mathematician, cfd-reviewer, and brainstorming-pm agents through a
-  5-phase workflow with quality gates, self-correction loops, and three-tier
-  mode selection (DIRECT/LITE/FULL).
+  bioreactor geometries, or membrane devices using FEniCSx. Covers Navier-Stokes
+  flow, O2 species transport with Michaelis-Menten kinetics, membrane permeation,
+  mesh generation from CAD geometry, and interactive 3D visualization.
 
 # v2.0 orchestrator handoff metadata
 handoff:
@@ -14,7 +13,6 @@ handoff:
   provides_to:
     - cfd-mathematician
     - cfd-reviewer
-    - brainstorming-pm
   schema_version: "1.0"
   schema_type: cfd-orchestrator
 
@@ -47,8 +45,11 @@ work yourself.
   convergence, dimensionless analysis)
 - **Engineering review** --> `cfd-reviewer` (adversarial challenge of plans, error
   diagnosis, physical plausibility)
-- **Brainstorming** --> `brainstorming-pm` (multi-perspective discussion at decision
-  points; FULL mode only)
+- **Multi-perspective analysis** --> Perspective agents spawned directly (FULL mode
+  only). The orchestrator spawns 3-5 domain-specific perspective agents as parallel
+  Task calls, then spawns a synthesis agent to combine their outputs. This replaces
+  brainstorming-pm, which cannot function as a sub-agent due to the Claude Code
+  no-nesting constraint (sub-agents cannot use the Task tool).
 
 **Orchestrator-owned tasks** (do NOT delegate these):
 - Session setup, state management, phase transitions
@@ -63,7 +64,17 @@ work yourself.
 at deployed path), degrade gracefully:
 - Missing `cfd-mathematician`: Use reference file defaults for mathematical decisions
 - Missing `cfd-reviewer`: Proceed with APPROVED_WITH_WARNINGS, log "NO ADVERSARIAL REVIEW"
-- Missing `brainstorming-pm`: Skip swarm steps (equivalent to LITE mode)
+- Perspective agent failures: If fewer than 3 perspectives complete, skip swarm
+  synthesis and proceed with mathematician + reviewer only (equivalent to LITE mode
+  for that phase).
+
+**Agent tool access**: Agents invoked via Task tool inherit access to Read, Write,
+Edit, Bash, Glob, Grep, WebSearch, and WebFetch. They do NOT have access to the
+Task tool (cannot spawn sub-agents) or AskUserQuestion (cannot prompt the user).
+This is a confirmed Claude Code platform constraint, not an implementation detail.
+The orchestrator relies on agents using Read for reference file loading and Write
+for handoff YAML output. If an agent reports it cannot use the Read tool, the
+orchestrator must re-invoke with reference content inlined in the Task prompt.
 
 ---
 
@@ -205,7 +216,76 @@ Override: You can select a different mode.
 | Debug FEniCSx import errors | Read | Load troubleshooting-guide.md Stage 0. |
 | Delegate mathematical analysis | Task(cfd-mathematician) | Invoke with problem spec + reference loading instructions. |
 | Delegate engineering review | Task(cfd-reviewer) | Invoke with plan + mathematician output + error history. |
-| Delegate brainstorming | Task(brainstorming-pm) | Invoke with filled challenge template. FULL mode only. |
+| Delegate perspective analysis | Task (3-5 perspective agents) | Spawn parallel perspective agents with challenge context. FULL mode only. |
+| Synthesize perspectives | Task (synthesis agent) | Combine perspective outputs into convergent/divergent insights. FULL mode only. |
+
+---
+
+## 6b. Agent Invocation Templates
+
+When invoking any agent via the Task tool, use the appropriate template below.
+These templates ensure consistent instructions across all invocations.
+
+### Base Template (cfd-mathematician, cfd-reviewer)
+
+```
+ROLE: You are {agent_name}. Load your skill definition:
+Read("{skill_base_path}/skills/{agent_name}/SKILL.md")
+
+SESSION CONTEXT:
+- Session directory: {session_dir}
+- Skill base path: {skill_base_path}
+- Current phase: Phase {N}
+- Mode: {mode}
+
+REFERENCE FILES (load via Read tool with absolute paths):
+{loading_instructions_from_agent_loading_guide}
+
+After loading reference files, confirm by stating the first section heading
+you loaded. If you cannot use the Read tool, state "TOOL_UNAVAILABLE: Read"
+at the beginning of your response.
+
+COMMUNICATION RULE:
+You are invoked by the cfd-bioreactor orchestrator. You communicate ONLY with
+the orchestrator. Do not read files from {session_dir}/handoffs/ or other
+agents' outputs. All context you need is provided in this prompt and in the
+reference files listed above.
+
+TASK:
+{task_description}
+
+{If retry after reviewer rejection:}
+HARD CONSTRAINTS (from reviewer -- you MUST satisfy these):
+{blocking_issues_from_reviewer}
+
+{If error diagnosis mode:}
+ERROR CONTEXT:
+{error_output}
+Error history (do NOT recommend fixes already attempted):
+{error_history_yaml}
+
+OUTPUT:
+Write handoff YAML to: {session_dir}/handoffs/{handoff_filename}
+Follow the exact template in your SKILL.md Section 6.
+```
+
+### Fallback: Inline Reference Injection
+
+If an agent responds with "TOOL_UNAVAILABLE: Read", re-invoke with the
+reference content embedded directly in the Task prompt:
+
+1. Read the reference sections yourself (using the orchestrator's Read tool)
+2. Include the content in the Task prompt under a "REFERENCE CONTENT" heading
+3. Remove the "REFERENCE FILES" section
+4. Add note: "Reference content is provided inline below. Do not attempt to
+   use the Read tool for reference files."
+
+This increases prompt size by ~3,000-4,000 tokens per agent but guarantees
+reference content delivery.
+
+### Perspective Agent Template (FULL Mode Swarm -- Option D)
+
+See Section 8b for the decomposed pipeline perspective and synthesis templates.
 
 ---
 
@@ -238,7 +318,8 @@ Verify specialist agents are deployed:
 
 1. Check `cfd-mathematician` SKILL.md exists at deployed path
 2. Check `cfd-reviewer` SKILL.md exists at deployed path
-3. Check `brainstorming-pm` SKILL.md exists (required only for FULL mode)
+3. [Removed] brainstorming-pm is no longer invoked as a sub-agent. FULL mode
+   perspective agents are spawned directly by the orchestrator.
 4. If agents missing: "New agent skills not synced. Run: `./sync-config.py push`"
 5. If agents remain unavailable: degrade gracefully (see Section 1)
 
@@ -255,10 +336,23 @@ Verify all reference files exist:
 - `references/agent-loading-guide.md`
 - `references/swarm-framing-templates.md`
 
+### Step 0.3a: Skill Base Path Resolution
+
+Determine the absolute path to the cfd-bioreactor skill directory:
+
+1. This SKILL.md is loaded from a known filesystem location. The directory
+   containing this file is the skill base path.
+2. Define: `SKILL_BASE = "/Users/davidangelesalbores/repos/claude/claude-config/skills/cfd-bioreactor"`
+3. Store `skill_base_path` in the session state file (see Section 20).
+4. All subsequent agent invocations include `{skill_base_path}/references/` as
+   the prefix for reference file paths.
+5. All subsequent Read operations by the orchestrator use absolute paths:
+   `{skill_base_path}/references/{filename}`
+
 ### Step 0.4: Session Initialization
 
 1. Create session directory: `/tmp/cfd-bioreactor-session-{YYYYMMDD-HHMMSS}-{PID}/`
-2. Create subdirectories: `handoffs/`, `scripts/`, `logs/`
+2. Create subdirectories: `handoffs/`, `scripts/`, `logs/`, `perspectives/`
 3. Initialize state file (see Section 20 for schema)
 
 ### Step 0.5: Problem Parsing and Mode Selection
@@ -280,7 +374,11 @@ created. State file initialized. Mode selected.
 
 1. Read `references/swarm-framing-templates.md` Swarm 1 template
 2. Fill in placeholders with problem parameters (geometry, physical groups, memory budget)
-3. Invoke `brainstorming-pm` via Task tool with the filled challenge template
+3. Execute the decomposed swarm pipeline (Section 8b):
+   a. Spawn 3 perspective agents (Mesh Engineer, Numerical Analyst, Computational
+      Pragmatist) with the filled Swarm 1 challenge template
+   b. Collect perspective outputs from `{session_dir}/perspectives/phase1-*.md`
+   c. Spawn synthesis agent to combine perspectives into swarm-synthesis handoff
 4. Check swarm output against quality threshold:
    - At least 2 specific numerical recommendations
    - At least 1 concrete alternative approach
@@ -330,11 +428,180 @@ Invoke `cfd-reviewer` via Task tool:
 
 ---
 
+### 8b. Decomposed Swarm Pipeline (FULL Mode Only)
+
+This section describes the two-phase decomposed pipeline that replaces the
+brainstorming-pm invocation for FULL mode swarm discussions. The orchestrator
+spawns perspective agents directly (respecting the Claude Code depth-1 constraint)
+and then spawns a synthesis agent to combine their outputs.
+
+**Why not brainstorming-pm?** The brainstorming-pm skill is designed as a
+standalone orchestrator that spawns 5 parallel perspective agents via Task tool.
+When invoked as a sub-agent by cfd-bioreactor, brainstorming-pm CANNOT use the
+Task tool (Claude Code platform constraint: sub-agents cannot spawn sub-agents).
+This would reduce its multi-perspective pipeline to single-context sequential
+operation, losing the diversity that makes swarm discussion valuable.
+
+**Architecture:**
+```
+cfd-bioreactor (depth 0)
+  |-- Task --> Perspective Agent: Numerical Analyst   (depth 1)
+  |-- Task --> Perspective Agent: Mesh Engineer        (depth 1)
+  |-- Task --> Perspective Agent: Physical Modeler     (depth 1)
+  |-- Task --> Perspective Agent: Computational Pragmatist (depth 1)
+  |-- Task --> Perspective Agent: Validation Strategist (depth 1, optional)
+  |
+  |-- [collect perspective outputs from files]
+  |
+  |-- Task --> Synthesis Agent                         (depth 1)
+```
+
+#### Phase D1: Spawn Perspective Agents
+
+1. Read `references/swarm-framing-templates.md` for the appropriate swarm template
+   (Swarm 1, 2, or 3) and fill in placeholders with problem parameters
+2. Spawn 3-5 perspective agents as parallel Task calls. Each agent receives:
+
+**Perspective Agent Task Template:**
+```
+ROLE: You are a CFD perspective agent providing the {perspective_name} viewpoint.
+
+PERSPECTIVE: {perspective_description}
+
+CHALLENGE:
+{filled_challenge_template_from_swarm_framing_templates}
+
+REFERENCE CONTEXT:
+{relevant_reference_excerpts_for_this_perspective}
+
+SESSION:
+- Write your perspective output to: {session_dir}/perspectives/phase{N}-{perspective_id}.md
+
+INSTRUCTIONS:
+- Analyze the challenge from your specific perspective
+- Provide 1-2 key insights with specific numerical recommendations
+- Assess your confidence (1-5) in your recommendations
+- Acknowledge blind spots from your perspective
+- Use WebSearch for 1-2 supporting queries if helpful
+- Target ~500 words
+
+OUTPUT FORMAT:
+## {perspective_name} Perspective
+
+### Key Insight
+[1-2 sentence primary recommendation with specific numbers]
+
+### Supporting Analysis
+[2-3 bullets with evidence and reasoning]
+
+### Confidence: [1-5]
+
+### Blind Spots
+[What this perspective might miss]
+```
+
+3. Apply per-agent timeout: 5 minutes
+4. Minimum agents required: 3 of 5
+5. If fewer than 3 complete: log warning, skip swarm synthesis, proceed as LITE mode
+
+**Perspective definitions** (see swarm-framing-templates.md Section 6 for full prompts):
+
+| Perspective | Focus | Example Contribution |
+|-------------|-------|---------------------|
+| Numerical Analyst | Stability, convergence, error bounds | "Taylor-Hood P2/P1 gives O(h^3) velocity convergence" |
+| Mesh Engineer | Mesh quality, resolution, memory | "Graded refinement with growth ratio 1.2 saves 40% elements vs uniform" |
+| Physical Modeler | Physics accuracy, model assumptions | "Pe > 100 means SUPG is mandatory, not optional" |
+| Computational Pragmatist | Runtime, memory, solver trade-offs | "MUMPS for 30K DOFs takes 12 seconds; GMRES+ILU takes 8 seconds" |
+| Validation Strategist | Benchmark comparisons, uncertainty | "Compare against Poiseuille at Re=0.1 first to validate pipeline" |
+
+For Phase 1 (Mesh): prioritize Mesh Engineer, Numerical Analyst, Computational Pragmatist (3 agents minimum)
+For Phase 2 (Flow): prioritize Numerical Analyst, Physical Modeler, Computational Pragmatist
+For Phase 3 (Transport): prioritize Numerical Analyst, Physical Modeler, Validation Strategist
+
+#### Phase D2: Synthesis Agent
+
+After all perspective agents complete (or timeout):
+
+1. Collect perspective outputs from `{session_dir}/perspectives/phase{N}-*.md`
+2. Spawn a synthesis agent via Task tool:
+
+**Synthesis Agent Task Template:**
+```
+ROLE: You are a synthesis agent combining multiple CFD perspective analyses
+into a unified assessment.
+
+PERSPECTIVES:
+{concatenated_perspective_outputs}
+
+TASK:
+1. Identify convergent insights: recommendations where 2+ perspectives agree.
+   Extract as specific, actionable items with numbers.
+2. Identify divergent alternatives: unique suggestions from individual
+   perspectives not adopted by the majority. Preserve these as alternatives.
+3. Assess overall confidence (1-5):
+   - 5 = strong consensus (4-5 perspectives agree on key points)
+   - 4 = majority consensus (3 perspectives agree)
+   - 3 = split opinions (2-3 agree, significant dissent)
+   - 2 = no clear consensus
+   - 1 = contradictory recommendations
+4. Flag any unresolved conflicts that the mathematician should address.
+
+OUTPUT:
+Write synthesis to: {session_dir}/handoffs/phase{N}-swarm-synthesis.yaml
+
+Use this exact YAML format:
+```yaml
+handoff:
+  version: "1.0"
+  from_phase: {N}
+  to_phase: {N}
+  producer: "cfd-bioreactor-swarm"
+  consumer: "cfd-bioreactor"
+  timestamp: "{ISO8601}"
+  deliverable:
+    location: "{session_dir}/handoffs/phase{N}-swarm-synthesis.yaml"
+    type: "synthesis"
+  context:
+    task_id: "phase{N}-swarm"
+    description: "Multi-perspective synthesis for phase {N}"
+    focus_areas: []
+    known_gaps: []
+  quality:
+    status: "complete"
+    confidence: "{high|medium|low}"
+    notes: ""
+  swarm_synthesis:
+    perspectives_received: {count}
+    convergent_insights:
+      - "{specific actionable insight with numbers}"
+    divergent_alternatives:
+      - "{specific alternative approach}"
+    confidence_score: {1-5}
+    unresolved_conflicts: []
+```
+```
+
+3. Apply synthesis agent timeout: 5 minutes
+4. If synthesis agent fails or times out: extract insights manually from
+   perspective files (orchestrator reads files and summarizes)
+
+#### Swarm Quality Check
+
+After Phase D2 completes, validate the swarm synthesis:
+- At least 2 specific numerical recommendations in `convergent_insights`
+- At least 1 concrete alternative in `divergent_alternatives`
+- If below threshold: log "Swarm output for Phase {N} below quality threshold"
+  and proceed without swarm input
+
+---
+
 ## 9. Phase 2 -- Flow Solver Planning, Code Generation, and Execution
 
 ### Step 2.1: Swarm Discussion (FULL Mode Only)
 
-Same pattern as Phase 1 with Swarm 2 template from `references/swarm-framing-templates.md`.
+Same pattern as Step 1.1 with Swarm 2 template from `references/swarm-framing-templates.md`.
+Perspective agents for Phase 2: Numerical Analyst, Physical Modeler, Computational
+Pragmatist (see Section 8b phase-perspective mapping).
 
 ### Step 2.2: Mathematical Analysis
 
@@ -434,7 +701,9 @@ Mirrors Phase 2 structure with transport-specific content.
 
 ### Step 3.1: Swarm Discussion (FULL Mode Only)
 
-Same pattern as Phase 1-2 with Swarm 3 template from `references/swarm-framing-templates.md`.
+Same pattern as Step 1.1 with Swarm 3 template from `references/swarm-framing-templates.md`.
+Perspective agents for Phase 3: Numerical Analyst, Physical Modeler, Validation
+Strategist (see Section 8b phase-perspective mapping).
 
 ### Step 3.2: Mathematical Analysis
 
@@ -669,7 +938,8 @@ Always provide actionable diagnostic messages. Never just report an error code.
 
 | Agent | Timeout | Fallback on Timeout |
 |---|---|---|
-| brainstorming-pm | 15 min | Skip swarm; proceed with mathematician + reviewer only |
+| Perspective agent (each) | 5 min | Proceed with completed perspectives (min 3 of 5) |
+| Synthesis agent | 5 min | Orchestrator extracts insights manually from perspective files |
 | cfd-mathematician | 8 min | Retry once with simplified prompt; if still fails, use reference file defaults |
 | cfd-reviewer | 8 min | Retry once simplified; if still fails, APPROVED_WITH_WARNINGS + log "NO ADVERSARIAL REVIEW" |
 
@@ -683,6 +953,23 @@ Always provide actionable diagnostic messages. Never just report an error code.
 | 3D production (Tier 3) | 30 min - 4 hours | Write script only. User runs manually. |
 | 3D with convergence (Tier 4) | 4-24 hours | Write script only. User runs with MPI. |
 | Mesh convergence study | 4x single-run time | Write script only for 3D. |
+
+### Per-Phase Agent Invocation Budgets (FULL Mode)
+
+| Phase | Budget | On Exceeded |
+|-------|--------|-------------|
+| Phase 1 (Mesh Planning) | 25 minutes | Skip remaining retries; use current best plan with APPROVED_WITH_WARNINGS |
+| Phase 2 (Flow Planning) | 30 minutes | Skip remaining retries; proceed with current plan |
+| Phase 3 (Transport Planning) | 30 minutes | Skip remaining retries; proceed with current plan |
+
+These budgets include all agent invocations within the phase (perspectives,
+mathematician, reviewer, and any retries). If the budget is exceeded before
+reviewer approval, proceed with the current best plan and log:
+"Phase {N} time budget exceeded. Proceeding with current plan."
+
+**Cumulative budget**: If total agent invocation time across Phases 1-3 exceeds
+90 minutes in FULL mode, auto-downgrade remaining phases to LITE mode (skip
+perspective agents) and summarize all previous handoffs to 200-token summaries.
 
 **Rule**: If estimated runtime exceeds 10 minutes, generate the script and instruct the
 user to run it manually. Do not attempt to execute long-running simulations via Bash.
@@ -815,6 +1102,7 @@ State file location: `/tmp/cfd-bioreactor-state-{session-id}.yaml`
 session:
   session_id: "20260221-143000-12345"
   session_dir: "/tmp/cfd-bioreactor-session-20260221-143000-12345"
+  skill_base_path: "/Users/davidangelesalbores/repos/claude/claude-config/skills/cfd-bioreactor"
   mode: "LITE"                    # DIRECT | LITE | FULL
   tier: 2                         # 1-4
   current_phase: 2                # 0-5
@@ -880,7 +1168,7 @@ On startup, check for existing state files:
 | Cross-check CFD results | `calculator` | After simulation: verify CFD results against analytical estimates. If they disagree by > 10x, investigate. |
 | Mathematical analysis | `cfd-mathematician` | Via Task tool. Variational formulations, stability analysis, convergence estimates. |
 | Adversarial review | `cfd-reviewer` | Via Task tool. Engineering review with severity-rated challenges and approval status. |
-| Multi-perspective brainstorming | `brainstorming-pm` | Via Task tool. FULL mode only. Swarm discussion at 3 decision points. |
+| Multi-perspective analysis | Perspective agents (direct) | Via parallel Task invocations. FULL mode only. 3-5 CFD-specific perspectives at each decision point. |
 
 ---
 
@@ -900,7 +1188,7 @@ section-level loading maps per agent.
 | `references/troubleshooting-guide.md` | On error | Error catalog by stage, diagnostic commands |
 | `references/orchestrator-handoff-schema.md` | Agent invocations | YAML handoff contracts for all agent communication |
 | `references/agent-loading-guide.md` | Agent invocations | Maps agents to reference file sections to load |
-| `references/swarm-framing-templates.md` | FULL mode swarms | Pre-written challenge templates for brainstorming-pm |
+| `references/swarm-framing-templates.md` | FULL mode swarms | Pre-written challenge templates for perspective agents |
 | `examples/environment.yml` | Phase 0 (if not installed) | Conda environment specification |
 
 ---
@@ -937,4 +1225,4 @@ section-level loading maps per agent.
 
 - **v2.0 multi-agent orchestrator**: This is v2.0 of the cfd-bioreactor skill. v1.0 was
   a single-context generate-explain-validate skill; v2.0 is a multi-agent orchestrator
-  with cfd-mathematician, cfd-reviewer, and brainstorming-pm coordination.
+  with cfd-mathematician, cfd-reviewer, and decomposed perspective agent coordination.

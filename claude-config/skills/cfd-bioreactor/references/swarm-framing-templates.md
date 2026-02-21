@@ -1,17 +1,17 @@
 # Swarm Framing Templates
 
-Pre-written challenge templates for brainstorming-pm swarm invocations at the three
-decision points in the cfd-bioreactor orchestrator workflow. Each template injects
-concrete numerical parameters (Re, Pe, Da, element counts, memory budgets) to force
-the swarm perspectives to engage with specific CFD trade-offs rather than producing
-generic advice.
+Pre-written challenge templates for FULL mode multi-perspective analysis at the
+three decision points in the cfd-bioreactor orchestrator workflow. Each template
+injects concrete numerical parameters (Re, Pe, Da, element counts, memory budgets)
+to force the perspective agents to engage with specific CFD trade-offs rather than
+producing generic advice.
 
 **Usage**: The orchestrator reads the appropriate template below, fills in the
 placeholder variables `{...}` with values from the problem specification and
-preceding phase results, then passes the filled template as the challenge to
-brainstorming-pm via the Task tool.
+preceding phase results, then passes the filled template to each perspective
+agent via parallel Task tool invocations (see SKILL.md Section 8b).
 
-**Swarm invocation**: FULL mode only. LITE and DIRECT modes skip all swarm steps.
+**Swarm invocation**: FULL mode only. LITE and DIRECT modes skip all perspective steps.
 
 ---
 
@@ -174,55 +174,132 @@ If below threshold: log "Swarm 3 output below quality threshold; proceeding with
 
 ---
 
-## 4. Standard Archetypes and CFD-Specific Framing
+## 6. CFD-Specific Perspective Definitions
 
-The swarm uses the standard 5 archetypes from brainstorming-pm / perspective-swarm.
-The CFD-specific framing comes from the challenge templates above, not from custom
-archetypes. Each archetype naturally maps to a useful CFD perspective:
+The decomposed pipeline uses domain-specific perspectives instead of generic
+brainstorming archetypes. Each perspective is a Task-spawned sub-agent with a
+focused analysis lens.
 
-| Archetype | Natural CFD Perspective | Typical Contribution |
-|---|---|---|
-| Optimist | Best-case performance advocate | "With proper refinement, we can achieve 2nd-order convergence" |
-| Critic | Failure mode detector | "Pe > 710 will cause SUPG parameter overflow with cosh/sinh" |
-| Analyst | Quantitative trade-off evaluator | "Direct solver needs 2.1 GB RAM for 80K DOFs; iterative needs 0.4 GB" |
-| Innovator | Alternative approach proposer | "Consider MINI element instead of Taylor-Hood for this low-Re case" |
-| Pragmatist | Implementation feasibility assessor | "Newton with Stokes initial guess converges in 5 iterations for Re < 5" |
+### 6a. Perspective Prompts
 
-**No custom archetypes in v2.0.** The concrete numerical framing in the challenge
-templates provides sufficient CFD domain context. Custom archetypes (Theoretician,
-Experimentalist, Computationalist, Skeptic, Practitioner) are a Could-Have for
-future iterations.
+**Numerical Analyst:**
+```
+You are an expert in numerical analysis for finite element methods. Your focus
+is mathematical stability, convergence properties, and error estimation.
+Evaluate the challenge through the lens of: Will the numerical method converge?
+What are the expected error bounds? Are stability conditions satisfied?
+Cite specific theorems (Lax-Milgram, Babuska-Brezzi, Cea's lemma) when applicable.
+```
+
+**Mesh Engineer:**
+```
+You are an expert in computational mesh generation for CFD. Your focus is mesh
+quality, element sizing, memory efficiency, and generation robustness.
+Evaluate the challenge through the lens of: Is the mesh adequate for the physics?
+Are boundary layers resolved? Is the memory budget feasible? What are the mesh
+quality metrics (scaled Jacobian, aspect ratio)?
+Provide specific numbers for element sizes, growth ratios, and element counts.
+```
+
+**Physical Modeler:**
+```
+You are an expert in bioreactor fluid dynamics and mass transport. Your focus
+is physical accuracy, model assumptions, and parameter plausibility.
+Evaluate the challenge through the lens of: Are the physics correctly captured?
+Are model assumptions valid for this operating regime? Are parameter values
+physically reasonable? What simplifications might cause problems?
+Reference dimensionless numbers (Re, Pe, Da) and their regime implications.
+```
+
+**Computational Pragmatist:**
+```
+You are an expert in practical CFD computation. Your focus is solver efficiency,
+runtime estimation, memory management, and robustness.
+Evaluate the challenge through the lens of: What solver strategy minimizes
+wall-clock time? What are the memory requirements? What happens if the solver
+diverges? What is the fallback plan?
+Provide specific solver recommendations with expected iteration counts and runtimes.
+```
+
+**Validation Strategist:**
+```
+You are an expert in CFD verification and validation. Your focus is benchmark
+comparisons, convergence testing, and uncertainty quantification.
+Evaluate the challenge through the lens of: How will we know the result is correct?
+What benchmarks should we compare against? What convergence behavior should we
+expect? What are the sources of uncertainty?
+Reference specific analytical solutions and expected error magnitudes.
+```
+
+### 6b. Phase-Perspective Mapping
+
+| Phase | Required Perspectives (min 3) | Optional (if budget allows) |
+|-------|-------------------------------|----------------------------|
+| Phase 1 (Mesh) | Mesh Engineer, Numerical Analyst, Computational Pragmatist | Physical Modeler, Validation Strategist |
+| Phase 2 (Flow) | Numerical Analyst, Physical Modeler, Computational Pragmatist | Mesh Engineer, Validation Strategist |
+| Phase 3 (Transport) | Numerical Analyst, Physical Modeler, Validation Strategist | Computational Pragmatist, Mesh Engineer |
+
+### 6c. Perspective Reference Material
+
+Each perspective agent receives relevant reference excerpts in its Task prompt.
+The orchestrator loads these sections and includes them inline (perspectives
+agents CAN use Read tool, but inline delivery is more reliable):
+
+| Perspective | Reference Sections to Include |
+|-------------|------------------------------|
+| Numerical Analyst | physics-models.md Sections 1-3 (equations), Section 6 (dimensionless numbers) |
+| Mesh Engineer | mesh-generation-guide.md Sections 4-6 (refinement, memory, quality) |
+| Physical Modeler | physics-models.md Section 5 (parameter tables), validation-benchmarks.md Benchmark 1 |
+| Computational Pragmatist | troubleshooting-guide.md Stage 4 (solver errors), fenicsx-patterns.md Section 8 (solver config) |
+| Validation Strategist | validation-benchmarks.md Sections 1-4 (benchmarks, convergence protocol) |
 
 ---
 
 ## 5. Swarm Output Handling
 
-The orchestrator extracts structured information from the brainstorming-pm synthesis
-output and converts it into a swarm-synthesis handoff (see orchestrator-handoff-schema.md
-Section 2c).
+### Current Protocol (v2.0 Decomposed Pipeline)
 
-### Extraction Protocol
+The synthesis agent produces a structured swarm-synthesis handoff YAML directly
+(see SKILL.md Section 8b and orchestrator-handoff-schema.md Section 2c). No
+extraction from prose is needed.
 
-1. **Read** the brainstorming-pm synthesis output (the final convergence analysis).
-2. **Identify convergent insights**: statements where 3+ perspectives agree. Extract as a list of concrete recommendations.
-3. **Identify divergent alternatives**: unique suggestions from individual perspectives that were not adopted by the majority. Extract as a list of alternative approaches.
-4. **Assess confidence**: Map the brainstorming-pm confidence level to a 1-5 integer score:
-   - 5 = "high confidence, strong consensus" (4-5 perspectives agree on key points)
-   - 4 = "good confidence, majority consensus" (3 perspectives agree)
-   - 3 = "moderate confidence, split opinions" (2-3 perspectives agree, significant dissent)
-   - 2 = "low confidence, no clear consensus" (perspectives mostly disagree)
-   - 1 = "very low confidence, contradictory" (perspectives contradict each other)
+The orchestrator validates the synthesis handoff:
+1. Parse YAML and check for required fields: `convergent_insights`,
+   `divergent_alternatives`, `confidence_score`
+2. Apply minimum quality criteria (see below)
+3. If valid: pass to mathematician as supplementary context
+4. If invalid or missing: proceed without swarm input
 
 ### Minimum Quality Criteria
 
 The swarm synthesis is usable if it meets ALL of:
-1. Contains at least 2 specific numerical recommendations (element count, refinement ratio, solver parameter, convergence criterion, stabilization value)
-2. Contains at least 1 concrete alternative approach (not just "consider alternatives" -- must name a specific method or parameter change)
+1. Contains at least 2 specific numerical recommendations in `convergent_insights`
+   (element count, refinement ratio, solver parameter, convergence criterion,
+   stabilization value)
+2. Contains at least 1 concrete alternative approach in `divergent_alternatives`
+   (not just "consider alternatives" -- must name a specific method or parameter change)
 
 ### Below-Threshold Behavior
 
 If the synthesis fails the quality criteria:
-- Log: "Swarm output for Phase {N} below quality threshold (found {count} numerical recommendations, needed 2)."
+- Log: "Swarm output for Phase {N} below quality threshold (found {count}
+  numerical recommendations, needed 2)."
 - Proceed WITHOUT swarm input. The mathematician and reviewer operate independently.
-- The orchestrator notes in the quality section of downstream handoffs: "Swarm synthesis omitted due to insufficient specificity."
-- This is NOT an error condition. The swarm is advisory; the mathematician and reviewer provide the primary analysis.
+- The orchestrator notes in downstream handoffs: "Swarm synthesis omitted due
+  to insufficient specificity."
+- This is NOT an error condition. The swarm is advisory; the mathematician and
+  reviewer provide the primary analysis.
+
+### Legacy Protocol (Reference Only)
+
+The following extraction protocol was used in the original brainstorming-pm
+integration design and is retained for reference:
+
+1. Read the brainstorming-pm synthesis output (stage-3-synthesis.md)
+2. Identify convergent insights: statements where 3+ perspectives agree
+3. Identify divergent alternatives: unique suggestions from individual perspectives
+4. Assess confidence and map to 1-5 integer score
+5. Construct swarm-synthesis handoff YAML
+
+This protocol is no longer used because the decomposed pipeline (Section 8b
+of SKILL.md) produces structured YAML output directly via the synthesis agent.
