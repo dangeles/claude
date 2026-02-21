@@ -107,11 +107,10 @@ Examples:
 
 | Situation | Tool | Reason |
 |-----------|------|--------|
-| Phase 2 parallel analysis (4 agents) | Task tool | Context isolation, parallel execution |
-| Phase 2.5 strategic review | Task tool | Separate specialist context |
-| Phase 3 synthesis | Task tool | Independent decision-making context |
-| Phase 3 adversarial review | Task tool | Independent, skeptical review |
-| Phase 4 implementation | Task tool | Isolated execution environment |
+| Phase 2 swarm analysis | Task tool (brainstorming-pm) | Multi-perspective analysis via swarm delegation |
+| Phase 2 edge-case analysis | Task tool (edge-case-simulator) | Domain-specific failure modes, parallel with swarm |
+| Phase 3 adversarial review | Task tool (adversarial-reviewer) | Independent, skeptical review |
+| Phase 4 implementation | Task tool (executor) | Isolated execution environment |
 | Loading reference docs for YOUR routing decisions | Read tool | Orchestrator decision support |
 | Loading skill instructions to decide WHICH specialist to invoke | Read tool (brief scan) | Routing information, not specialist work |
 | User interaction (questions, approvals, options) | AskUserQuestion | Structured user communication |
@@ -281,153 +280,86 @@ Run the mode detection script which performs:
 
 ---
 
-### Phase 2: Parallel Analysis (4 Simultaneous Agents)
+### Phase 2: Analysis (FULL mode only)
 
-**Objective**: Analyze proposed change from multiple expert perspectives.
+**Objective**: Analyze proposed change from multiple expert perspectives using two parallel tracks.
 
-**Agents** (all run in parallel):
-1. `skill-editor-best-practices-reviewer` (Opus 4.6) - Critical
-2. `skill-editor-external-researcher` (Opus 4.6) - Supplementary
-3. `skill-editor-edge-case-simulator` (Opus 4.6) - Critical
-4. `skill-editor-knowledge-engineer` (Opus 4.6) - Critical [NEW]
+**Agents** (run in parallel):
+- **Track A**: `brainstorming-pm` (swarm delegation) — multi-perspective analysis
+- **Track B**: `skill-editor-edge-case-simulator` (Opus 4.6) — domain-specific failure modes
 
-**Process**:
+#### Track A: Brainstorming-PM Swarm Delegation
 
-Launch all 4 agents with wave-based execution to reduce resource contention:
+1. Read `references/swarm-challenge-templates.md`
+2. Fill challenge template with values from refined specification:
+   - Skill name, change type, file count, line count
+   - Orchestrator detection result
+   - Specification summary (objective + scope)
+   - Current skill summary (if modifying existing skill)
+3. Invoke `brainstorming-pm` via Task tool with the filled challenge template
+4. Receives convergent/divergent insights with confidence scores from 5-archetype swarm
 
-**Wave 1 (T=0s)**: Launch critical analysis agents (best-practices-reviewer, edge-case-simulator)
-**Wave 2 (T=30s)**: Launch structural analysis agent (knowledge-engineer)
-**Wave 3 (T=60s)**: Launch supplementary research agent (external-researcher)
+**Quality threshold**: Synthesis must contain 2+ specific recommendations and 1+ alternative approach. If below threshold: log and proceed without swarm input.
 
-**Rationale for wave-based execution**: Staggering launches by 30-60 seconds reduces system resource contention and improves reliability for parallel agent execution.
+**Timeout**: 15 minutes. On timeout: skip swarm, proceed with edge-case-simulator output only.
 
-**Important**: All 4 agents run in parallel (waves overlap). Wait for all to complete before proceeding to Phase 3.
+**Orchestrator Analysis** (conditional -- when orchestrator_detected is true):
+- Add to challenge template: "This skill is an orchestrator -- evaluate against orchestrator patterns in references/orchestrator-checklist.md (6 REQUIRED + 4 RECOMMENDED patterns)"
 
-**Orchestrator Analysis** (conditional -- only when orchestrator_detected is true in session state):
+#### Track B: Edge-Case Simulator
 
-When the target skill is an orchestrator, Phase 2 agents perform additional analysis:
+1. Launch `skill-editor-edge-case-simulator` via Task tool with refined specification
+2. Agent produces skill-specific failure mode matrix covering:
+   - YAML parsing failures, sync-config.py edge cases
+   - Task tool timeouts, git dirty state scenarios
+   - Claude Code-specific boundary conditions
+3. Quality threshold: report exists and >100 words
 
-- **best-practices-reviewer**: Evaluates 6 REQUIRED patterns from `references/orchestrator-checklist.md`
-- **knowledge-engineer**: Evaluates 4 RECOMMENDED patterns from `references/orchestrator-checklist.md`
-- **Neither agent evaluates all 11 patterns.** Division of labor prevents cognitive overload.
-- **external-researcher and edge-case-simulator**: No additional orchestrator-specific tasks.
-
-**Agent Timeouts and Retry Logic**:
-
-| Agent Type | Timeout | On Failure |
-|-----------|---------|------------|
-| Critical (best-practices, edge-case, knowledge) | 10 min | Auto-retry once (30s wait), then ask user |
-| Supplementary (external-researcher) | 10 min | Proceed without |
-
-Maximum 2 attempts per critical agent.
-
-**Output Files** (must be created before proceeding to Phase 3):
-- `${SESSION_DIR}/best-practices-review.md`
-- `${SESSION_DIR}/external-research.md`
-- `${SESSION_DIR}/edge-cases.md`
-- `${SESSION_DIR}/knowledge-engineering-analysis.md`
+**Output Files**:
+- `${SESSION_DIR}/swarm-synthesis.md` (from brainstorming-pm, or absent if skipped/degraded)
+- `${SESSION_DIR}/edge-cases.md` (from edge-case-simulator)
 
 **Quality Gate 2: Analysis Completion**
 
-| Completed Agents | Critical Agents Status | Action |
-|------------------|----------------------|--------|
-| 4/4 | All critical complete | PASS - Proceed to Phase 3 |
-| 3/4 | All critical (only external-researcher failed) | PASS - Proceed with note |
-| 3/4 | 1 critical failed (first attempt) | RETRY - Retry failed critical agent once |
-| 3/4 | 1 critical failed (after retry) | ASK USER - Proceed with placeholder or abort? |
-| 2/4 or fewer | Multiple critical failed | FAIL - Retry all failed critical agents or abort |
+| Track A (swarm) | Track B (edge-case) | Action |
+|-----------------|---------------------|--------|
+| Complete | Complete | PASS |
+| Below threshold | Complete | PASS with note (graceful degradation) |
+| Timeout | Complete | PASS with note (proceed without swarm) |
+| Any | Failed | RETRY edge-case-simulator once, then ask user |
 
 **If Gate 2 passes**: Update session state to phase 3 and proceed.
 
 ---
 
-### Phase 2.5: STRATEGIC REVIEW [CONDITIONAL]
-
-**Purpose**: Strategic architectural assessment for complex changes using cross-domain pattern matching.
-
-**When**: Conditionally executed based on complexity detection. Skipped for simple changes.
-
-**Agent**: strategy-consultant (Opus 4.6)
-
-**Process**:
-1. Run complexity detection to determine if strategic review is needed
-2. If triggered: Launch strategy-consultant agent with 30-minute timeout
-3. Validate strategic review quality (>200 words, patterns identified, recommendations present)
-4. Check for major refactoring opportunities (user decision: proceed/explore/abort)
-5. Quality Gate 2.5: Verify complexity detection completed, review exists if needed, user decisions recorded
-
-**Implementation**: See `references/phase-2-5-detection.sh` for complete bash including complexity detection, strategy consultant launch/timeout handling, quality validation, major refactoring detection, and Quality Gate 2.5.
-
-**Note**: Phase 2.5 is optional and conditional. If skipped, strategic-review.md will not exist, and Phase 3 agents handle this gracefully.
-
----
-
-### Phase 3 Variants by Mode
-
-#### Phase 3: SIMPLE MODE (Lightweight Decision)
-
-**Duration**: 10-20 minutes
-**Trigger**: SELECTED_MODE = "SIMPLE"
-
-Process:
-1. Create minimal implementation plan from specification (objective, files to modify, validation steps, rollback plan)
-2. Check if target files include core workflow/agent files — if so, offer upgrade to Standard Mode
-3. Skip adversarial review unless core files affected
-
-#### Phase 3: EXPERIMENTAL MODE (Minimal Decision)
-
-**Duration**: 5-10 minutes
-**Trigger**: SELECTED_MODE = "EXPERIMENTAL"
-
-Process:
-1. Create implementation plan with experimental flags and WARNING header
-2. Optionally run adversarial review (user choice, adds ~15 min)
-3. All output tagged as experimental/not production-ready
-
-#### Phase 3 Mode Checkpoint
-
-Before launching synthesis, offer mode change option. If currently in SIMPLE or EXPERIMENTAL, user can switch to STANDARD (which will run Phase 2, adding ~1.5 hours).
-
----
-
-### Phase 3: Decision & Review (Synthesis + Adversarial)
+### Phase 3: Decision (Inline Synthesis + Adversarial Review)
 
 **Objective**: Synthesize analyses, make decisions, create plan, get expert approval.
 
-#### Part A: Decision Synthesis
+#### Part A: Inline Synthesis (orchestrator-owned)
 
-**Agent**: `skill-editor-decision-synthesizer`
+The orchestrator performs synthesis directly (like brainstorming-pm Stage 3), NOT via a separate agent:
 
-**Model**: Opus 4.6 (critical decision-making)
-
-**Process**:
-
-1. Read all 4 analysis reports + refined specification
-2. Identify consensus and conflicts
-3. Resolve conflicts or present options to user:
-   - **Major decisions**: MUST ask user (new agents, structure changes)
+1. Read swarm synthesis output (`swarm-synthesis.md`) — convergent/divergent insights
+2. Read edge-case report (`edge-cases.md`)
+3. Identify consensus and conflicts across both sources
+4. Resolve conflicts or present options to user:
+   - **Major decisions**: MUST ask user via AskUserQuestion (new agents, structure changes)
    - **Medium decisions**: SHOULD ask user (workflow changes)
-   - **Minor decisions**: Agent decides (examples, docs)
-4. Create detailed implementation plan with:
-   - Exact file paths
-   - Specific changes (line numbers if possible)
-   - Edge case handling
-   - Git workflow
-   - Validation steps
-   - Rollback plan
+   - **Minor decisions**: Orchestrator decides (examples, docs)
+5. Create detailed implementation plan with:
+   - Exact file paths and specific changes
+   - Edge case handling strategies
+   - Validation steps and rollback plan
 
-**Orchestrator-Specific Synthesis** (when orchestrator_detected is true in session state):
-
-5. Read orchestrator checklist results from both best-practices-review.md and knowledge-engineering-analysis.md
-6. If REQUIRED patterns are ABSENT: Implementation plan MUST include adding those patterns
-7. If RECOMMENDED patterns are ABSENT: Implementation plan SHOULD note them as suggested additions
-8. Reference pattern templates from `orchestrator-best-practices.md` for copy-paste inclusion
-9. Check Pattern Interactions section to avoid contradictions
-10. For existing orchestrators: PARTIAL with a working variant is acceptable
+**Orchestrator-Specific Synthesis** (when orchestrator_detected is true):
+- If REQUIRED orchestrator patterns are ABSENT: plan MUST include adding them
+- If RECOMMENDED patterns are ABSENT: plan SHOULD note them as suggestions
+- Reference `orchestrator-best-practices.md` for pattern templates
 
 **Output File**: `${SESSION_DIR}/implementation-plan.md`
 
-#### Part B: Adversarial Review
+#### Part B: Adversarial Review (delegated)
 
 **Agent**: `skill-editor-adversarial-reviewer`
 
@@ -435,38 +367,28 @@ Before launching synthesis, offer mode change option. If currently in SIMPLE or 
 
 **Process**:
 
-1. Read implementation plan with expert skepticism
-2. Challenge assumptions and approach
-3. Identify failure modes not caught by analysis
-4. Verify exact file paths (run bash checks)
-5. Verify git workflow safety
-6. Check alignment with original specification
-7. Provide go/no-go decision
+1. Launch adversarial-reviewer via Task tool with implementation plan
+2. Reviewer reads plan with expert skepticism
+3. Challenges assumptions, identifies uncaught failure modes
+4. Verifies exact file paths and git workflow safety
+5. Checks alignment with original specification
+6. Provides verdict: GO / CONDITIONAL / NO-GO
 
-**Output File**: `${SESSION_DIR}/adversarial-review.md` containing:
-- Architecture assessment
-- Failure mode analysis
-- Integration risk assessment
-- Exact file path verification
-- Git workflow verification
-- Final decision: GO / CONDITIONAL / NO-GO
+**Output File**: `${SESSION_DIR}/adversarial-review.md`
 
-**Quality Gate 3: Plan Approval**
+**Quality Gate 2: Plan Approval**
 
 Check:
 - [ ] Implementation plan has exact file paths
 - [ ] Git workflow is safe and correct
-- [ ] Integration points identified
-- [ ] No architectural concerns
 - [ ] Adversarial reviewer approved (GO or CONDITIONAL with fixes applied)
 - [ ] User approves plan
 
-**If Gate 3 fails**:
-- If CONDITIONAL: Fix issues, re-review
-- If NO-GO: Return to decision-synthesizer, revise plan
-- If user doesn't approve: Refine plan or return to Phase 1
+**If CONDITIONAL**: Fix issues, re-review.
+**If NO-GO**: Revise plan, re-submit.
+**If user doesn't approve**: Refine plan or return to Phase 1.
 
-**If Gate 3 passes**: Update session state to phase 4 and proceed.
+**If Gate 2 passes**: Update session state to phase 4 and proceed.
 
 ---
 
@@ -589,19 +511,13 @@ Decision thresholds (from CONFIG_MANAGEMENT.md):
 ## Error Handling
 
 ### Retry Protocol (Phase 2 Agent Failures)
-- First failure: Wait 30s, retry automatically
-- Second failure: User decision required (proceed with placeholder or abort)
-- Maximum 2 attempts per critical agent
-- Retried operations should be idempotent
+- edge-case-simulator failure: Wait 30s, retry once automatically, then ask user
+- brainstorming-pm timeout (>15 min): Skip swarm, proceed with edge-case output only
+- brainstorming-pm below quality threshold: Log and proceed without swarm input
 
-### Graceful Degradation (Supplementary Agent Failures)
-- external-researcher timeout: Proceed without research analysis
-- knowledge-engineer timeout (after retry): Proceed with 3 analyses
-- Decision-synthesizer notes missing perspectives in synthesis
-
-### Circuit Breaker (Cascading Failures)
-- If 2+ critical agents fail in Phase 2: Stop retrying, escalate to user
-- User choices: retry all, proceed with available, or abort
+### Graceful Degradation
+- Swarm timeout or failure: Proceed without swarm analysis (orchestrator creates plan from specification + edge-case report only)
+- Edge-case-simulator timeout (after retry): Ask user to proceed with specification-only plan or abort
 
 ### Rollback Protocol (Phase 4 Failures)
 1. Stop immediately
@@ -652,11 +568,9 @@ Planning entry created in Phase 4, Step 7:
 
 | Gate | Phase | Owner | Criteria | Failure Action |
 |------|-------|-------|----------|----------------|
-| 1 | Phase 1 | request-refiner | Spec approved | Return to refinement |
-| 2 | Phase 2 | decision-synthesizer | All analyses complete | Re-run agents |
-| 3 | Phase 3 | adversarial-reviewer | Plan approved | Revise plan |
-| 4 | Phase 4 | executor | Syntax validated | Fix issues |
-| 5 | Phase 4 | executor | Implementation verified | Rollback |
+| 1: Specification Approval | Phase 1 | request-refiner | Spec approved by user | Return to refinement |
+| 2: Plan Approval | Phase 3 | adversarial-reviewer + user | Adversarial GO + user approves plan | Revise plan |
+| 3: Execution Verification | Phase 4 | executor | YAML validates, sync succeeds, skill invokes, no regressions | Rollback |
 
 ## Examples
 
@@ -682,9 +596,8 @@ Success Criteria:
 ```
 
 **Phase 2 Findings**:
-- Best practices: Use Task tool for parallel calls
-- Research: Community uses this pattern
-- Edge cases: Handle timeout, network failure
+- Swarm: Consensus on Task tool for parallel calls, alternative approaches explored
+- Edge cases: Handle timeout, network failure, partial results
 
 **Phase 3 Plan**:
 ```markdown
@@ -719,19 +632,17 @@ Commit: feat(researcher): Add parallel web search
 | Phase | Component | Timeout | Exceeded Action |
 |-------|-----------|---------|-----------------|
 | 1 | request-refiner | 30 min | Escalate to user |
-| 2 | critical agents (Wave 1-2) | 10 min each | Auto-retry once, then user decision |
-| 2 | supplementary agent (Wave 3) | 10 min | Proceed without |
-| 2.5 | strategy-consultant | 30 min | User decision (proceed/retry/abort) |
-| 3 | decision-synthesizer | 30 min | Escalate to user |
+| 2 | brainstorming-pm (swarm) | 15 min | Skip swarm, proceed with edge-case only |
+| 2 | edge-case-simulator | 10 min | Auto-retry once, then user decision |
 | 3 | adversarial-reviewer | 30 min | Escalate to user |
 | 4 | executor | 60 min | Escalate to user |
-| Global | entire workflow | 4 hours | Safety ceiling, force escalate |
+| Global | entire workflow | 3 hours | Safety ceiling, force escalate |
 
 ## Notes
 
-- **Parallel execution in Phase 2**: All 4 agents run simultaneously with wave-based launches (30-60s stagger reduces resource contention)
-- **All agents use Opus 4.6**: Maximum quality for all workflow phases (requirements analysis, research, edge cases, structural completeness, decision-making, review, execution)
-- **Quality gates enforce standards**: No bypassing validation
+- **Hybrid swarm + specialist model**: brainstorming-pm provides multi-perspective analysis, edge-case-simulator provides domain-specific failure modes
+- **All agents use Opus 4.6**: Maximum quality for all workflow phases
+- **3 quality gates**: Specification Approval, Plan Approval, Execution Verification
 - **Rollback on failure**: Safe to abort at any point
 - **Planning journal provides traceability**: Full documentation of changes
 - **Integration tested**: Works with sync-config.py and existing workflows
@@ -739,14 +650,15 @@ Commit: feat(researcher): Add parallel web search
 ## References
 
 See `skill-editor/references/` for:
+- `swarm-challenge-templates.md`: Challenge template for brainstorming-pm swarm delegation
 - `session-management.sh`: Git safety checks, session creation/resume, cleanup commands
 - `mode-detection.sh`: Three-tier complexity detection, mode selection prompt
-- `phase-2-5-detection.sh`: Phase 2.5 complexity detection, strategy consultant, Quality Gate 2.5
 - `experimental-tagging.sh`: Experimental mode YAML/comment tagging
 - `anthropic-guidelines-summary.md`: Anthropic best practices
 - `skill-structure-specification.md`: Skill format and validation
 - `quality-gates.md`: Detailed quality gate checklists
-- `config-management-integration.md`: Integration with CONFIG_MANAGEMENT.md
+- `orchestrator-checklist.md`: Orchestrator pattern evaluation checklist
+- `orchestrator-best-practices.md`: Orchestrator pattern templates
 
 ## Success Criteria
 
