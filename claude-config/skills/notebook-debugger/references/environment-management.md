@@ -26,7 +26,7 @@ Best practices for managing Python environments with Jupyter.
 ### When to use Pip
 
 ✅ Pure Python packages
-✅ Packages not on conda
+✅ Packages not on conda-forge
 ✅ Lightweight environments
 ✅ Integration with requirements.txt
 

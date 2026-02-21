@@ -609,7 +609,7 @@ Fix is complete when:
 
 **Quick references** (see `references/` directory):
 - `jupyter-troubleshooting-guide.md` - Common Jupyter issues and solutions
-- `environment-management.md` - Conda/pip best practices
+- `environment-management.md` - micromamba/pip best practices
 - `notebook-best-practices.md` - Reproducibility guidelines
 
 **When to consult**:

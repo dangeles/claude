@@ -9,7 +9,7 @@ Quick reference for recognizing frequent bug patterns.
 ### `ModuleNotFoundError: No module named 'X'`
 
 **Typical causes**:
-1. Package not installed: `pip install X`
+1. Package not installed: `micromamba install X`
 2. Wrong environment: Check `which python`, activate correct virtualenv
 3. Missing `__init__.py`: Package directory needs `__init__.py` file
 4. Typo in import: `from sklearn import ...` not `from scikit-learn import ...`
