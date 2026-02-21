@@ -1,6 +1,26 @@
 # Skills Changelog
 All notable changes to the Claude skills ecosystem.
 
+## [3.0.0] - 2026-02-21
+
+### skill-editor v3.0 — Major Refactor
+
+- Consolidated from 9 agents to 5 (hybrid swarm + specialist model)
+- Integrated brainstorming-pm swarm delegation for Phase 2 analysis
+- Reduced SKILL.md from 2,206 to ~645 lines via bash extraction + architectural simplification
+- Simplified from 3 modes (SIMPLE/STANDARD/EXPERIMENTAL) to 2 (QUICK/FULL)
+- Consolidated from 5 quality gates to 3
+- Eliminated conditional Phase 2.5 (absorbed into swarm)
+- Updated all model references to opus (resolves to latest Opus)
+- Added swarm challenge template (references/swarm-challenge-templates.md)
+
+### Agents Removed
+- skill-editor-best-practices-reviewer (absorbed into swarm)
+- skill-editor-knowledge-engineer (absorbed into swarm)
+- skill-editor-external-researcher (absorbed into swarm)
+- skill-editor-strategy-consultant (absorbed into swarm)
+- skill-editor-decision-synthesizer (inline synthesis by orchestrator)
+
 ## [2.1.0] - 2026-02-04
 
 ### Summary
