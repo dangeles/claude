@@ -478,7 +478,7 @@ EOF
 - **Use for**: Standard workflows, quick analysis, implementation
 - **Limit**: Very complex reasoning (use Opus for this)
 
-### Opus 4.5 (Premium)
+### Opus 4.6 (Premium)
 
 - **Strengths**: Highest quality reasoning, complex decisions
 - **Use for**: Critical reviews, complex planning, architectural decisions
@@ -489,12 +489,12 @@ EOF
 ```json
 {
   "name": "skill-editor-executor",
-  "model": "sonnet-4.5"  // Most agents use Sonnet
+  "model": "opus"  // All agents use Opus
 }
 
 {
   "name": "skill-editor-adversarial-reviewer",
-  "model": "opus-4.5"  // Critical decision = Opus
+  "model": "opus"  // Critical decision = Opus
 }
 ```
 

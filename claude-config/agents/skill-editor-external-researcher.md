@@ -8,7 +8,7 @@ tools:
   - Write
   - Grep
   - Glob
-model: opus-4.5
+model: opus
 permissionMode: default
 skills:
   - researcher

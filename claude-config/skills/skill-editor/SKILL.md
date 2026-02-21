@@ -390,7 +390,7 @@ On next invocation:
 
 **Agent**: `skill-editor-request-refiner`
 
-**Model**: Opus 4.5
+**Model**: Opus 4.6
 
 **Process**:
 
@@ -770,10 +770,10 @@ esac
 **Objective**: Analyze proposed change from multiple expert perspectives.
 
 **Agents** (all run in parallel):
-1. `skill-editor-best-practices-reviewer` (Opus 4.5) - Critical
-2. `skill-editor-external-researcher` (Opus 4.5) - Supplementary
-3. `skill-editor-edge-case-simulator` (Opus 4.5) - Critical
-4. `skill-editor-knowledge-engineer` (Opus 4.5) - Critical [NEW]
+1. `skill-editor-best-practices-reviewer` (Opus 4.6) - Critical
+2. `skill-editor-external-researcher` (Opus 4.6) - Supplementary
+3. `skill-editor-edge-case-simulator` (Opus 4.6) - Critical
+4. `skill-editor-knowledge-engineer` (Opus 4.6) - Critical [NEW]
 
 **Process**:
 
@@ -922,7 +922,7 @@ jq -n \
 
 **Duration**: 10-30 minutes (for complex changes), ~0 seconds (for simple changes)
 
-**Agent**: strategy-consultant (Opus 4.5)
+**Agent**: strategy-consultant (Opus 4.6)
 
 ---
 
@@ -1082,7 +1082,7 @@ fi
 if [ "$PROCEED_TO_STRATEGY_CONSULTANT" = "true" ]; then
   echo "=== Phase 2.5: Strategic Architectural Assessment ==="
   echo ""
-  echo "Launching strategy-consultant agent (Opus 4.5)..."
+  echo "Launching strategy-consultant agent (Opus 4.6)..."
   echo "Expected duration: 10-30 minutes"
   echo ""
   echo "This agent will:"
@@ -1736,7 +1736,7 @@ jq -n \
 
 **Agent**: `skill-editor-executor`
 
-**Model**: Opus 4.5
+**Model**: Opus 4.6
 
 **Process**:
 
@@ -1952,7 +1952,7 @@ Testing:
 
 See planning/$(hostname)/[date]-[title].md${COMMIT_SUFFIX}
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 EOF
 )"
 
@@ -2177,7 +2177,7 @@ Implementation:
 ## Notes
 
 - **Parallel execution in Phase 2**: All 4 agents run simultaneously with wave-based launches (30-60s stagger reduces resource contention)
-- **All agents use Opus 4.5**: Maximum quality for all workflow phases (requirements analysis, research, edge cases, structural completeness, decision-making, review, execution)
+- **All agents use Opus 4.6**: Maximum quality for all workflow phases (requirements analysis, research, edge cases, structural completeness, decision-making, review, execution)
 - **Quality gates enforce standards**: No bypassing validation
 - **Rollback on failure**: Safe to abort at any point
 - **Planning journal provides traceability**: Full documentation of changes

@@ -6,7 +6,7 @@ tools:
   - Grep
   - Glob
   - Write
-model: opus-4.5
+model: opus
 permissionMode: default
 skills: []
 ---

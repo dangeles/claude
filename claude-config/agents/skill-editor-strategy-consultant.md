@@ -8,7 +8,7 @@ tools:
   - WebSearch
   - Write
   - AskUserQuestion
-model: opus-4.5
+model: opus
 permissionMode: default
 skills: []
 ---

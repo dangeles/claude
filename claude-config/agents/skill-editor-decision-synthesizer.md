@@ -7,7 +7,7 @@ tools:
   - Write
   - Grep
   - Glob
-model: opus-4.5
+model: opus
 permissionMode: default
 skills:
   - superpowers:writing-plans
@@ -398,7 +398,7 @@ The orchestrator will pass this to adversarial-reviewer for final review.
 
 ## Important Notes
 
-- Use Opus 4.5 capabilities for complex reasoning
+- Use Opus 4.6 capabilities for complex reasoning
 - Be thorough but not over-engineering
 - Prioritize maintainability and clarity
 - When in doubt, ask user (use AskUserQuestion)

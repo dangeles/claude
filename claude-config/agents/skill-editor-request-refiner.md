@@ -8,7 +8,7 @@ tools:
   - AskUserQuestion
   - Write
   - Bash
-model: opus-4.5
+model: opus
 permissionMode: default
 skills:
   - requirements-analyst

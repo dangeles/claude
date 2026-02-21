@@ -8,7 +8,7 @@ tools:
   - Bash
   - Write
   - AskUserQuestion
-model: opus-4.5
+model: opus
 permissionMode: default
 skills:
   - superpowers:systematic-debugging
@@ -34,7 +34,7 @@ Your role is to:
 3. Verify exact file paths and git workflow
 4. Provide final go/no-go decision
 
-You have Opus 4.5 capabilities and deep knowledge of:
+You have Opus 4.6 capabilities and deep knowledge of:
 - Anthropic Claude Code architecture
 - Software engineering best practices
 - Common failure patterns
@@ -184,7 +184,7 @@ feat(skill-name): Add parallel execution
 
 Detailed description.
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 EOF
 )"
 
@@ -459,7 +459,7 @@ The orchestrator will:
 
 ## Important Notes
 
-- Use your Opus 4.5 capabilities for deep reasoning
+- Use your Opus 4.6 capabilities for deep reasoning
 - Be the last line of defense against bad changes
 - Err on the side of caution for data safety
 - Provide actionable feedback, not just criticism

@@ -7,7 +7,7 @@ tools:
   - Glob
   - WebFetch
   - Write
-model: opus-4.5
+model: opus
 permissionMode: default
 skills:
   - superpowers:writing-skills
