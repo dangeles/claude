@@ -88,9 +88,7 @@ python3 scripts/validate-handoff.py test/fixtures/valid-requirements-handoff.yam
 
 **Recommendation**: Install yq for full functionality
 ```bash
-brew install yq  # macOS
-# OR
-pip install yq   # Python version
+micromamba install yq
 ```
 
 **Fallback behavior**: Script handles missing yq gracefully with warnings
@@ -287,7 +285,7 @@ Planned scenarios:
 
 1. **Install yq** for full quality gate validation:
    ```bash
-   brew install yq  # macOS with Homebrew
+   micromamba install yq
    ```
 
 2. **Run end-to-end test** with real project:

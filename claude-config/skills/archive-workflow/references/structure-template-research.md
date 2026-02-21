@@ -51,7 +51,7 @@ project/
 │       └── visualization.py  # Plotting
 ├── tests/                    # Tests for src/
 │   └── test_data.py
-├── environment.yml           # Conda environment
+├── environment.yml           # micromamba environment
 ├── requirements.txt          # Pip requirements
 ├── Makefile                  # Automation
 ├── README.md
@@ -140,7 +140,7 @@ project/
 ├── scripts/                  # Analysis scripts
 │   ├── preprocess.py
 │   └── analysis.R
-├── envs/                     # Conda environments
+├── envs/                     # micromamba environments
 │   └── environment.yml
 ├── results/
 │   ├── figures/
@@ -309,7 +309,7 @@ clean:
 	rm -rf data/processed/*
 
 environment:
-	conda env create -f environment.yml
+	micromamba env create -f environment.yml
 ```
 
 ### Environment Files

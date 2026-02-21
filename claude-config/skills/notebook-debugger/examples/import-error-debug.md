@@ -46,11 +46,11 @@ pip list | grep scanpy
 # (no output - scanpy not installed in this environment)
 
 # Check where it was installed:
-conda env list
+micromamba env list
 # * base                     /Users/name/anaconda3
 #   scrna_project            /Users/name/anaconda3/envs/scrna_project
 
-conda activate scrna_project
+micromamba activate scrna_project
 pip list | grep scanpy
 # scanpy    1.9.3
 ```
@@ -79,7 +79,7 @@ jupyter kernelspec list
 
 ```bash
 # Activate project environment:
-conda activate scrna_project
+micromamba activate scrna_project
 
 # Check all packages:
 pip list
@@ -101,10 +101,10 @@ pip list
 
 ```bash
 # Activate project environment:
-conda activate scrna_project
+micromamba activate scrna_project
 
 # Install ipykernel in project environment:
-pip install ipykernel
+micromamba install ipykernel
 
 # Register environment as Jupyter kernel:
 python -m ipykernel install --user --name=scrna_project --display-name="Python (scrna_project)"
@@ -129,7 +129,7 @@ If you don't want separate environments:
 
 ```bash
 # Activate current environment (base):
-conda activate base
+micromamba activate base
 
 # Install scanpy:
 pip install scanpy
@@ -223,11 +223,11 @@ scanpy==1.9.3
 """
 Environment Requirements
 ------------------------
-This notebook requires the 'scrna_project' conda environment.
+This notebook requires the 'scrna_project' micromamba environment.
 
 Setup:
-    conda env create -f environment.yml
-    conda activate scrna_project
+    micromamba env create -f environment.yml
+    micromamba activate scrna_project
     python -m ipykernel install --user --name=scrna_project
 
 In Jupyter: Kernel → Change kernel → Python (scrna_project)
@@ -253,12 +253,12 @@ print("✓ Correct environment loaded")
 
 1. **Create environment**:
    ```bash
-   conda env create -f environment.yml
+   micromamba env create -f environment.yml
    ```
 
 2. **Register Jupyter kernel**:
    ```bash
-   conda activate scrna_project
+   micromamba activate scrna_project
    python -m ipykernel install --user --name=scrna_project --display-name="Python (scrna_project)"
    ```
 
@@ -273,7 +273,7 @@ print("✓ Correct environment loaded")
 
 - **"ModuleNotFoundError"**: Check kernel (top right corner shows which kernel is active)
 - **Wrong kernel listed**: Re-run kernel registration command
-- **Kernel not starting**: `conda activate scrna_project && jupyter lab`
+- **Kernel not starting**: `micromamba activate scrna_project && jupyter lab`
 ```
 
 ### Created environment.yml
@@ -304,8 +304,8 @@ dependencies:
 **Usage**:
 ```bash
 # Others can recreate exact environment:
-conda env create -f environment.yml
-conda activate scrna_project
+micromamba env create -f environment.yml
+micromamba activate scrna_project
 python -m ipykernel install --user --name=scrna_project
 ```
 
@@ -325,7 +325,7 @@ python -m ipykernel install --user --name=scrna_project
 
 ## Key Lessons
 
-1. **Jupyter kernels != conda environments**: Installing a package in an environment doesn't automatically make it available to Jupyter
+1. **Jupyter kernels != micromamba environments**: Installing a package in an environment doesn't automatically make it available to Jupyter
 2. **Always register kernels**: After creating a project environment, register it with `python -m ipykernel install`
 3. **Environment assertion**: Add assertion in first cell to catch wrong environment immediately
 4. **Document setup**: Include environment.yml so others can reproduce
@@ -336,11 +336,11 @@ python -m ipykernel install --user --name=scrna_project
 ## Prevention for Future Notebooks
 
 **Environment management checklist**:
-- [ ] Create dedicated conda environment for project
-- [ ] Install ipykernel in the environment: `pip install ipykernel`
+- [ ] Create dedicated micromamba environment for project
+- [ ] Install ipykernel in the environment: `micromamba install ipykernel`
 - [ ] Register kernel: `python -m ipykernel install --user --name=myproject`
 - [ ] Add environment assertion to first cell of notebook
-- [ ] Export environment: `conda env export > environment.yml`
+- [ ] Export environment: `micromamba env export > environment.yml`
 - [ ] Document setup instructions in notebook markdown
 
 **Automation script** (add to project):
@@ -356,10 +356,10 @@ if [ -z "$ENV_NAME" ]; then
 fi
 
 echo "Creating environment: $ENV_NAME"
-conda env create -f environment.yml -n $ENV_NAME
+micromamba env create -f environment.yml -n $ENV_NAME
 
 echo "Activating environment"
-conda activate $ENV_NAME
+micromamba activate $ENV_NAME
 
 echo "Registering Jupyter kernel"
 python -m ipykernel install --user --name=$ENV_NAME --display-name="Python ($ENV_NAME)"
@@ -382,5 +382,5 @@ echo "✓ Setup complete. Select kernel 'Python ($ENV_NAME)' in Jupyter"
 
 **Issue: Kernel keeps dying on import**
 - Check: Package version compatibility
-- Try: `conda install package-name` instead of `pip install` (sometimes resolves dependencies better)
+- Try: `micromamba install package-name` instead of `pip install` (sometimes resolves dependencies better)
 - Check: `jupyter lab` terminal output for error messages

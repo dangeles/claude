@@ -146,7 +146,7 @@ See **[Skills by Domain](#skills-by-domain)** below for categorized lists, or us
 **Key features**:
 - Extended thinking budget: 4,096-8,192 tokens
 - Sparse matrix optimization (RNA-seq 50k cells × 20k genes example)
-- Environment management (conda/pip kernel registration)
+- Environment management (micromamba/pip kernel registration)
 - 3 real-world debugging examples
 
 **Word count**: 2,546 words

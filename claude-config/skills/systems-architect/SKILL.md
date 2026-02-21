@@ -275,7 +275,7 @@ FASTQ files → Validator → QC Runner (parallel) → Aggregator → HTML Repor
 - Final report includes QC pass/fail status per sample
 
 ### Deployment
-- Install: conda env from environment.yml
+- Install: micromamba env from environment.yml
 - Config: samples.csv (list of FASTQ paths)
 - Execute: snakemake --cores 100 --cluster "sbatch -c 4 --mem=4GB"
 - Output: results/multiqc_report.html

@@ -229,9 +229,9 @@ All sequential ✓
 **Create new virtualenv and test**:
 ```bash
 # Terminal:
-conda create -n test_pipeline python=3.11
-conda activate test_pipeline
-pip install pandas numpy jupyter
+micromamba create -n test_pipeline python=3.11
+micromamba activate test_pipeline
+micromamba install pandas numpy jupyter
 jupyter lab
 
 # Open notebook, run Restart & Run All

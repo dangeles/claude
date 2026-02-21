@@ -22,7 +22,7 @@ Quick reference for common Jupyter notebook issues and solutions.
 pip list | grep ipykernel
 
 # Install if missing:
-pip install ipykernel
+micromamba install ipykernel
 
 # Register kernel:
 python -m ipykernel install --user --name=myenv
@@ -128,7 +128,7 @@ python -c "import package_name"
 pip install package-name
 
 # Or register kernel for project environment:
-conda activate myproject
+micromamba activate myproject
 python -m ipykernel install --user --name=myproject
 
 # Switch kernel in Jupyter:
@@ -223,7 +223,7 @@ for stat in snapshot.statistics('lineno')[:10]:
 jupyter nbconvert --clear-output --inplace notebook.ipynb
 
 # Or use nbstripout (automatic):
-pip install nbstripout
+micromamba install nbstripout
 nbstripout notebook.ipynb
 
 # Add to git hooks:
@@ -472,8 +472,8 @@ print(sys.executable)
 **Solutions**:
 ```bash
 # Create environment with specific Python:
-conda create -n myenv python=3.11
-conda activate myenv
+micromamba create -n myenv python=3.11
+micromamba activate myenv
 python -m ipykernel install --user --name=myenv
 
 # Switch kernel in notebook:
@@ -497,8 +497,8 @@ pip install --upgrade package-name
 # Install specific versions:
 pip install package-a==1.0 package-b==2.0
 
-# Use conda to resolve:
-conda install package-name  # Better dependency resolution
+# Use micromamba to resolve:
+micromamba install package-name  # Better dependency resolution
 ```
 
 ---

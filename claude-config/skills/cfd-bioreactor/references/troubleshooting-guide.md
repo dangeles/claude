@@ -17,10 +17,10 @@ print(dolfinx.__version__)
 ```
 **Fix**: Recreate the environment from the pinned `environment.yml`:
 ```bash
-conda deactivate
-conda env remove -n cfd-bioreactor
-conda env create -f environment.yml
-conda activate cfd-bioreactor
+micromamba deactivate
+micromamba env remove -n cfd-bioreactor
+micromamba env create -f environment.yml
+micromamba activate cfd-bioreactor
 ```
 
 ### AttributeError: module 'gmsh.model' has no attribute 'occ'
@@ -29,7 +29,7 @@ conda activate cfd-bioreactor
 This happens when installing gmsh via pip instead of conda-forge.
 **Fix**: Install gmsh from conda-forge (which includes OCC):
 ```bash
-conda install -c conda-forge gmsh python-gmsh
+micromamba install -c conda-forge gmsh python-gmsh
 ```
 **Verify**:
 ```python
@@ -46,7 +46,7 @@ gmsh.finalize()
 **Cause**: PETSc Python bindings not installed or version mismatch with dolfinx.
 **Fix**:
 ```bash
-conda install -c conda-forge petsc4py
+micromamba install -c conda-forge petsc4py
 ```
 **Note**: petsc4py version must match the PETSc version used to build dolfinx.
 Using conda-forge for both ensures compatibility.
@@ -62,19 +62,19 @@ pyvista.start_xvfb()  # Linux only; requires xvfb package
 ```
 **Fix** (missing VTK):
 ```bash
-conda install -c conda-forge pyvista vtk
+micromamba install -c conda-forge pyvista vtk
 ```
 
 ### Segmentation fault on import
 
 **Cause**: Version mismatch between PETSc, petsc4py, and dolfinx compiled libraries.
 This is the hardest error to debug because there is no Python traceback.
-**Fix**: The only reliable fix is to recreate the conda environment from scratch:
+**Fix**: The only reliable fix is to recreate the micromamba environment from scratch:
 ```bash
-conda deactivate
-conda env remove -n cfd-bioreactor
-conda env create -f environment.yml
-conda activate cfd-bioreactor
+micromamba deactivate
+micromamba env remove -n cfd-bioreactor
+micromamba env create -f environment.yml
+micromamba activate cfd-bioreactor
 ```
 **Prevention**: Never mix conda-forge and pip for core packages (dolfinx, petsc4py, gmsh).
 

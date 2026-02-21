@@ -7,25 +7,29 @@ set up, no simulation will run.
 
 ---
 
-## 1. Conda Installation (Primary Method)
+## 1. micromamba Installation (Primary Method)
 
-Conda is the recommended installation path. The provided `environment.yml` pins
+micromamba is the recommended installation path. The provided `environment.yml` pins
 FEniCSx v0.10 and all transitive dependencies to tested, compatible versions.
 
 ### 1.1 One-Command Install
 
 ```bash
 # From the skill examples directory (where environment.yml lives):
-conda env create -f environment.yml
+micromamba env create -f environment.yml
 
 # Activate the environment:
-conda activate cfd-bioreactor
+micromamba activate cfd-bioreactor
 ```
 
 If you already have the environment and need to update it:
 
 ```bash
-conda env update -f environment.yml --prune
+# For incremental updates (updates already-installed packages only):
+micromamba env update -f environment.yml
+
+# For full environment recreation:
+micromamba env create --yes -f environment.yml
 ```
 
 ### 1.2 Verification Commands
@@ -70,7 +74,7 @@ the sole channel.
 ## 2. Docker Alternative
 
 Docker provides a self-contained environment with zero dependency management. Prefer
-Docker when conda installation fails (especially on Windows or HPC clusters with
+Docker when micromamba installation fails (especially on Windows or HPC clusters with
 restricted permissions).
 
 ### 2.1 Quick Start
@@ -122,10 +126,10 @@ docker compose exec cfd bash
 
 ### 2.3 When to Use Docker Over Conda
 
-- Windows (WSL2 Docker Desktop is simpler than WSL2 + conda)
+- Windows (WSL2 Docker Desktop is simpler than WSL2 + micromamba)
 - HPC clusters where conda-forge packages conflict with system MPI
 - CI/CD pipelines (reproducible container builds)
-- When conda environment creation fails due to solver conflicts
+- When micromamba environment creation fails due to solver conflicts
 
 ---
 
@@ -136,10 +140,10 @@ docker compose exec cfd bash
 Conda-forge provides ARM64 (osx-arm64) builds for FEniCSx and most dependencies.
 However, availability can change between releases.
 
-**Before attempting conda install**, verify ARM64 availability:
+**Before attempting micromamba install**, verify ARM64 availability:
 
 ```bash
-conda search -c conda-forge fenics-dolfinx --platform osx-arm64
+micromamba search -c conda-forge fenics-dolfinx --platform osx-arm64
 ```
 
 If ARM64 builds are not yet available for v0.10, use Docker instead (see Section 2).
@@ -188,13 +192,19 @@ Native Windows is not supported. FEniCSx requires a POSIX environment.
    wsl --install -d Ubuntu-24.04
    ```
 
-2. Inside WSL2, install Miniconda:
+2. Inside WSL2, install micromamba:
    ```bash
-   wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-   bash Miniconda3-latest-Linux-x86_64.sh
+   "${SHELL}" <(curl -L https://micro.mamba.pm/install.sh)
+   ```
+   After installation, initialize the shell and configure channels:
+   ```bash
+   micromamba shell init -s bash -r ~/micromamba
+   source ~/.bashrc
+   micromamba config append channels conda-forge
+   micromamba config set channel_priority strict
    ```
 
-3. Proceed with conda installation (Section 1).
+3. Proceed with micromamba installation (Section 1).
 
 Alternatively, use Docker Desktop with WSL2 backend (Section 2).
 
@@ -255,7 +265,7 @@ def main():
     else:
         check("Python version", FAIL,
               f"{v.major}.{v.minor}.{v.micro} (need >= 3.10). "
-              "Install Python 3.10+ or use the conda environment.")
+              "Install Python 3.10+ or use the micromamba environment.")
     print()
 
     # ---- Check 2: dolfinx ----
@@ -269,10 +279,10 @@ def main():
         else:
             check("dolfinx", FAIL,
                   f"version {ver} (need >= 0.10). "
-                  "Run: conda install -c conda-forge fenics-dolfinx=0.10.*")
+                  "Run: micromamba install -c conda-forge fenics-dolfinx=0.10.*")
     except ImportError:
         check("dolfinx", FAIL,
-              "Not installed. Run: conda install -c conda-forge fenics-dolfinx=0.10.* "
+              "Not installed. Run: micromamba install -c conda-forge fenics-dolfinx=0.10.* "
               "OR use Docker: docker pull dolfinx/dolfinx:v0.10.0.0")
     print()
 
@@ -296,17 +306,17 @@ def main():
                 check("gmsh OCC kernel", FAIL,
                       "addBox succeeded but no 3D entities found after synchronize. "
                       "OpenCASCADE kernel may be broken. "
-                      "Reinstall: conda install -c conda-forge gmsh python-gmsh")
+                      "Reinstall: micromamba install -c conda-forge gmsh python-gmsh")
         except Exception as e:
             check("gmsh OCC kernel", FAIL,
                   f"OpenCASCADE test failed: {e}. "
                   "STEP/IGES import will not work. "
-                  "Reinstall: conda install -c conda-forge gmsh python-gmsh")
+                  "Reinstall: micromamba install -c conda-forge gmsh python-gmsh")
         finally:
             gmsh.finalize()
     except ImportError:
         check("gmsh import", FAIL,
-              "Not installed. Run: conda install -c conda-forge gmsh python-gmsh")
+              "Not installed. Run: micromamba install -c conda-forge gmsh python-gmsh")
         check("gmsh OCC kernel", FAIL, "Skipped (gmsh not available)")
     print()
 
@@ -329,7 +339,7 @@ def main():
     except ImportError:
         check("pyvista", WARN,
               "Not installed. Visualization will use VTK export only. "
-              "Install: conda install -c conda-forge pyvista")
+              "Install: micromamba install -c conda-forge pyvista")
     print()
 
     # ---- Check 5: PETSc + MUMPS solver ----
@@ -364,10 +374,10 @@ def main():
                   "MUMPS not detected. Direct solver unavailable. "
                   "2D problems will use LU (slower). 3D problems will use "
                   "iterative solvers. Reinstall PETSc with MUMPS: "
-                  "conda install -c conda-forge petsc4py=*=*mumps*")
+                  "micromamba install -c conda-forge petsc4py=*=*mumps*")
     except ImportError:
         check("petsc4py", FAIL,
-              "Not installed. Run: conda install -c conda-forge petsc4py")
+              "Not installed. Run: micromamba install -c conda-forge petsc4py")
         check("MUMPS solver", FAIL, "Skipped (petsc4py not available)")
     print()
 
@@ -380,7 +390,7 @@ def main():
               f"rank {comm.Get_rank()} of {comm.Get_size()}")
     except ImportError:
         check("mpi4py", FAIL,
-              "Not installed. Run: conda install -c conda-forge mpi4py mpich")
+              "Not installed. Run: micromamba install -c conda-forge mpi4py mpich")
     print()
 
     # ---- Check 7: System RAM ----
@@ -402,7 +412,7 @@ def main():
     except ImportError:
         check("System RAM", WARN,
               "psutil not installed; cannot check RAM. "
-              "Install: pip install psutil")
+              "Install: micromamba install psutil")
     print()
 
     # ---- Summary ----
@@ -468,7 +478,7 @@ series to ensure ABI and API compatibility.
 version (0.10). Mixing 0.9 basix with 0.10 dolfinx will produce import errors
 or silent numerical errors.
 
-The conda `environment.yml` enforces these constraints automatically. If installing
+The `environment.yml` enforces these constraints automatically. If installing
 manually, verify with:
 
 ```bash
@@ -526,7 +536,7 @@ If gmsh is installed but the OpenCASCADE kernel is non-functional:
 **What to tell the user**: "The gmsh OpenCASCADE kernel is not available. STEP
 file import is disabled. I can create parametric geometries (rectangles, cylinders,
 channels) directly. To enable STEP import, reinstall gmsh:
-`conda install -c conda-forge gmsh python-gmsh`."
+`micromamba install -c conda-forge gmsh python-gmsh`."
 
 ### 6.4 Nothing Installed -- Setup Instructions Mode
 
@@ -538,7 +548,7 @@ If no scientific computing packages are available:
 
 **What to tell the user**: "No simulation packages are installed. Before we can
 run any CFD simulations, you need to set up the environment. Here are your
-options: [display conda and Docker instructions from this document]."
+options: [display micromamba and Docker instructions from this document]."
 
 ### Degradation Summary Table
 

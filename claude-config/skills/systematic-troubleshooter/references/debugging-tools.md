@@ -106,7 +106,7 @@ logging.critical("Critical failure")
 **When to use**: Tracking memory usage line-by-line
 
 ```bash
-pip install memory_profiler
+micromamba install memory_profiler
 ```
 
 ```python
@@ -207,7 +207,7 @@ stats.print_stats(10)  # Top 10 slowest
 **When to use**: Line-by-line timing (like memory_profiler but for time)
 
 ```bash
-pip install line_profiler
+micromamba install line_profiler
 ```
 
 ```python
@@ -449,7 +449,7 @@ ssh -t user@server python script.py
 **When to use**: Finding reference cycles, understanding object relationships
 
 ```bash
-pip install objgraph
+micromamba install objgraph
 ```
 
 ```python

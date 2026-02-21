@@ -278,7 +278,7 @@ bash test/run-all-tests.sh
 
 ### Recommended (Soft Dependencies)
 - **yq**: YAML parsing for quality gate validation
-  - Installation: `brew install yq` (macOS) or `pip install yq`
+  - Installation: `micromamba install yq`
   - Fallback: grep-based parsing (limited functionality)
 
 - **sync-config.py**: For ~/.claude/ synchronization
@@ -286,7 +286,7 @@ bash test/run-all-tests.sh
   - Fallback: direct git commands (manual sync required)
 
 - **jq**: JSON manipulation for session state
-  - Installation: `brew install jq` (macOS)
+  - Installation: `micromamba install jq`
   - Used for session-state.json updates
 
 ---
@@ -373,9 +373,7 @@ bash test/run-all-tests.sh
 1. **Install dependencies**:
    ```bash
    # Install yq (recommended)
-   brew install yq  # macOS
-   # OR
-   pip install yq   # Python version
+   micromamba install yq
 
    # Verify installation
    yq --version

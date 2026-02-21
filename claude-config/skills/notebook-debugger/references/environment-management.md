@@ -14,9 +14,9 @@ Best practices for managing Python environments with Jupyter.
 
 ---
 
-## Conda vs Pip
+## micromamba vs Pip
 
-### When to use Conda
+### When to use micromamba
 
 ✅ Scientific computing (numpy, scipy, pandas)
 ✅ Complex dependencies (requires compiled libraries)
@@ -33,11 +33,11 @@ Best practices for managing Python environments with Jupyter.
 ### Best practice: Hybrid approach
 
 ```bash
-# Create environment with conda:
-conda create -n myproject python=3.11
+# Create environment with micromamba:
+micromamba create -n myproject python=3.11
 
-# Install scientific packages with conda:
-conda install numpy pandas matplotlib
+# Install scientific packages with micromamba:
+micromamba install numpy pandas matplotlib
 
 # Install specialized packages with pip:
 pip install scanpy pydeseq2
@@ -47,20 +47,20 @@ pip install scanpy pydeseq2
 
 ## Creating Environments
 
-### With Conda
+### With micromamba
 
 ```bash
 # Basic environment:
-conda create -n myproject python=3.11
+micromamba create -n myproject python=3.11
 
 # With packages:
-conda create -n myproject python=3.11 numpy pandas jupyter
+micromamba create -n myproject python=3.11 numpy pandas jupyter
 
 # From file:
-conda env create -f environment.yml
+micromamba env create -f environment.yml
 
 # Clone existing:
-conda create --name newenv --clone oldenv
+micromamba create --name newenv --clone oldenv
 ```
 
 ### With Virtualenv (pip)
@@ -84,15 +84,14 @@ pip install -r requirements.txt
 
 ## Registering Kernels
 
-### Register Conda Environment
+### Register micromamba Environment
 
 ```bash
 # Activate environment:
-conda activate myproject
+micromamba activate myproject
 
 # Install ipykernel:
-conda install ipykernel
-# Or: pip install ipykernel
+micromamba install ipykernel
 
 # Register kernel:
 python -m ipykernel install --user --name=myproject --display-name="Python (myproject)"
@@ -131,17 +130,20 @@ jupyter kernelspec uninstall myproject
 
 ## Exporting Environments
 
-### Conda: environment.yml
+### micromamba: environment.yml
 
 ```bash
-# Export full environment:
-conda env export > environment.yml
+# Export micromamba packages:
+micromamba env export > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # Export without builds (more portable):
-conda env export --no-builds > environment.yml
+micromamba env export --no-builds > environment.yml
 
 # Export only explicit packages:
-conda env export --from-history > environment.yml
+micromamba env export --from-history > environment.yml
 ```
 
 **Example environment.yml**:
@@ -241,18 +243,22 @@ numpy==1.24.3
 
 ```bash
 # 1. Create environment:
-conda create -n myproject python=3.11
-conda activate myproject
+micromamba create -n myproject python=3.11
+micromamba activate myproject
 
 # 2. Install packages:
-conda install jupyter numpy pandas matplotlib
+micromamba install jupyter numpy pandas matplotlib
 pip install scanpy
 
 # 3. Register kernel:
 python -m ipykernel install --user --name=myproject
 
 # 4. Export environment:
-conda env export --no-builds > environment.yml
+# Export micromamba packages:
+micromamba env export --no-builds > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # 5. Launch Jupyter:
 jupyter lab
@@ -263,9 +269,9 @@ jupyter lab
 ### Workflow 2: Reproduce Existing Project
 
 ```bash
-# With conda:
-conda env create -f environment.yml
-conda activate myproject
+# With micromamba:
+micromamba env create -f environment.yml
+micromamba activate myproject
 python -m ipykernel install --user --name=myproject
 jupyter lab
 
@@ -281,11 +287,15 @@ jupyter lab
 
 ```bash
 # Add new package:
-conda activate myproject
-conda install new-package  # Or: pip install new-package
+micromamba activate myproject
+micromamba install new-package  # Or: pip install new-package
 
 # Update environment file:
-conda env export --no-builds > environment.yml
+# Export micromamba packages:
+micromamba env export --no-builds > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # Commit changes:
 git add environment.yml
@@ -295,13 +305,16 @@ git commit -m "Add new-package dependency"
 ### Workflow 4: Sync Environment
 
 ```bash
-# Update from environment.yml:
-conda env update -f environment.yml --prune
+# For incremental updates (updates already-installed packages only):
+micromamba env update -f environment.yml
 
-# Or recreate:
-conda deactivate
-conda env remove -n myproject
-conda env create -f environment.yml
+# For full environment recreation:
+micromamba env create --yes -f environment.yml
+
+# Or remove and recreate:
+micromamba deactivate
+micromamba env remove -n myproject
+micromamba env create -f environment.yml
 ```
 
 ---
@@ -328,8 +341,8 @@ print(sys.executable)
 
 **Solution**:
 ```bash
-conda activate myproject
-conda install ipykernel
+micromamba activate myproject
+micromamba install ipykernel
 python -m ipykernel install --user --name=myproject
 ```
 
@@ -337,13 +350,13 @@ python -m ipykernel install --user --name=myproject
 
 **Cause**: Incompatible package versions
 
-**Solution with conda**:
+**Solution with micromamba**:
 ```bash
-# Let conda resolve:
-conda install package-a package-b
+# Let micromamba resolve:
+micromamba install package-a package-b
 
 # If fails, check constraints:
-conda search package-a
+micromamba search package-a
 ```
 
 **Solution with pip**:
@@ -370,7 +383,7 @@ cat /path/to/runtime/kernel-*.json
 ```bash
 # Reinstall kernel:
 jupyter kernelspec uninstall myproject
-conda activate myproject
+micromamba activate myproject
 python -m ipykernel install --user --name=myproject
 ```
 
@@ -382,13 +395,13 @@ python -m ipykernel install --user --name=myproject
 
 ```bash
 # Python 3.10 environment:
-conda create -n py310 python=3.10 jupyter
-conda activate py310
+micromamba create -n py310 python=3.10 jupyter
+micromamba activate py310
 python -m ipykernel install --user --name=py310
 
 # Python 3.11 environment:
-conda create -n py311 python=3.11 jupyter
-conda activate py311
+micromamba create -n py311 python=3.11 jupyter
+micromamba activate py311
 python -m ipykernel install --user --name=py311
 
 # Both kernels available in Jupyter
@@ -398,9 +411,9 @@ python -m ipykernel install --user --name=py311
 
 ```bash
 # Only essential packages:
-conda create -n minimal python=3.11 jupyter ipykernel
-conda activate minimal
-pip install numpy pandas  # Only what you need
+micromamba create -n minimal python=3.11 jupyter ipykernel
+micromamba activate minimal
+micromamba install numpy pandas  # Only what you need
 
 # Benefits: Faster, fewer conflicts, clearer dependencies
 ```
@@ -412,7 +425,7 @@ pip install numpy pandas  # Only what you need
 python -m ipykernel install --name=shared
 
 # Team environment on shared server:
-conda env create -f environment.yml --prefix /shared/envs/myproject
+micromamba env create -f environment.yml --prefix /shared/envs/myproject
 python -m ipykernel install --prefix=/shared/envs/myproject --name=team_project
 ```
 
@@ -479,11 +492,11 @@ if [ -z "$ENV_NAME" ]; then
     exit 1
 fi
 
-echo "Creating conda environment: $ENV_NAME"
-conda env create -f environment.yml -n $ENV_NAME
+echo "Creating micromamba environment: $ENV_NAME"
+micromamba env create -f environment.yml -n $ENV_NAME
 
 echo "Activating environment"
-conda activate $ENV_NAME
+micromamba activate $ENV_NAME
 
 echo "Registering Jupyter kernel"
 python -m ipykernel install --user --name=$ENV_NAME --display-name="Python ($ENV_NAME)"
@@ -499,7 +512,7 @@ echo "✓ Environment ready. Launch Jupyter with: jupyter lab"
 
 if [ -f environment.yml ]; then
     echo "Updating environment.yml..."
-    conda env export --no-builds > environment.yml
+    micromamba env export --no-builds > environment.yml
 fi
 
 if [ -f requirements.txt ]; then
@@ -518,21 +531,25 @@ echo "✓ Requirements updated"
 
 ```bash
 # 1. Export environment:
-conda env export --no-builds > environment.yml
+# Export micromamba packages:
+micromamba env export --no-builds > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # 2. Create test environment:
-conda env create -f environment.yml -n test_env
+micromamba env create -f environment.yml -n test_env
 
 # 3. Run notebook in test environment:
-conda activate test_env
+micromamba activate test_env
 python -m ipykernel install --user --name=test_env
 jupyter lab
 
 # 4. In notebook: Switch to test_env kernel, run all cells
 
 # 5. Clean up:
-conda deactivate
-conda env remove -n test_env
+micromamba deactivate
+micromamba env remove -n test_env
 jupyter kernelspec uninstall test_env
 ```
 
@@ -548,7 +565,7 @@ jupyter kernelspec uninstall test_env
 - [ ] Commit environment.yml or requirements.txt to git
 - [ ] Test reproducibility on clean environment
 - [ ] Document setup steps in README or notebook
-- [ ] Use conda for scientific packages, pip for others
+- [ ] Use micromamba for scientific packages, pip for others
 - [ ] Remove unused environments regularly
 
 ---
@@ -556,12 +573,12 @@ jupyter kernelspec uninstall test_env
 ## Quick Reference
 
 ```bash
-# Conda basics:
-conda create -n NAME python=VERSION
-conda activate NAME
-conda install PACKAGE
-conda env export > environment.yml
-conda env create -f environment.yml
+# micromamba basics:
+micromamba create -n NAME python=VERSION
+micromamba activate NAME
+micromamba install PACKAGE
+micromamba env export > environment.yml
+micromamba env create -f environment.yml
 
 # Kernel management:
 python -m ipykernel install --user --name=NAME
@@ -580,7 +597,8 @@ pip install -r requirements.txt
 
 ## Resources
 
-- [Conda User Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/)
+- [micromamba Documentation](https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html)
+- [Conda User Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/) (for reference; micromamba uses compatible commands)
 - [Jupyter Kernels](https://jupyter-client.readthedocs.io/en/stable/kernels.html)
 - [Python Packaging Guide](https://packaging.python.org/en/latest/)
 - [IPykernel Documentation](https://ipykernel.readthedocs.io/en/stable/)

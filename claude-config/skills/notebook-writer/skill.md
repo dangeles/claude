@@ -399,7 +399,7 @@ Scientific notebooks must be fully reproducible. Every notebook should enable an
 # %%
 # Environment Information
 # Run: pip freeze > requirements.txt
-# Or: conda env export > environment.yml
+# Or: micromamba env export > environment.yml
 
 import sys
 import numpy as np
@@ -420,8 +420,12 @@ print(f"Scanpy: {sc.__version__}")
 # For pip users:
 pip freeze > requirements.txt
 
-# For conda users:
-conda env export > environment.yml
+# For micromamba users:
+# Export micromamba packages:
+micromamba env export > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # Include these files in your repository
 ```
@@ -611,7 +615,7 @@ Before finalizing a notebook:
 
 **Required packages:**
 ```bash
-pip3 install jupytext nbformat
+micromamba install jupytext nbformat
 ```
 
 **Check installation:**

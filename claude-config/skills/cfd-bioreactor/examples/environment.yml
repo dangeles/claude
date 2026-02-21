@@ -1,13 +1,13 @@
-# Conda environment for CFD bioreactor simulation with FEniCSx v0.10
+# micromamba environment for CFD bioreactor simulation with FEniCSx v0.10
 #
 # Installation:
-#   conda env create -f environment.yml
-#   conda activate cfd-bioreactor
+#   micromamba env create -f environment.yml
+#   micromamba activate cfd-bioreactor
 #
 # Verification:
 #   python -c "import dolfinx; print(dolfinx.__version__)"
 #
-# Note: Uses mpich (not openmpi) for conda compatibility.
+# Note: Uses mpich (not openmpi) for micromamba compatibility.
 # Channel must be conda-forge exclusively for consistent builds.
 
 name: cfd-bioreactor

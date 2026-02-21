@@ -22,7 +22,7 @@ Guidelines for creating notebooks that run reliably and can be reproduced by oth
 
 **Always include** (choose one):
 
-**Option A: environment.yml (conda)**
+**Option A: environment.yml (micromamba)**
 ```yaml
 name: myproject
 channels:
@@ -47,8 +47,12 @@ jupyter
 
 **Generate automatically**:
 ```bash
-# Conda:
-conda env export --no-builds > environment.yml
+# micromamba:
+# Export micromamba packages:
+micromamba env export --no-builds > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # Pip:
 pip freeze > requirements.txt
@@ -65,8 +69,8 @@ pip freeze > requirements.txt
 
 ```bash
 # Create environment:
-conda env create -f environment.yml
-conda activate myproject
+micromamba env create -f environment.yml
+micromamba activate myproject
 
 # Register Jupyter kernel:
 python -m ipykernel install --user --name=myproject
@@ -414,7 +418,7 @@ plt.show()
 # Edit → Clear All Outputs
 
 # Automated with nbstripout:
-pip install nbstripout
+micromamba install nbstripout
 nbstripout notebook.ipynb
 
 # Add to git hooks:
@@ -533,8 +537,8 @@ Before sharing notebook:
 
 ```bash
 # Create test environment:
-conda env create -f environment.yml -n test_env
-conda activate test_env
+micromamba env create -f environment.yml -n test_env
+micromamba activate test_env
 python -m ipykernel install --user --name=test_env
 
 # Run notebook:
@@ -544,8 +548,8 @@ jupyter lab
 # Should succeed without modification
 
 # Clean up:
-conda deactivate
-conda env remove -n test_env
+micromamba deactivate
+micromamba env remove -n test_env
 jupyter kernelspec uninstall test_env
 ```
 
@@ -715,7 +719,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install nbconvert pytest
+          micromamba install nbconvert pytest
 
       - name: Test notebooks
         run: |
@@ -742,11 +746,15 @@ jobs:
 jupyter nbconvert --clear-output --inplace notebook.ipynb
 
 # 2. Export environment:
-conda env export --no-builds > environment.yml
+# Export micromamba packages:
+micromamba env export --no-builds > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # 3. Test in fresh environment:
-conda env create -f environment.yml -n test
-conda activate test
+micromamba env create -f environment.yml -n test
+micromamba activate test
 jupyter lab
 # Run "Restart & Run All"
 ```

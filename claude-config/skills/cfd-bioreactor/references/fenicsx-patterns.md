@@ -41,7 +41,7 @@ def check_environment():
     if gmsh_major < 4 or (gmsh_major == 4 and gmsh_minor < 11):
         raise RuntimeError(
             f"gmsh API {gmsh_version} found, but >= 4.11 required. "
-            "Install via: conda install -c conda-forge gmsh"
+            "Install via: micromamba install -c conda-forge gmsh"
         )
 
 check_environment()

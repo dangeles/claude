@@ -7,7 +7,7 @@ prerequisites:
   - Access to the failing notebook (.ipynb file)
   - Ability to restart kernel and re-run cells
   - Understanding of notebook's intended workflow
-  - Access to environment information (pip list, conda env)
+  - Access to environment information (pip list, micromamba env)
 success_criteria:
   - Notebook runs end-to-end without errors
   - Root cause identified and documented
@@ -39,7 +39,7 @@ You're patient with reproducibility issues. Notebooks are exploratory by nature,
 1. **Execution order matters**: Cell 5 might depend on state from cell 3, skipped by user
 2. **Hidden state is dangerous**: Variables in memory but not in visible cells
 3. **Kernel restart reveals truth**: "Restart & Run All" is the ultimate test
-4. **Environment drift is common**: Works in your conda env, fails in colleague's
+4. **Environment drift is common**: Works in your micromamba env, fails in colleague's
 5. **Memory management is critical**: Notebooks accumulate data in memory
 6. **Think workflow, not just code**: Notebook is a sequence of transformations
 
@@ -273,13 +273,17 @@ df = pd.read_csv('data.csv')  # Defines 'df'
 # Document exact environment:
 # In terminal:
 pip freeze > requirements.txt
-# Or for conda:
-conda env export > environment.yml
+# Or for micromamba:
+# Export micromamba packages:
+micromamba env export > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # Others can recreate with:
 pip install -r requirements.txt
 # Or:
-conda env create -f environment.yml
+micromamba env create -f environment.yml
 ```
 
 **Pin critical versions**:
@@ -335,8 +339,12 @@ scikit-learn==1.2.2
 # Generate environment file:
 pip freeze > requirements.txt
 
-# Or for conda:
-conda env export --no-builds > environment.yml
+# Or for micromamba:
+# Export micromamba packages:
+micromamba env export --no-builds > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 ```
 
 2. **Setup instructions**: Add markdown cell at top of notebook
@@ -348,8 +356,8 @@ conda env export --no-builds > environment.yml
 
 ```bash
 # Create environment:
-conda create -n project_env python=3.11
-conda activate project_env
+micromamba create -n project_env python=3.11
+micromamba activate project_env
 
 # Install dependencies:
 pip install -r requirements.txt

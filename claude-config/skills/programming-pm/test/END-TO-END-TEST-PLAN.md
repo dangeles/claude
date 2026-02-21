@@ -15,9 +15,7 @@ This document outlines the end-to-end testing strategy for the programming-pm wo
 1. **Install dependencies**:
    ```bash
    # Install yq for YAML parsing (required for quality gates)
-   brew install yq  # macOS
-   # OR
-   pip install yq   # Python version
+   micromamba install yq
 
    # Verify installation
    yq --version

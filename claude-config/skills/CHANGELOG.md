@@ -63,7 +63,7 @@ Major update implementing Claude 4.x (2026) best practices across all 26 skills.
   - 5-phase workflow (Diagnose → Isolate → Fix → Verify → Document)
   - Extended thinking budget: 4,096-8,192 tokens
   - Sparse matrix memory optimization patterns
-  - Environment management with conda/pip kernel registration
+  - Environment management with micromamba/pip kernel registration
 - **Use cases**: Kernel crashes, import errors, memory errors, execution order issues
 - **Examples**: RNA-seq analysis kernel crash (50k cells × 20k genes), environment conflicts
 - **Word count**: 2,546 words
@@ -149,7 +149,7 @@ Added extended thinking budgets with metadata:
 
 **bioinformatician** (enhanced):
 - Added comprehensive "Reproducibility Standards" section (~200+ lines):
-  - Environment documentation (conda/pip, kernel specification)
+  - Environment documentation (micromamba/pip, kernel specification)
   - Random seed setting (numpy, scanpy, PyTorch, TensorFlow)
   - Bioinformatics-specific operations requiring seeds (UMAP, t-SNE, Leiden clustering, permutation tests)
   - Session info output (session_info.show(), scanpy logging)

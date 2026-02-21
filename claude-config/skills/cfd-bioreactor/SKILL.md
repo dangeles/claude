@@ -222,7 +222,7 @@ Override: You can select a different mode.
 | Pre-Flight Result | Action |
 |---|---|
 | All PASS | Proceed to workflow |
-| FAIL on dolfinx | Provide conda/Docker install instructions from environment-setup.md. STOP. |
+| FAIL on dolfinx | Provide micromamba/Docker install instructions from environment-setup.md. STOP. |
 | FAIL on gmsh OCC | Can still do parametric geometry. Warn user that STEP import is disabled. |
 | WARN on PyVista | Proceed; export to VTK instead of interactive plots. |
 | WARN on MUMPS | Proceed; use iterative solver (GMRES+ILU) instead of direct solver. |
@@ -924,7 +924,7 @@ section-level loading maps per agent.
   script in the same environment.
 
 - **This skill generates code but does not modify system packages**: It writes Python
-  scripts to the user's working directory. It never installs packages, modifies conda
+  scripts to the user's working directory. It never installs packages, modifies micromamba
   environments, or changes system configuration.
 
 - **Physical group convention**: inlet=1, outlet=2, walls=3, membrane=4, cell_region=5,

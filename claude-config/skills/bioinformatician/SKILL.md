@@ -393,8 +393,12 @@ print("\nFor full environment, see requirements.txt")
 **Create environment files before starting analysis:**
 
 ```bash
-# For conda users (recommended for bioinformatics):
-conda env export > environment.yml
+# For micromamba users (recommended for bioinformatics):
+# Export micromamba packages:
+micromamba env export > environment.yml
+
+# Export pip-installed packages separately (micromamba export does not include pip packages):
+pip freeze > pip-requirements.txt
 
 # For pip users:
 pip freeze > requirements.txt
@@ -407,7 +411,7 @@ pip freeze > requirements.txt
 ## Computational Environment
 
 - **Kernel**: Python 3.11 (bio-analysis-env)
-- **Environment file**: `environment.yml` (recreate with `conda env create -f environment.yml`)
+- **Environment file**: `environment.yml` (recreate with `micromamba env create -f environment.yml`)
 - **Key packages**: scanpy==1.10.0, numpy==1.26.3, pandas==2.2.0, scipy==1.12.0
 - **Execution date**: 2026-01-29
 ```
@@ -649,7 +653,7 @@ print(f"  Annotations: {ANNOTATION_VERSION} ({ANNOTATION_DATE})")
 - **MACS2**: v2.2.9.1 (for peak calling)
 - **bedtools**: v2.31.0 (for interval operations)
 
-All tools available in conda environment (see environment.yml).
+All tools available in micromamba environment (see environment.yml).
 ```
 
 **Data Processing Parameters:**
