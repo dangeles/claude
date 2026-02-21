@@ -40,10 +40,11 @@ Use this skill when:
 4. **Quality assurance needed**: Change requires thorough review and validation
 
 This skill provides:
-- Structured 4-phase workflow
+- Structured 4-phase workflow (2 modes: QUICK and FULL)
 - Interactive requirements refinement
-- Parallel expert analysis (4 simultaneous agents)
-- Adversarial review before implementation
+- Multi-perspective swarm analysis via brainstorming-pm delegation (FULL mode)
+- Domain-specific edge-case analysis (FULL mode)
+- Adversarial review before implementation (FULL mode)
 - Automated validation and testing
 - Integration with sync-config.py and planning journal
 
@@ -94,8 +95,8 @@ Start every response with a phase indicator:
 
 Examples:
 - `[Phase 1/4 - Refinement] Gathering requirements from user`
-- `[Phase 2/4 - Analysis] 3/4 agents completed, waiting for external-researcher`
-- `[Phase 3/4 - Decision] Synthesizing 4 analysis reports`
+- `[Phase 2/4 - Analysis] Swarm complete, waiting for edge-case-simulator`
+- `[Phase 3/4 - Decision] Synthesizing swarm + edge-case reports`
 - `[Phase 4/4 - Execution] Implementing change 3/12`
 
 **Protocol**:
@@ -122,35 +123,17 @@ Examples:
 ## Workflow Overview
 
 ```
-SIMPLE MODE (15-45 min)
-├── Phase 1: Refinement (5-15 min)
-├── Mode Selection: User confirms SIMPLE
-├── [SKIP Phase 2: No parallel analysis]
-├── [SKIP Phase 2.5: No strategic review]
-├── Phase 3: Lightweight Decision (10-20 min)
-│   └── Minimal synthesis from specification only
-└── Phase 4: Execution (10-20 min)
-    └── Gates 4 & 5 always run
-
-STANDARD MODE (1.5-3 hours) [Current default]
-├── Phase 1: Refinement (10-30 min)
-├── Mode Selection: User confirms STANDARD
-├── Phase 2: Parallel Analysis (30-60 min, 4 agents)
-├── [Phase 2.5: Strategic Review - conditional, stricter triggers]
-├── Phase 3: Decision & Review (45-90 min)
-│   └── Full synthesis + adversarial review
-└── Phase 4: Execution (60-120 min)
-    └── Gates 4 & 5 always run
-
-EXPERIMENTAL MODE (10-30 min) [User-requested]
-├── Phase 1: Quick Refinement (5-10 min)
-├── Mode Selection: User explicitly requests EXPERIMENTAL
+QUICK MODE (~30 min)
+├── Phase 1: Refinement
 ├── [SKIP Phase 2]
-├── [SKIP Phase 2.5]
-├── Phase 3: Minimal Decision (5-10 min)
-│   └── Direct implementation plan with experimental tags
-└── Phase 4: Execution with rollback plan (5-15 min)
-    └── Gates 4 & 5 always run + experimental tagging
+├── Phase 3: Lightweight plan (orchestrator creates minimal plan)
+└── Phase 4: Execution (Gate 3 always runs)
+
+FULL MODE (~1.5-2 hrs) [Default]
+├── Phase 1: Refinement
+├── Phase 2: Swarm + Edge-case analysis (parallel)
+├── Phase 3: Inline synthesis + Adversarial review
+└── Phase 4: Execution (Gate 3 always runs)
 ```
 
 ## Workflow
@@ -256,27 +239,24 @@ Update session state to phase 1.5 with `agents_completed: ["request-refiner"]`.
 
 ### Mode Selection (After Phase 1)
 
-**Objective**: Select workflow execution mode based on complexity detection and user preference.
+**Objective**: Select workflow execution mode.
 
 **Trigger**: After Quality Gate 1 passes (specification approved)
 
-Run the mode detection script which performs:
-- Three-tier complexity detection (COMPLEX / SIMPLE / STANDARD / EXPERIMENTAL)
-- Metrics extraction from specification (files changed, lines changed, scope keywords)
-- Fail-safe default to STANDARD when uncertain
-- Mode selection display with user prompt (A/B/C for SIMPLE/STANDARD/EXPERIMENTAL)
-- User override confirmation for risky downgrades
-- Experimental mode warning and acknowledgment
-- Mode recording to session state (`mode-selection.json`)
-- Mode-based branching to appropriate phase
+**Decision rule**:
+- **Default**: FULL
+- **Auto-detect QUICK**: Single file AND <50 lines AND (documentation OR typo OR comment fix)
+- User can always override in either direction
+- When uncertain: default to FULL (preserves safety)
 
-**Implementation**: See `references/mode-detection.sh` for complete bash.
+**Modes**:
 
-**Detection logic summary**:
-- **COMPLEX** (triggers Phase 2.5): New skill, >4 files, >300 lines, explicit request, refactoring with moderate+ scope
-- **SIMPLE**: Documentation/typo/comment with <=1 file and <=50 lines
-- **STANDARD**: Default for everything else
-- **EXPERIMENTAL**: User keyword triggers (experimental, quick, try, prototype)
+| Mode | When | What runs | Duration |
+|------|------|-----------|----------|
+| QUICK | Documentation, typos, single-file fixes | Phase 1 → Phase 3 (lightweight) → Phase 4 | ~30 min |
+| FULL | Everything else (default) | Phase 1 → Phase 2 (swarm + edge-case) → Phase 3 (synthesis + adversarial) → Phase 4 | ~1.5-2 hrs |
+
+Record mode selection in session state and proceed.
 
 ---
 
@@ -332,11 +312,13 @@ Run the mode detection script which performs:
 
 ---
 
-### Phase 3: Decision (Inline Synthesis + Adversarial Review)
+### Phase 3: Decision
 
-**Objective**: Synthesize analyses, make decisions, create plan, get expert approval.
+**QUICK mode**: Orchestrator creates a minimal implementation plan directly from the refined specification. No swarm analysis or adversarial review — just objective, files to modify, validation steps, and rollback plan. If target files include core workflow/agent files, offer upgrade to FULL mode. Proceed to Phase 4.
 
-#### Part A: Inline Synthesis (orchestrator-owned)
+**FULL mode**: Full synthesis + adversarial review (below).
+
+#### Part A: Inline Synthesis (orchestrator-owned, FULL mode)
 
 The orchestrator performs synthesis directly (like brainstorming-pm Stage 3), NOT via a separate agent:
 
@@ -414,17 +396,12 @@ For each file in implementation plan:
 - **Create**: Write new file
 - **Delete**: Remove file
 
-#### Experimental Mode Output Tagging
-If workflow_mode = "EXPERIMENTAL", add experimental tags to output skill files (YAML frontmatter `experimental: true` + warning comment).
-
-**Implementation**: See `references/experimental-tagging.sh` for complete bash.
-
-#### Step 3: Quality Gate 4 - Pre-Sync Validation
+#### Step 3: Quality Gate 3 - Pre-Sync Validation
 - Validate YAML frontmatter for all modified skills
 - Validate JSON for modified agents
 - Dry-run sync: `./sync-config.py push --dry-run`
 
-**If Gate 4 fails**: Fix issues, re-validate, do NOT proceed until pass.
+**If Gate 3 fails**: Fix issues, re-validate, do NOT proceed until pass.
 
 #### Step 4: Sync to ~/.claude/
 - `./sync-config.py push`
@@ -435,15 +412,15 @@ If workflow_mode = "EXPERIMENTAL", add experimental tags to output skill files (
 - Verify YAML parses
 - Smoke test existing skills (no regressions)
 
-#### Step 6: Quality Gate 5 - Post-Execution Verification
+#### Step 6: Post-Execution Verification (part of Gate 3)
 - [ ] Original requirement met (from refined spec)
-- [ ] Edge cases handled (from edge-case report)
+- [ ] Edge cases handled (from edge-case report, if FULL mode)
 - [ ] sync-config.py push successful
 - [ ] Skill invokes without errors
 - [ ] No regressions in existing skills
 - [ ] Planning journal entry ready
 
-**If Gate 5 fails**: Rollback via `git reset --hard HEAD`, re-sync, fix, retry.
+**If verification fails**: Rollback via `git reset --hard HEAD`, re-sync, fix, retry.
 
 #### Step 7: Update Planning Journal
 `./sync-config.py plan --title "[Brief description from refined spec]"`
@@ -453,11 +430,7 @@ Before committing, MAY invoke `git-strategy-advisor` via Task tool in post-work 
 
 #### Step 8: Commit Changes
 
-Determine commit prefix based on mode:
-- EXPERIMENTAL: `experimental` prefix + `[EXPERIMENTAL - requires full review]` suffix
-- Others: `feat` prefix
-
-Stage specific files (NEVER -A or .), commit with HEREDOC multi-line message including `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`, then mark session as completed.
+Stage specific files (NEVER -A or .), commit with HEREDOC multi-line message using conventional commit format (`feat`/`fix`/`docs`) and including `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`, then mark session as completed.
 
 **Git Safety Checklist**:
 - [ ] Specific files staged (not -A or .)
@@ -471,7 +444,7 @@ Stage specific files (NEVER -A or .), commit with HEREDOC multi-line message inc
 
 Generate completion report with:
 - Summary of changes
-- Validation results (Gates 4 & 5)
+- Validation results (Gate 3)
 - Testing results
 - Commit SHA
 - Planning journal entry path
@@ -652,8 +625,6 @@ Commit: feat(researcher): Add parallel web search
 See `skill-editor/references/` for:
 - `swarm-challenge-templates.md`: Challenge template for brainstorming-pm swarm delegation
 - `session-management.sh`: Git safety checks, session creation/resume, cleanup commands
-- `mode-detection.sh`: Three-tier complexity detection, mode selection prompt
-- `experimental-tagging.sh`: Experimental mode YAML/comment tagging
 - `anthropic-guidelines-summary.md`: Anthropic best practices
 - `skill-structure-specification.md`: Skill format and validation
 - `quality-gates.md`: Detailed quality gate checklists
