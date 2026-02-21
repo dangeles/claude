@@ -89,7 +89,7 @@ Deliver completed notebook to PI for interpretation
 
 ## Standard Notebook Structure
 
-Use the template in `assets/notebook_structure_template.ipynb`:
+Use the template in `assets/notebook-structure-template.ipynb`:
 
 ```
 1. Title and Description
@@ -361,7 +361,7 @@ Before starting implementation, verify:
 - [ ] Expected output format understood
 - [ ] Random seeds set for reproducibility
 
-Use `assets/analysis_checklist.md` for complete list.
+Use `assets/analysis-checklist.md` for complete list.
 
 ## Reproducibility Standards
 

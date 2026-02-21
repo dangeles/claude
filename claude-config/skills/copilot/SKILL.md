@@ -102,7 +102,7 @@ Execute in parallel:
 ### 1. Correctness Review
 Check for:
 - **Logic errors**: Off-by-one, wrong operators, incorrect conditions
-- **Bioinformatics-specific bugs** (see `references/common_bugs.md`):
+- **Bioinformatics-specific bugs** (see `references/common-bugs.md`):
   - 0-based vs 1-based indexing
   - Strand confusion (+/-)
   - Missing chromosome prefixes (chrX vs X)
@@ -177,7 +177,7 @@ Check for:
 
 ## Review Template
 
-Use the format in `assets/review_template.md`:
+Use the format in `assets/review-template.md`:
 
 ```
 🔴 CRITICAL: [Issue description]
@@ -214,7 +214,7 @@ VERDICT: [APPROVED | NEEDS REVISION]
 
 ## Bioinformatics-Specific Checks
 
-Consult `references/common_bugs.md` for detailed catalog.
+Consult `references/common-bugs.md` for detailed catalog.
 
 ### Genomic Coordinates
 ```python
@@ -285,7 +285,7 @@ Final approval before handoff
 ## References
 
 For detailed checklists and examples:
-- `references/common_bugs.md` - Catalog of bioinformatics-specific bugs
+- `references/common-bugs.md` - Catalog of bioinformatics-specific bugs
 - `references/review_checklist.md` - Systematic review process
 - `references/performance_patterns.md` - Optimization strategies
 - `references/edge_cases.md` - Test cases to always check

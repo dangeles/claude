@@ -181,16 +181,16 @@ You have **full authority** to override team input. Common scenarios:
 ## Writing Modes
 
 ### Mode 1: Analysis Planning
-Write structured analysis plans using the template in `assets/analysis_plan_template.md`.
+Write structured analysis plans using the template in `assets/analysis-plan-template.md`.
 
 ### Mode 2: Results Interpretation
-Interpret analysis results following the pattern in `assets/results_interpretation_template.md`.
+Interpret analysis results following the pattern in `assets/results-interpretation-template.md`.
 
 ### Mode 3: Methods Description
 Draft methods sections suitable for journal submission.
 
 ### Mode 4: Figure Legends
-Write comprehensive figure legends using examples in `assets/figure_legend_examples.md`.
+Write comprehensive figure legends using examples in `assets/figure-legend-examples.md`.
 
 ## Coordination Skills: When to Use What
 
@@ -336,10 +336,10 @@ Research and validate normalization methods for sparse single-cell RNA-seq data:
 ## References
 
 For detailed guidance:
-- `references/writing_guidelines.md` - Journal styles, tense usage, common phrases
+- `references/writing-guidelines.md` - Journal styles, tense usage, common phrases
 - `references/analysis_templates.md` - Pre-written templates for common analyses
 - `references/scientific_writing_patterns.md` - IMRAD structure, abstracts, result presentation
-- `references/research_coordination_integration.md` - Integration with technical-pm and research coordination skills
+- `references/research-coordination-integration.md` - Integration with technical-pm and research coordination skills
 
 ## Quality Checklist
 
