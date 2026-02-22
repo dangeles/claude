@@ -97,7 +97,7 @@ Graceful degradation levels:
 | SEO Manager | 10 min | Placeholder report, proceed |
 | Coherence Manager | 15 min | Skip coherence, present raw Phase 2 outputs |
 | Suggestion Engine | 15 min | Present raw Phase 2/3 outputs to user |
-| Phase 2 total (sequential) | 30 min | If exceeded: present completed reports, skip remaining sub-functions |
+| Phase 2 total (parallel) | 15 min | If exceeded: present any completed sub-function reports; mark remaining sub-functions as timed out; proceed to Gate 2 check |
 | Build validation | 5 min per repo | Block push, report timeout |
 | Global session ceiling | 120 min | Pause execution, save state, offer resume |
 
@@ -115,13 +115,37 @@ Graceful degradation levels:
 
 ## Invocation Mode Detection
 
-Detect whether this is a full review or targeted ad-hoc invocation:
+Detect which of three modes applies:
 
 - **Full review indicators**: "monthly review", "full review", "review all sites", "run the review"
-- **Targeted indicators**: "just", "only", "check [area]", "update [thing]", "fix [specific item]"
-- **Ambiguous**: Ask user to clarify: "Would you like a full monthly review across all sites, or a targeted [area] check?"
+- **Ad-hoc indicators**: "just", "only", "check [area]", "audit [area]" — area-level requests without a specific file or value
+- **Quick-edit indicators**: requests that include a specific file path, CSS selector, HTML element, or exact text value — but must pass 3-component check below
 
-For targeted invocations: clone only relevant repos, run only the specified
+**3-Component Precision Check** (required for quick-edit routing):
+
+Classify as **precise** (quick-edit direct path) only if ALL THREE are present:
+- [ ] **Target**: file path, CSS selector, or specific HTML element
+- [ ] **Property**: what attribute or content to change
+- [ ] **Value**: the specific new value
+
+If any component is missing: classify as **vague** (quick-edit sub-function path) or ask the user for the missing component.
+
+**Tie-breaking rule**: If both precise signals (specific file/selector) AND symptom signals (describes a problem) are present, route to ad-hoc mode or ask for clarification rather than direct edit.
+
+**Routing examples:**
+
+| User request | Mode | Why |
+|---|---|---|
+| "monthly review" | Full review | Trigger phrase |
+| "check the SEO on my blog" | Ad-hoc | "check [area]" pattern, no specific file or value |
+| "change `--primary-color` to `#2d3436` in `_sass/main.scss`" | Quick-edit precise | Target ✓ + Property ✓ + Value ✓ |
+| "update `_config.yml`" | Quick-edit vague (or clarify) | Target ✓ but Property ✗ and Value ✗ — ask what to change |
+| "fix the broken link on the about page" | Quick-edit vague | Symptom ("broken link") overrides page specificity — run scoped sub-function |
+| "change the font to something better" | Quick-edit vague | Has property (font) but Value ✗ — ask or run Website Designer |
+
+**Ambiguous**: If mode cannot be determined, ask: "Would you like a full monthly review, a targeted area audit, or do you have a specific change to make?"
+
+For targeted (ad-hoc) invocations: clone only relevant repos, run only the specified
 sub-function, skip coherence and synthesis unless user requests them.
 
 ## Ad-Hoc Mode Protocol
@@ -137,17 +161,110 @@ For targeted invocations, use this abbreviated lifecycle:
 - **Audit persistence**: Save results to `~/.web-presence-audits/adhoc-{area}-YYYY-MM-DD.md`. These are NOT loaded as "previous audit" for monthly reviews.
 - **Resume**: On re-invocation, detect existing ad-hoc session and offer resume or fresh start
 
+## Quick-Edit Mode Protocol
+
+Quick-edit mode skips audit phases (1–4) when the user's intent is precise enough for a direct edit. It preserves all Phase 5 safety gates.
+
+**Depth model**: This skill implements depth 0 (fully precise: direct edit) and depth 2 (sub-function scoped: scoped audit → implement single finding). Depth 1 (file-scoped: value inference) is a named future extension.
+
+### Quick-Edit Setup (replaces full Phase 1, for precise path)
+
+1. Create session directory: `/tmp/web-presence-session/quickedit-YYYY-MM-DD-HHMMSS/`
+2. Read site registry to identify target repo (match from file path or user context; if ambiguous, ask user which site)
+3. Clone target repo only: `git clone --depth 25 --single-branch <repo-url>`
+4. Create lock file: `.lock` with `{"locked_at": "<ISO-8601>", "session_id": "<quickedit-id>"}`. Respect existing lock files — if fresh lock exists, refuse with "A session is active. Complete or cancel it first."
+5. Pre-flight: `git ls-remote` to verify push access. If fails, report and abort.
+6. Record pre-edit SHA in `rollback-info.json` before any file modification.
+
+### Routing Logic
+
+**Precise path** (all 3 components confirmed):
+1. Complete Quick-Edit Setup (above)
+2. Show micro-context preview: read the target file, display the relevant section + 5 lines of surrounding context
+3. Apply edit using the Phase 5 Edit Pattern Matrix for the appropriate edit type
+4. Proceed to Gate 5 safety checks (NEVER skipped — see below)
+
+**Vague path** (any component missing):
+1. Determine relevant sub-function from the request area (Website Designer for CSS/layout, SEO Manager for SEO, Portfolio Manager for portfolio)
+2. Run that sub-function only (reuses ad-hoc mode sub-function invocation — same delegation template)
+3. Present findings to user; user selects ONE finding to implement immediately
+4. Apply the selected finding using the Phase 5 Edit Pattern Matrix
+5. Proceed to Gate 5 safety checks (NEVER skipped)
+6. Remaining findings (not selected) are saved as recommendations but not implemented in this session
+
+### Safety Gates (NEVER Skipped in Quick-Edit Mode)
+
+Quick-edit skips audit phases 1–4. It does **NOT** skip Phase 5 deployment safety:
+
+| Safety Check | Status in Quick-Edit |
+|---|---|
+| Pre-edit SHA recorded in `rollback-info.json` | ALWAYS active |
+| Build validation per site registry `build_validation` setting | ALWAYS active |
+| Diff shown to user before commit | ALWAYS active |
+| User confirms push per repo | ALWAYS active |
+| Specific files staged (never `git add -A`) | ALWAYS active |
+| YAML validation for content/portfolio edits | ALWAYS active |
+| Lock file created and respected | ALWAYS active |
+
+### Session State for Quick-Edit
+
+Quick-edit sessions are **non-resumable by default**. The session directory and rollback-info.json are created for safety, but if interrupted before push, the user must re-run the quick-edit. On re-invocation, detect existing quick-edit sessions and offer: resume from last known state or start fresh.
+
 ## Workflow
 
 Phase 1: **Setup** -- Pre-flight checks, clone repos, load previous audit, initialize session. See `references/monthly-review-checklist.md` for full protocol.
 
-Phase 2: **Sequential Analysis** -- Launch Website Designer, Portfolio Manager, and SEO Manager via Task tool sequentially (one at a time; Task tool blocks until each completes). Each sub-function receives its instruction file path, site data, and output location via the delegation template below. Wait for all three. Validate via Gate 2. Total Phase 2 time: up to 30 minutes.
+Phase 2: **Parallel Analysis** -- Launch Website Designer, Portfolio Manager, and SEO Manager via Task tool **in a single message with 3 Task tool calls** (parallel execution). All three receive their instruction file path, site data, and output location via the delegation templates below. The Task tool waits for all three to return before proceeding. After all three complete, update session state as a batch (three simultaneous "running" statuses are expected; no sequential ordering dependency exists). Validate via Gate 2. Total Phase 2 wall-clock time: up to 15 minutes (bounded by slowest agent, not sum of agents).
 
 Phase 3: **Coherence Audit** -- After Gate 2 passes, launch Coherence Manager via Task tool. It reads all repos plus Phase 2 outputs. Produces coherence-audit.md. Validate via Gate 3.
 
 Phase 4: **Synthesis** -- After Gate 3 passes, launch Suggestion Engine via Task tool. It reads all prior outputs plus previous audit. Produces action-items.md, content-calendar.md, and audit-report.md. Validate via Gate 4.
 
 Phase 5: **Review and Execute** -- Present audit summary and action items to user. User selects changes to implement. Group changes by repo. Deploy per the two-phase commit protocol in the checklist. Save audit report for next month.
+
+## Phase 5 Edit Pattern Matrix
+
+When implementing action items in Phase 5, use this matrix to identify files, validate edits, and coordinate shared file writes. For commit format, build commands, and full rollback procedures, see `references/monthly-review-checklist.md` Phase 5 Deployment Pipeline.
+
+### Edit Type x Site Type Routing
+
+| Edit Type | Jekyll Site | GitHub README/Profile | LaTeX CV |
+|-----------|-------------|----------------------|----------|
+| **CSS/Styling** | Files: `_sass/**/*.scss` or `assets/css/*.css`. Gem theme check: if `_config.yml` has `theme:`, local `_sass/` may not exist -- create override file. Build: `bundle exec jekyll build` (required). Rollback: capture full file content before edit. | N/A -- no CSS layer. | N/A -- use LaTeX styling commands instead. |
+| **Content update** | Files: `_posts/*.md`, `_pages/*.md`, `index.md`. YAML frontmatter: validate after every write (see YAML Validation below). Rollback: capture original frontmatter. Build: per registry `build_validation` field. | File: `README.md`. Direct markdown edit. No build step required. Rollback: capture full file content. | Files: `*.tex` (target section). No YAML. Build: `latexmk` or `pdflatex`. Rollback: capture original content. |
+| **SEO fixes** | Files: `_config.yml` (plugins, url, description), `_includes/head.html` (meta tags). Batch all `_config.yml` edits (see Shared File Coordination below). Build: required. Rollback: capture original content of each file. | File: `README.md` (keywords in bio, section headings for discoverability). No build. Rollback: capture full file content. | N/A -- CV does not have web SEO. |
+| **Portfolio entries** | Files: `_projects/*.md` (new post) or `_data/projects.yml` (append). YAML frontmatter: validate after create/edit. May require adding collection to `_config.yml`. Batch `_config.yml` changes. Build: required. Rollback: capture pre-edit state of each modified file. | File: `README.md` (add entry to pinned projects section). Direct markdown append. No build. | Files: `*.tex` (append entry to projects or publications section). No YAML. Build: `latexmk`. |
+
+### YAML Validation
+
+After any write that includes YAML frontmatter (content updates, portfolio entries):
+
+1. Extract frontmatter (content between `---` delimiters)
+2. Validate: `python3 -c "import yaml; yaml.safe_load('''<frontmatter>''')"`
+3. If validation fails: REVERT the edit, report the specific YAML error with suggested fix
+4. Common fix: quote values containing `: { } [ ] # & * ! | > ' " % @` characters
+
+Example of fragile frontmatter (title with colon):
+```yaml
+# BREAKS: title: My Project: A Deep Dive
+# SAFE:   title: "My Project: A Deep Dive"
+```
+
+### Shared File Coordination (_config.yml)
+
+Multiple edit types (SEO, content, portfolio) may all modify `_config.yml`. To prevent overwrites:
+
+1. Before beginning Phase 5 execution, identify ALL pending action items that target `_config.yml`
+2. Batch all `_config.yml` changes into a single read-modify-write cycle (read once, apply all changes, write once)
+3. If edit patterns run sequentially and each reads the current state, order them SEO -> content -> portfolio so each sees the previous change
+
+### Composite Edits
+
+If a single action item spans multiple edit types (e.g., a portfolio entry needs a new `_projects/` post + a new CSS card style + an `_config.yml` collection entry):
+
+1. Execute edit types in order: `_config.yml` changes first, then content files, then CSS last
+2. Group all changes in a single `git commit` per repo
+3. Run build validation once after all edits are applied, not per edit type
 
 ## Task Delegation Templates
 
