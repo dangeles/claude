@@ -14,6 +14,22 @@ Best practices for managing Python environments with Jupyter.
 
 ---
 
+## Claude Code Agent Usage
+
+> **Important**: Claude Code's Bash tool does not inherit the user's shell initialization files. A bare `micromamba activate ENV_NAME` **will fail silently** when run by an agent via the Bash tool.
+
+**Always use the shell hook pattern in agent-executed bash commands:**
+
+```bash
+eval "$(micromamba shell hook --shell=zsh)" 2>/dev/null; micromamba activate ENV_NAME 2>/dev/null; YOUR_COMMANDS_HERE
+```
+
+The `2>/dev/null` suppresses harmless warnings. All subsequent commands must be on the same line (separated by `;` or `&&`) because the Bash tool does not persist shell state between calls.
+
+**Workflow sections** in this document show multi-step commands designed for human terminal use (where micromamba is already initialized). When an agent executes these, collapse the steps into a single line using the pattern above.
+
+---
+
 ## micromamba vs Pip
 
 ### When to use micromamba
@@ -87,14 +103,13 @@ pip install -r requirements.txt
 ### Register micromamba Environment
 
 ```bash
-# Activate environment:
-micromamba activate myproject
+# For Claude Code Bash tool (all on one line):
+eval "$(micromamba shell hook --shell=zsh)" 2>/dev/null; micromamba activate myproject 2>/dev/null; micromamba install ipykernel; python -m ipykernel install --user --name=myproject --display-name="Python (myproject)"
 
-# Install ipykernel:
-micromamba install ipykernel
-
-# Register kernel:
-python -m ipykernel install --user --name=myproject --display-name="Python (myproject)"
+# For terminal use (multi-step):
+# micromamba activate myproject
+# micromamba install ipykernel
+# python -m ipykernel install --user --name=myproject --display-name="Python (myproject)"
 ```
 
 ### Register Virtualenv
@@ -341,9 +356,8 @@ print(sys.executable)
 
 **Solution**:
 ```bash
-micromamba activate myproject
-micromamba install ipykernel
-python -m ipykernel install --user --name=myproject
+# For Claude Code Bash tool:
+eval "$(micromamba shell hook --shell=zsh)" 2>/dev/null; micromamba activate myproject 2>/dev/null; micromamba install ipykernel; python -m ipykernel install --user --name=myproject
 ```
 
 ### Package version conflict
@@ -381,10 +395,8 @@ cat /path/to/runtime/kernel-*.json
 
 **Solution**:
 ```bash
-# Reinstall kernel:
-jupyter kernelspec uninstall myproject
-micromamba activate myproject
-python -m ipykernel install --user --name=myproject
+# Reinstall kernel (for Claude Code Bash tool):
+jupyter kernelspec uninstall myproject; eval "$(micromamba shell hook --shell=zsh)" 2>/dev/null; micromamba activate myproject 2>/dev/null; python -m ipykernel install --user --name=myproject
 ```
 
 ---

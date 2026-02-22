@@ -38,6 +38,34 @@ micromamba install -c conda-forge PACKAGE
 micromamba search PACKAGE
 ```
 
+### Claude Code Bash Sessions
+
+> **Note**: Claude Code's Bash tool does not inherit the user's shell initialization files (`.zshrc`, `.bashrc`, etc.). A bare `micromamba activate ENV_NAME` will fail silently in agent-executed Bash sessions.
+
+**Canonical pattern for Claude Code Bash tool sessions:**
+
+```bash
+# Initialize shell hook + activate + run commands — all on one line:
+eval "$(micromamba shell hook --shell=zsh)" 2>/dev/null; micromamba activate ENV_NAME 2>/dev/null; YOUR_COMMANDS_HERE
+```
+
+**Key details:**
+- `--shell=zsh`: Matches macOS/Darwin with zsh. Change to `--shell=bash` for bash users.
+- `2>/dev/null` on both: Suppresses harmless warnings; graceful degradation if micromamba is absent.
+- Semicolons (not `&&`): The `eval` may print warnings but still succeed; `;` is more forgiving.
+- Everything on one line: The Bash tool does not persist shell state between calls.
+
+**When required:**
+- Any time a skill or agent runs `micromamba activate` via the Claude Code Bash tool.
+- When adapting multi-step human-facing bash blocks for agent execution.
+
+**When NOT required:**
+- Human-facing setup instructions run in the user's terminal (shell already initialized).
+- Docker contexts (micromamba typically not installed).
+- Virtualenv/venv workflows (no micromamba).
+
+---
+
 ### Channel configuration
 
 - **Primary channel**: conda-forge
