@@ -224,6 +224,25 @@ COPY pipeline.py /app/
 ENTRYPOINT ["python", "/app/pipeline.py"]
 ```
 
+### 6. Specialist Assignment Flags
+
+For every component in the architecture handoff, set explicit specialist flags:
+
+```yaml
+specialist_flags:
+  requires_mathematician: true/false    # true: algorithm design, complexity analysis, optimization, numerical methods
+  requires_statistician: true/false     # true: statistical method selection, hypothesis testing, power analysis, MCMC
+  requires_notebook_writer: true/false  # true: component IS a Jupyter notebook or interactive analysis report
+  rationale: "Brief explanation"        # Required when any flag is true; "none" when all are false
+```
+
+**Defaults**: All three flags default to `false`. Set `true` only when the component REQUIRES that specialist's design input -- not just because the component will call a statistical function.
+
+**Setting guidelines**:
+- `requires_mathematician`: algorithm design decisions need formal complexity analysis or mathematical modeling
+- `requires_statistician`: statistical method selection is non-trivial (not just "use scipy.stats")
+- `requires_notebook_writer`: the deliverable itself is an interactive notebook (not just code that produces plots)
+
 ## Output: Technical Specification
 
 Deliverable to Software Developer includes:
@@ -235,6 +254,7 @@ Deliverable to Software Developer includes:
 6. **Performance requirements** (memory, time, storage)
 7. **Testing strategy** (unit, integration, validation)
 8. **Architecture Context Document** (`.architecture/context.md` - persistent context for incremental development)
+9. **Specialist assignment flags** per component (requires_mathematician, requires_statistician, requires_notebook_writer with rationale)
 
 ## References
 

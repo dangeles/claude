@@ -502,7 +502,7 @@ Mode selection updates `session-state.json`:
 
 ```json
 {
-  "session_dir": "/tmp/programming-pm-session-...",
+  "session_dir": "~/.claude/programming-pm-sessions/{workflow-id}",
   "mode": "STANDARD",
   "phase": 1,
   "status": "active",

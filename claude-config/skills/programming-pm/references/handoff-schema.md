@@ -32,7 +32,7 @@ handoff:
 
   # Session context (from Phase 0)
   session:
-    session_dir: string  # Path to /tmp/programming-pm-session-{...}/
+    session_dir: string  # Path to ~/.claude/programming-pm-sessions/{workflow-id}/
     archival_guidelines_path: string  # Path to archival-guidelines-summary.md
 
   # Deliverable reference
@@ -67,7 +67,7 @@ session_handoff:
   <<: *base_handoff
 
   session:
-    session_dir: "/tmp/programming-pm-session-{timestamp}-{pid}/"
+    session_dir: "~/.claude/programming-pm-sessions/{workflow-id}/"
     archival_guidelines_path: "{session_dir}/archival-guidelines-summary.md"
     guidelines_found: boolean
     guidelines_source: string  # Path to CLAUDE.md or "defaults"
@@ -189,6 +189,12 @@ architecture_handoff:
         outputs: []
       dependencies: []
       estimated_effort: string  # T-shirt size or hours
+      # Explicit specialist assignment flags (v1.4) — set by systems-architect
+      specialist_flags:
+        requires_mathematician: boolean    # true if needs algorithm design, complexity analysis, or numerical methods
+        requires_statistician: boolean     # true if needs statistical method selection, hypothesis testing, or validation
+        requires_notebook_writer: boolean  # true if component IS a Jupyter notebook or interactive analysis
+        rationale: string                  # Brief explanation (required if any flag is true)
 
   data_flow:
     description: string
@@ -480,7 +486,7 @@ def validate_handoff(handoff_path: Path, schema: dict) -> list[str]:
 ## Handoff File Naming
 
 ```
-/tmp/programming-pm-session-{timestamp}-{pid}/   # Session directory (Phase 0)
+~/.claude/programming-pm-sessions/{workflow-id}/   # Session directory (Phase 0)
   ├── archival-guidelines-summary.md             # Phase 0 output
   └── handoffs/
       ├── phase0-session-handoff.yaml
@@ -500,7 +506,7 @@ def validate_handoff(handoff_path: Path, schema: dict) -> list[str]:
 
 Handoff schema version is included in each handoff.
 
-Current version: **1.3**
+Current version: **1.4**
 
 ### Version History
 
@@ -510,6 +516,7 @@ Current version: **1.3**
 | 1.1 | Added Phase 0 (Archival Setup), session context in all handoffs, phase range 0-6 |
 | 1.2 | Added architecture_context fields to architecture_handoff and code_handoff schemas |
 | 1.3 | Added copilot_dispatch, copilot_review_return, specialist_dispatch, specialist_return schemas (not yet validated by validate-handoff.py) |
+| 1.4 | Added specialist_flags to architecture_handoff components schema |
 
 ### Compatibility
 
@@ -652,7 +659,12 @@ specialist_return:
 
 On successful Phase 6 completion, programming-pm deletes the session directory:
 ```bash
-rm -rf /tmp/programming-pm-session-{timestamp}-{pid}/
+# SAFETY: Verify WORKFLOW_ID is non-empty before deletion
+if [ -n "${WORKFLOW_ID}" ]; then
+  rm -rf "$HOME/.claude/programming-pm-sessions/${WORKFLOW_ID}/"
+else
+  echo "ERROR: WORKFLOW_ID is empty, aborting session cleanup to prevent data loss"
+fi
 ```
 
 On workflow failure or abort, the session directory is retained for debugging. The path is logged to the user for inspection.

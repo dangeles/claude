@@ -9,14 +9,14 @@ handoff:
 
   # Session context
   session:
-    session_dir: "/tmp/programming-pm-session-20250205-100000-12345/"
-    archival_guidelines_path: "/tmp/programming-pm-session-20250205-100000-12345/archival-guidelines-summary.md"
+    session_dir: "~/.claude/programming-pm-sessions/prog-test-20250205/"
+    archival_guidelines_path: "~/.claude/programming-pm-sessions/prog-test-20250205/archival-guidelines-summary.md"
     guidelines_found: true
     guidelines_source: "/Users/user/project/CLAUDE.md"
 
   # Deliverable reference
   deliverable:
-    location: "/tmp/programming-pm-session-20250205-100000-12345/archival-guidelines-summary.md"
+    location: "~/.claude/programming-pm-sessions/prog-test-20250205/archival-guidelines-summary.md"
     type: "documentation"
     checksum: "sha256:abc123"
 

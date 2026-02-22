@@ -8,7 +8,7 @@
     "source": {
       "skill": "programming-pm",
       "workflow_id": "session-20260208-091500-67890",
-      "session_path": "/tmp/programming-pm-session/session-20260208-091500-67890",
+      "session_path": "~/.claude/programming-pm-sessions/session-20260208-091500-67890",
       "phase": "Phase 2: Requirements Analysis"
     },
 
@@ -55,7 +55,7 @@
       "references": {
         "files": [
           {
-            "path": "/tmp/programming-pm-session/session-20260208-091500-67890/requirements.md",
+            "path": "~/.claude/programming-pm-sessions/session-20260208-091500-67890/requirements.md",
             "description": "Full requirements document with validation rules",
             "relevance": "critical"
           }

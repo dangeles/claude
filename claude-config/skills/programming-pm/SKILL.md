@@ -129,6 +129,7 @@ Use the systems-architect skill to design the system architecture.
 1. Architecture document with components, data flow, technology choices
 2. Architecture Context Document (.architecture/context.md) if applicable
 3. Architecture handoff YAML at: {SESSION_DIR}/handoffs/phase3-architecture-handoff.yaml
+4. Specialist assignment flags per component (requires_mathematician, requires_statistician, requires_notebook_writer with rationale)
 
 ## Required Handoff Field
 Your architecture handoff YAML MUST include: `producer: "systems-architect"`
@@ -137,6 +138,7 @@ Your architecture handoff YAML MUST include: `producer: "systems-architect"`
 - Output must follow architecture_handoff schema (see handoff-schema.md)
 - All components must have defined interfaces (inputs/outputs)
 - Implementation order must be specified
+- Each component MUST include specialist_flags with explicit boolean values and rationale field
 - SIMPLE mode minimum: at least 1 component with interfaces, 1 technology choice rationale, 1 testing strategy
 ```
 
@@ -179,6 +181,37 @@ If this task contains multiple independently implementable subtasks, you MUST ev
 whether any subtasks are suitable for junior-developer delegation (see your Delegation
 Evaluation step). Document your delegation decision in your code handoff regardless of
 the outcome.
+```
+
+---
+
+### Template: Dispatch to senior-developer (Phase 4 Step 0 Pre-flight)
+
+```
+Use the senior-developer skill to validate the architecture handoff for implementability.
+This is PRE-FLIGHT VALIDATION only — do not implement anything.
+
+## Validation Task
+Review the architecture handoff and produce a preflight_validation report.
+
+## Architecture Handoff
+{If <= 200 lines: paste verbatim. If > 200 lines: "Read architecture from: {SESSION_DIR}/handoffs/phase3-architecture-handoff.yaml"}
+
+## Requirements Summary
+{paste verbatim from Phase 1 handoff: problem_statement, success_criteria}
+
+## Validation Checklist
+1. All component interfaces fully specified (input types, output types present)
+2. Component dependency chains are traceable without cycles
+3. Technology choices are recognizable
+4. Implementation order is consistent with dependencies
+
+## Expected Output
+Write validation report to: {SESSION_DIR}/deliverables/phase4-preflight.yaml
+
+status: PASS | FAIL | PASS_WITH_WARNINGS
+For each gap: component name, issue, severity (BLOCKING or WARNING)
+Recommendations for resolving BLOCKING issues.
 ```
 
 ---
@@ -293,7 +326,7 @@ Use the statistician skill to design the statistical approach for the following 
 
 Start every response with: "[Phase N/6 - {phase_name}] {brief status}"
 
-Before starting any phase (Phase 1 onward): Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm `current_phase` and `phases_completed` match expectations.
+Before starting any phase (Phase 1 onward): Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm `current_phase` and `phases_completed` match expectations.
 
 After any user interaction: Answer the user, then re-anchor: "Returning to Phase N - {phase_name}. Next step: {action}."
 
@@ -392,7 +425,7 @@ done
 
 Maintain workflow state in a YAML file for resume capability.
 
-**State File**: `/tmp/programming-pm-state-{workflow-id}.yaml`
+**State File**: `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`
 
 ```yaml
 workflow:
@@ -408,7 +441,7 @@ state:
   retry_count: 0
 
 session:
-  session_dir: "/tmp/programming-pm-session-{timestamp}-{pid}/"
+  session_dir: "~/.claude/programming-pm-sessions/{workflow-id}/"
   archival_guidelines_path: "{session_dir}/archival-guidelines-summary.md"
   guidelines_found: boolean
   guidelines_source: string  # Path to CLAUDE.md or "defaults"
@@ -433,10 +466,11 @@ exceptions:
 ### State Recovery
 
 On session resume:
-1. Read state file from `/tmp/programming-pm-state-*.yaml`
-2. Verify last_updated within 72 hours
-3. Display current phase and completed gates
-4. Offer: Continue from current phase OR restart
+1. List sessions in `~/.claude/programming-pm-sessions/`
+2. Read state file from `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`
+3. Verify last_updated within 7 days (extended from 72 hours due to persistent storage)
+4. Display current phase and completed gates
+5. Offer: Continue from current phase OR restart
 
 ## Workflow Phases
 
@@ -445,13 +479,44 @@ On session resume:
 **Owner**: programming-pm (automatic)
 **Checkpoint**: Never (always runs automatically)
 **Duration**: 2-5 minutes
-**Session Setup**: Creates `/tmp/programming-pm-session-{YYYYMMDD-HHMMSS}-{PID}/`
+**Session Setup**: Creates `~/.claude/programming-pm-sessions/{workflow-id}/`
 
 Initialize workflow session and extract archival guidelines, preferring `.archive-metadata.yaml` over CLAUDE.md, with code-specific extraction focus.
 
 **Process**:
-1. **Create session directory**: `/tmp/programming-pm-session-$(date +%Y%m%d-%H%M%S)-$$/`
-2. **Store session path** in workflow state for downstream agents
+1. **Create session directory**:
+```bash
+mkdir -p ~/.claude/programming-pm-sessions/
+SESSION_DIR="$HOME/.claude/programming-pm-sessions/prog-${PROJECT_SLUG}-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "${SESSION_DIR}"
+```
+
+2. **Stale session cleanup** (present to user, never auto-delete):
+```bash
+STALE_THRESHOLD=$((7 * 24 * 60 * 60))  # 7 days
+CURRENT_TIME=$(date +%s)
+STALE_FOUND=false
+
+for SESSION in "$HOME/.claude/programming-pm-sessions"/*/; do
+  [ ! -d "$SESSION" ] && continue
+  STATE_FILE="${SESSION}state.yaml"
+  if [ -f "$STATE_FILE" ]; then
+    LAST_MODIFIED=$(stat -f %m "$STATE_FILE" 2>/dev/null || stat -c %Y "$STATE_FILE" 2>/dev/null || echo 0)
+    AGE=$((CURRENT_TIME - LAST_MODIFIED))
+    if [ "$AGE" -gt "$STALE_THRESHOLD" ]; then
+      echo "STALE SESSION ($(( AGE / 86400 )) days old): $(basename "$SESSION")"
+      STALE_FOUND=true
+    fi
+  fi
+done
+
+if [ "$STALE_FOUND" = true ]; then
+  echo "Review stale sessions manually: ls $HOME/.claude/programming-pm-sessions/"
+  echo "To remove: rm -rf \"$HOME/.claude/programming-pm-sessions/<session-id>\"  (verify non-empty session-id first)"
+fi
+```
+
+3. **Store session path** in workflow state for downstream agents
 
 ### Primary Source: .archive-metadata.yaml
 1. Follow the archival compliance check pattern:
@@ -490,7 +555,7 @@ Write archival-guidelines-summary.md to the session directory with:
 
 ```yaml
 session_setup:
-  session_dir: "/tmp/programming-pm-session-{timestamp}-{pid}/"
+  session_dir: "~/.claude/programming-pm-sessions/{workflow-id}/"
   archival_summary_path: "{session_dir}/archival-guidelines-summary.md"
   guidelines_found: boolean
   guidelines_source: string  # ".archive-metadata.yaml" or "CLAUDE.md" or "defaults"
@@ -558,7 +623,7 @@ fi
 
 ### Phase 1: Requirements and Scoping
 
-If resuming: Read `/tmp/programming-pm-state-{workflow-id}.yaml` to confirm Phase 0 is complete.
+If resuming: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml` to confirm Phase 0 is complete.
 
 **Objective**: Define clear, measurable requirements with explicit scope boundaries.
 **Receives**: Session directory path and archival guidelines from Phase 0
@@ -785,7 +850,7 @@ fi
 
 ### Phase 2: Pre-Mortem and Risk Assessment
 
-Before starting Phase 2: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-1 are complete.
+Before starting Phase 2: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-1 are complete.
 
 **Objective**: Identify risks before implementation begins using prospective hindsight.
 
@@ -832,7 +897,7 @@ fi
 
 ### Phase 3: Architecture Design
 
-Before starting Phase 3: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-2 are complete.
+Before starting Phase 3: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-2 are complete.
 
 **Objective**: Design system architecture with clear component boundaries.
 
@@ -898,7 +963,7 @@ fi
 
 ### Phase 4: Implementation
 
-Before starting Phase 4: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-3 are complete.
+Before starting Phase 4: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-3 are complete.
 
 **Objective**: Implement architecture with specialist agents in parallel.
 
@@ -907,6 +972,47 @@ Before starting Phase 4: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Co
 - **STANDARD/EXTENDED**: Wave-based parallel execution (waves at T=0s, T=30s, T=60s)
 
 **Steps**:
+
+#### Step 0: Architecture Pre-flight Validation
+
+**Skip condition**: SIMPLE mode projects with <= 1 component skip Step 0 and proceed directly to Step 1.
+
+Before any task decomposition, validate the architecture handoff for implementability.
+
+**Owner**: programming-pm dispatches to senior-developer via Task tool.
+
+**Context size check**: Before filling the dispatch:
+- If architecture handoff YAML is <= 200 lines: paste verbatim
+- If > 200 lines: pass file path and instruct senior-developer to read it directly
+
+**Dispatch** (using template below): Send architecture handoff + requirements summary to senior-developer for pre-flight review.
+
+**senior-developer validates**:
+1. All component interfaces are fully specified (inputs have types, outputs have types)
+2. Component dependencies are traversable without cycles (check by tracing dependency chains)
+3. Technology choices are recognizable and compatible
+4. Implementation order in the handoff is internally consistent
+
+**senior-developer returns** a validation report (write to `{SESSION_DIR}/deliverables/phase4-preflight.yaml`):
+```yaml
+preflight_validation:
+  status: "PASS" | "FAIL" | "PASS_WITH_WARNINGS"
+  gaps:
+    - component: string
+      issue: string
+      severity: "BLOCKING" | "WARNING"
+  recommendations: []
+```
+
+**On PASS or PASS_WITH_WARNINGS**: Log any warnings, proceed to Step 1.
+
+**On FAIL**:
+1. Escalate back to Phase 3 -- re-invoke systems-architect via Task tool with the gap report
+2. systems-architect addresses BLOCKING gaps only
+3. Re-run Step 0 (max 2 escalation cycles)
+4. If still FAIL after 2 cycles: present to user for override (proceed with warnings, or abort)
+
+**Timeout**: 15 minutes. If Step 0 Task tool invocation fails or times out: log "Step 0 pre-flight unavailable" and proceed to Step 1 with a warning.
 
 #### Step 1: Task Decomposition
 
@@ -928,17 +1034,41 @@ if command -v yq &> /dev/null; then
     COMPONENT_DESC=$(yq eval ".handoff.components[$i].responsibility" "$ARCHITECTURE_FILE")
     DEPENDENCIES=$(yq eval ".handoff.components[$i].dependencies[]" "$ARCHITECTURE_FILE" 2>/dev/null || echo "")
 
-    # Determine specialist based on component characteristics
     SPECIALIST="senior-developer"  # default
 
-    if echo "$COMPONENT_DESC" | grep -qiE "algorithm|optimization|complexity"; then
+    # PRIMARY SIGNAL: Explicit specialist flags from architecture handoff (v1.4+)
+    REQUIRES_MATH=$(yq eval ".handoff.components[$i].specialist_flags.requires_mathematician // \"null\"" "$ARCHITECTURE_FILE" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    REQUIRES_STATS=$(yq eval ".handoff.components[$i].specialist_flags.requires_statistician // \"null\"" "$ARCHITECTURE_FILE" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    REQUIRES_NOTEBOOK=$(yq eval ".handoff.components[$i].specialist_flags.requires_notebook_writer // \"null\"" "$ARCHITECTURE_FILE" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+
+    # Normalize YAML boolean variants: true/yes/on -> "true"; false/no/off/null -> not-true
+    [[ "$REQUIRES_MATH" =~ ^(true|yes|on)$ ]] && REQUIRES_MATH="true"
+    [[ "$REQUIRES_STATS" =~ ^(true|yes|on)$ ]] && REQUIRES_STATS="true"
+    [[ "$REQUIRES_NOTEBOOK" =~ ^(true|yes|on)$ ]] && REQUIRES_NOTEBOOK="true"
+
+    if [ "$REQUIRES_MATH" = "true" ]; then
       SPECIALIST="mathematician"
-    elif echo "$COMPONENT_DESC" | grep -qiE "statistic|hypothesis|regression|bayesian"; then
+    elif [ "$REQUIRES_STATS" = "true" ]; then
       SPECIALIST="statistician"
-    elif echo "$COMPONENT_DESC" | grep -qiE "notebook|jupyter|ipynb|jupytext|interactive.analysis|parameter.sweep|analysis.report|visualization.notebook|reproducible.analysis|data.exploration"; then
+    elif [ "$REQUIRES_NOTEBOOK" = "true" ]; then
       SPECIALIST="notebook-writer"
-    elif echo "$COMPONENT_DESC" | grep -qiE "simple|utility|helper|wrapper|validation|config|parser|formatter|converter|serializer|loader|constants|enum|data[._-]class|type[._-]definition|test[._-]fixture|test[._-]helper|boilerplate|scaffold"; then
-      SPECIALIST="junior-developer"
+    elif [ "$REQUIRES_MATH" = "null" ] && [ "$REQUIRES_STATS" = "null" ] && [ "$REQUIRES_NOTEBOOK" = "null" ]; then
+      # FALLBACK: keyword-based assignment for pre-v1.4 architecture handoffs
+      echo "  WARN: No specialist_flags found for '$COMPONENT_NAME'. Using keyword-based fallback (upgrade to v1.4 handoff schema recommended)."
+      if echo "$COMPONENT_DESC" | grep -qiE "algorithm|optimization|complexity"; then
+        SPECIALIST="mathematician"
+      elif echo "$COMPONENT_DESC" | grep -qiE "statistic|hypothesis|regression|bayesian"; then
+        SPECIALIST="statistician"
+      elif echo "$COMPONENT_DESC" | grep -qiE "notebook|jupyter|ipynb|jupytext|interactive.analysis|parameter.sweep|analysis.report|visualization.notebook|reproducible.analysis|data.exploration"; then
+        SPECIALIST="notebook-writer"
+      fi
+    fi
+
+    # Junior-developer assignment (keyword-based, independent of specialist flags)
+    if [ "$SPECIALIST" = "senior-developer" ]; then
+      if echo "$COMPONENT_DESC" | grep -qiE "simple|utility|helper|wrapper|validation|config|parser|formatter|converter|serializer|loader|constants|enum|data[._-]class|type[._-]definition|test[._-]fixture|test[._-]helper|boilerplate|scaffold"; then
+        SPECIALIST="junior-developer"
+      fi
     fi
 
     # Record task assignment
@@ -1080,14 +1210,59 @@ For each independent task not already launched in Wave 1:
   Write output to: `{session_dir}/deliverables/{task_id}-implementation/`
 Skip any task already tracked in running-agents (prevents double-launch).
 
-**Wave 3 (after Wave 1 specialists complete)** -- Launch specialists for dependent tasks:
+**Wave 3 -- Bounded dependency retry protocol**:
 
-For each task with unsatisfied dependencies:
-  Check whether dependency output files exist in `{session_dir}/deliverables/`.
-  If dependencies satisfied: Launch specialist via Task tool with dependency outputs included in prompt.
-  If dependencies NOT satisfied: Wait and retry. If still not satisfied after 3 retries, inform user.
+```bash
+MAX_WAVE3_RETRIES=3
+WAVE3_RETRY_INTERVAL=120  # seconds
 
-Monitor all agents via output file existence. When all tasks show deliverables, proceed to quality gate.
+# For each Wave 3 task with unsatisfied dependencies
+for TASK_ID in $(cat "$SESSION_DIR/wave3-pending.txt" 2>/dev/null); do
+  RETRY_COUNT=0
+  DEPS_SATISFIED=false
+
+  while [ "$RETRY_COUNT" -lt "$MAX_WAVE3_RETRIES" ] && [ "$DEPS_SATISFIED" = false ]; do
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    MISSING_DEP=""
+
+    # Read dependencies for this task
+    DEPS=$(grep "^$TASK_ID|" "$SESSION_DIR/task-assignments.txt" | cut -d'|' -f4 | tr ',' ' ')
+    ALL_DEPS_MET=true
+
+    for DEP in $DEPS; do
+      # Use ls glob (not [ -f glob ]) for safe wildcard existence check
+      if ! ls "${SESSION_DIR}/deliverables/${DEP}-"* > /dev/null 2>&1; then
+        ALL_DEPS_MET=false
+        MISSING_DEP="$DEP"
+        break
+      fi
+    done
+
+    if [ "$ALL_DEPS_MET" = true ]; then
+      DEPS_SATISFIED=true
+      # Launch specialist via Task tool dispatch
+    else
+      echo "  Wave 3: $TASK_ID retry $RETRY_COUNT/$MAX_WAVE3_RETRIES (waiting on: $MISSING_DEP)"
+      sleep "$WAVE3_RETRY_INTERVAL"
+    fi
+  done
+
+  if [ "$DEPS_SATISFIED" = false ]; then
+    echo "  ESCALATION: $TASK_ID — dependencies unresolved after $MAX_WAVE3_RETRIES retries"
+    echo "$TASK_ID|ESCALATED|$(date -u +%Y-%m-%dT%H:%M:%SZ)|missing:$MISSING_DEP" >> "$SESSION_DIR/escalations.txt"
+  fi
+done
+
+# Present escalations to user if any occurred
+if [ -f "$SESSION_DIR/escalations.txt" ] && [ -s "$SESSION_DIR/escalations.txt" ]; then
+  ESCALATED_COUNT=$(wc -l < "$SESSION_DIR/escalations.txt" | tr -d ' ')
+  echo ""
+  echo "HARD ESCALATION: $ESCALATED_COUNT task(s) have unresolvable dependencies."
+  echo "Options: (A) Skip blocked tasks, proceed with completed work  (B) Return to Phase 3  (C) Abort"
+fi
+```
+
+Monitor all agents via output file existence. When all non-escalated tasks show deliverables, proceed to quality gate.
 
 #### Step 3: Progress Monitoring
 
@@ -1102,7 +1277,13 @@ if [ "$PROGRAMMING_PM_MODE" = "EXTENDED" ]; then
   TIMEOUT_THRESHOLD=14400  # 4 hours (EXTENDED mode)
 fi
 
-while true; do
+# Derive cycle count from TIMEOUT_THRESHOLD (single source of truth for timeout duration)
+MAX_MONITORING_CYCLES=$(( TIMEOUT_THRESHOLD / 60 ))  # TIMEOUT_THRESHOLD defined in timeout-config.md
+MONITORING_CYCLE=0
+
+while [ "$MONITORING_CYCLE" -lt "$MAX_MONITORING_CYCLES" ]; do
+  MONITORING_CYCLE=$((MONITORING_CYCLE + 1))
+
   # Check running agents
   RUNNING_COUNT=$(wc -l < "$SESSION_DIR/running-agents.txt" 2>/dev/null || echo 0)
 
@@ -1140,7 +1321,7 @@ while true; do
 
   # Check progress file outputs (must be >100 words)
   for TASK_ID in $(awk -F'|' '{print $1}' "$SESSION_DIR/task-assignments.txt"); do
-    PROGRESS_FILE="${SESSION_DIR}/progress/${TASK_ID}-progress.txt"
+    PROGRESS_FILE="/tmp/progress-${TASK_ID}.md"
 
     if [ -f "$PROGRESS_FILE" ]; then
       WORD_COUNT=$(wc -w < "$PROGRESS_FILE")
@@ -1156,6 +1337,13 @@ while true; do
   # Sleep before next check
   sleep 60  # Check every minute
 done
+
+# Hard abort if loop exhausted with tasks still running
+if [ "${RUNNING_COUNT:-0}" -gt 0 ]; then
+  echo "HARD ABORT: Monitoring exhausted ($MAX_MONITORING_CYCLES cycles × 60s = $TIMEOUT_THRESHOLD s)"
+  echo "Still running: $RUNNING_COUNT task(s)"
+  echo "Options: (A) Proceed with completed tasks  (B) Extend monitoring (+60 cycles)  (C) Abort workflow"
+fi
 ```
 
 #### Step 4: Quality Gate 4a - Specialist Completion Check
@@ -1267,7 +1455,7 @@ fi
 
 ### Phase 5: Code Review and Testing
 
-Before starting Phase 5: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-4 are complete.
+Before starting Phase 5: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-4 are complete.
 
 **Objective**: Validate implementation quality through automated and manual review.
 
@@ -1367,7 +1555,7 @@ fi
 
 ### Phase 6: Version Control Integration
 
-Before starting Phase 6: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Confirm Phases 0-5 are complete.
+Before starting Phase 6: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-5 are complete.
 
 **Objective**: Integrate changes with sync-config.py and version control.
 

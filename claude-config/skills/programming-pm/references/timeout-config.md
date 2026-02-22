@@ -33,7 +33,7 @@ Default timeouts for each workflow phase (Phase 0-6).
 - ABORT on timeout (no recovery possible)
 - If CLAUDE.md not found, use defaults and continue (not a timeout)
 - Session directory creation failure is the only timeout trigger
-- Creates `/tmp/programming-pm-session-{timestamp}-{pid}/` for session isolation
+- Creates `~/.claude/programming-pm-sessions/{workflow-id}/` for session isolation
 
 **Phase 1 (Requirements)**:
 - Complex projects may need longer
