@@ -13,6 +13,7 @@ handoff:
   provides_to:
     - cfd-mathematician
     - cfd-reviewer
+    - programming-pm
   schema_version: "1.0"
   schema_type: cfd-orchestrator
 
@@ -361,10 +362,37 @@ Determine the absolute path to the cfd-bioreactor skill directory:
    boundary conditions, target tier
 2. Compute initial dimensionless estimates (Re, Pe, Da) if parameters available
 3. Select mode based on tier + complexity heuristics (Section 5)
-4. Present mode display to user (Section 5e)
+4. Determine `run_purpose` based on tier and session history:
+   - Tier 1-2: Always `debug`
+   - Tier 3-4: Check for prior completed sessions with same geometry hash.
+     If no prior session: `debug`. If prior debug session completed successfully:
+     `production` (user can override).
+   - If resuming a session from a state file that lacks `run_purpose`, default
+     to `debug`.
+   - Store `run_purpose` in state file (see Section 20)
+5. Apply run_purpose/mode precedence (auto-adjust conflicts):
+
+   | run_purpose | Mode Selected | Result | Rationale |
+   |-------------|--------------|--------|-----------|
+   | debug | DIRECT | OK | Normal |
+   | debug | LITE | OK | Normal |
+   | debug | FULL | Auto-downgrade to LITE | Do not waste agent time planning mesh that gets discarded |
+   | production | DIRECT | Auto-upgrade to LITE | Production needs reviewer |
+   | production | LITE | OK | Normal |
+   | production | FULL | OK | Normal |
+
+   Display any auto-adjustments to the user with rationale.
+6. Present mode display to user (Section 5e), including run purpose:
+   ```
+   Problem: [description] (Tier [N])
+   Available modes: DIRECT (10 min) | LITE (20 min) | FULL (40 min)
+   Recommended: [MODE] ([reason])
+   Run purpose: [DEBUG | PRODUCTION] ([reason])
+   Override: You can select a different mode or run purpose.
+   ```
 
 **Quality Gate 0**: Pre-flight passes (dolfinx and petsc4py available). Session directory
-created. State file initialized. Mode selected.
+created. State file initialized. Mode selected. Run purpose determined.
 
 ---
 
@@ -630,6 +658,13 @@ Same pattern as Quality Gate 1:
 
 1. Read reference file sections per agent-loading-guide.md Phase 1 + Phase 2 maps
 2. Generate mesh script from Phase 1 validated plan:
+   - Apply mesh sizing defaults from Section 15b based on `run_purpose`:
+     debug runs use the coarse element count range for the current tier;
+     production runs use the fine element count range
+   - Geometric feature resolution check: ensure >= 3 elements across the thinnest
+     geometric feature (membranes, thin channels). If the debug element count range
+     cannot achieve this, increase to the minimum that satisfies this constraint
+     and warn the user.
    - Import STEP geometry via `gmsh.model.occ.importShapes()` (with error handling)
      OR construct parametric geometry via gmsh built-in/OCC kernel
    - Call `gmsh.model.occ.synchronize()` after ALL OCC operations
@@ -667,7 +702,7 @@ Same pattern as Quality Gate 1:
 
 1. **Collect** error output (traceback, log messages, solver convergence history)
 2. **Classify** error type: `import_error`, `mesh_error`, `solver_divergence`,
-   `assertion_failure`, `numerical_instability`
+   `assertion_failure`, `numerical_instability`, `wall_clock_timeout`
 3. **Simple errors** (import path, syntax, assertion): Fix directly and retry
    (max 2 direct retries)
 4. **Complex errors** (solver divergence, numerical instability): Invoke `cfd-reviewer`
@@ -675,6 +710,11 @@ Same pattern as Quality Gate 1:
    - Pass: error output, error_history from previous attempts, mathematical specification
    - Reviewer classifies root cause and recommends specific fix
    - Check error_history to avoid recommending previously-failed fixes
+4b. **Wall-clock timeout**: If the simulation hit the kill threshold from Section 15b:
+   - If `run_purpose == debug`: The mesh is likely too fine. Reduce element count
+     by 50% and retry. Do NOT escalate to cfd-reviewer for this error type.
+   - If `run_purpose == production`: Invoke cfd-reviewer for diagnosis. Common
+     causes: insufficient Newton continuation steps, solver parameter tuning needed.
 5. **Regenerate code** with reviewer feedback applied
 6. **Track** error_history (append each attempt: error_type, error_message, fix_attempted,
    fix_outcome)
@@ -733,7 +773,11 @@ Same pattern as Quality Gates 1 and 2a:
 ### Step 3.4: Code Generation (Orchestrator-Owned)
 
 1. Read reference file sections per agent-loading-guide.md Phase 3 map
-2. Generate transport script from Phase 3 validated plan:
+2. Apply mesh sizing from Section 15b for any transport-specific mesh refinement
+   (e.g., near-membrane refinement for SUPG accuracy). Use `run_purpose` to select
+   the appropriate element count range. Ensure >= 3 elements across thin features
+   (membranes, boundary layers) even in debug mode.
+3. Generate transport script from Phase 3 validated plan:
    - Define P1 function space for concentration
    - Estimate Peclet number: Pe = |u| * h / (2D)
    - Implement SUPG stabilization (see Section 13 -- ALWAYS rules)
@@ -742,8 +786,8 @@ Same pattern as Quality Gates 1 and 2a:
    - Use Newton solver (nonlinear due to Michaelis-Menten)
    - Import NonlinearProblem from `dolfinx.fem.petsc`, NewtonSolver from `dolfinx.nls.petsc`
    - Include post-solve checks: negative concentration warning, species conservation
-3. Apply ALL code generation rules from Section 13
-4. Run syntax check
+4. Apply ALL code generation rules from Section 13
+5. Run syntax check
 
 ### Step 3.5: Execution and Validation
 
@@ -756,8 +800,10 @@ Same pattern as Quality Gates 1 and 2a:
 
 ### Step 3.5b: Self-Correction Loop
 
-Same pattern as Step 2.5b. Invoke cfd-reviewer in error diagnosis mode for complex errors.
-Max 3 total retries, then escalate to user.
+Same pattern as Step 2.5b, including the `wall_clock_timeout` error type. Invoke
+cfd-reviewer in error diagnosis mode for complex errors. For wall-clock timeouts:
+if `run_purpose == debug`, reduce element count by 50%; if `run_purpose == production`,
+invoke cfd-reviewer. Max 3 total retries, then escalate to user.
 
 **Quality Gate 3b**: Transport validation passes (species conservation, Newton convergence,
 no large negative concentration regions).
@@ -981,6 +1027,151 @@ mpirun -np 4 python simulation.py
 
 ---
 
+## 15b. Simulation Runtime Management
+
+### 15b.1 Debug vs. Production Mesh Sizing
+
+Simulation mesh sizing defaults are tied to the complexity tier and `run_purpose`.
+The orchestrator determines `run_purpose` during Phase 0 (Step 0.5) based on user
+intent and tier selection. There are two run purpose levels:
+
+- `debug`: First run, error recovery, parameter exploration. Use coarsest mesh that
+  captures qualitative physics.
+- `production`: Publication-quality results. Use fine mesh with convergence study.
+
+**Tier-aware mesh sizing defaults**:
+
+| Tier | Run Purpose | Elements (2D) | Elements (3D) | Rationale |
+|------|-------------|---------------|----------------|-----------|
+| 1 | Always debug | 200-500 | N/A (2D only) | Pipeline validation; exact solution known |
+| 2 | Always debug | 500-2,000 | N/A (2D only) | Qualitative physics check; fast iteration |
+| 3 | Debug (first run) | N/A | 5,000-20,000 | Coarse 3D captures flow structure |
+| 3 | Production | N/A | 50,000-200,000 | Quantitative accuracy for publication |
+| 4 | Debug (first run) | N/A | 10,000-50,000 | Validate before committing hours |
+| 4 | Production | N/A | 200,000-1,000,000+ | Publication quality with convergence study |
+
+**Geometric feature resolution rule**: Regardless of run_purpose, ensure >= 3 elements
+across the thinnest geometric feature (membranes, thin channels, boundary layers). If
+the default element count range for a given tier and run_purpose cannot achieve this,
+increase the element count to the minimum that satisfies this constraint and warn the
+user: "Debug mesh increased from [default] to [adjusted] elements to resolve [feature]
+(>= 3 elements across thinnest feature required)."
+
+**Orchestrator behavior**:
+1. During Phase 0 (Step 0.5), set `run_purpose` based on tier and session history
+2. During Phase 1 (mesh planning), pass `run_purpose` to cfd-mathematician with
+   the corresponding element count range as a constraint
+3. During code generation (Steps 2.4/3.4), use the mesh sizing defaults from
+   this table unless the mathematician or reviewer recommends otherwise
+4. If `run_purpose == debug`, skip Phase 4 mesh convergence study entirely
+
+**Override**: The user can override run purpose at any time:
+```
+Current run purpose: debug (Tier 3, first run)
+Override to production? This will increase mesh from ~10K to ~100K elements
+and runtime from ~2 minutes to ~30-60 minutes.
+```
+
+### 15b.2 Solver Convergence Assessment
+
+During execution (Steps 2.5, 3.5), monitor solver convergence and apply these
+diagnostic thresholds:
+
+**Newton solver convergence**:
+
+| Metric | Healthy | Warning | Diverging |
+|--------|---------|---------|-----------|
+| Residual norm after 5 iterations | < 1e-4 | 1e-4 to 1e-1 | > 1e-1 or increasing |
+| Residual reduction per iteration | > 10x | 2x-10x | < 2x or oscillating |
+| Total iterations to converge | < 10 | 10-20 | > 20 or not converging |
+
+**Krylov solver convergence** (GMRES/CG inner solves):
+
+| Metric | Healthy | Warning | Diverging |
+|--------|---------|---------|-----------|
+| Krylov iterations per Newton step | < 100 | 100-500 | > 500 |
+| Krylov residual stagnation | N/A | Stalls for > 50 iterations | Residual increases |
+
+**Action on convergence signals**:
+- **Healthy**: Continue normally
+- **Warning**: Log warning, continue, but flag for user in Phase 5 summary.
+  If `run_purpose == debug`, suggest "convergence marginal on debug mesh --
+  may improve on finer production mesh"
+- **Diverging**: Enter self-correction loop (Step 2.5b/3.5b). If first attempt
+  on a debug mesh, do NOT refine mesh as first fix -- instead try solver
+  parameter adjustments (relaxation, Picard, continuation ramp)
+
+### 15b.3 Mesh Convergence Decision Guide
+
+Phase 4 mesh convergence study (Section 11, Step 4.2) is currently marked as
+optional. This section provides guidance on WHEN to run it.
+
+**Run mesh convergence study when**:
+- `run_purpose == production` AND tier >= 3
+- User explicitly requests publication-quality results
+- QoI sensitivity: if a 10% mesh coarsening changes QoI by > 5%, convergence
+  study is needed
+
+**Skip mesh convergence study when**:
+- `run_purpose == debug` (always skip)
+- Tier 1-2 (analytical solution available for validation instead)
+- User explicitly declines ("I just need qualitative results")
+
+**Convergence assessment criteria** (extending Quality Gate 4a):
+- QoI change between last two refinement levels < 1% (existing criterion)
+- Observed convergence rate within 0.5 of theoretical order (new criterion):
+  - P1 concentration: expect p ~ 2.0, accept 1.5-2.5
+  - P2 velocity: expect p ~ 3.0, accept 2.5-3.5
+- If convergence rate is anomalously low (p < 1.0): flag as potential
+  singularity or insufficient boundary layer resolution
+
+### 15b.4 Wall-Clock Time Limits
+
+Prevent simulations from running indefinitely by setting wall-clock expectations
+per tier and detecting stalls.
+
+**Expected wall-clock times** (serial execution, single core; times are for
+simulation execution only, not including agent discussion time):
+
+| Tier | Run Purpose | Mesh + Flow | Transport | Total Expected | Kill Threshold (3x) |
+|------|-------------|-------------|-----------|----------------|---------------------|
+| 1 | debug | 30s | N/A | 30s | 90s |
+| 2 | debug | 1-3 min | 1-2 min | 2-5 min | 15 min |
+| 3 | debug | 2-5 min | 2-5 min | 5-10 min | 30 min |
+| 3 | production | 15-30 min | 10-20 min | 30-60 min | 3 hours |
+| 4 | debug | 5-15 min | 5-10 min | 10-25 min | 75 min |
+| 4 | production | 1-4 hours | 30 min-2 hours | 2-6 hours | 18 hours |
+
+**Kill threshold**: If wall-clock time exceeds 3x the expected total for
+the tier and run purpose, the simulation is likely stalled or diverging.
+
+**Orchestrator behavior when kill threshold is reached**:
+1. If running via Bash: timeout will have already killed the process
+2. If running manually (3D production): include a timeout check in the
+   generated script:
+   ```python
+   import time
+   _start_time = time.time()
+   _kill_threshold_s = {kill_threshold_seconds}
+
+   # Inside solver loop:
+   if time.time() - _start_time > _kill_threshold_s:
+       print(f"TIMEOUT: Simulation exceeded {_kill_threshold_s}s kill threshold.")
+       print("Likely causes: mesh too fine for debug, solver diverging, or")
+       print("insufficient Newton continuation steps.")
+       print("Try: reduce mesh size, increase continuation ramp steps,")
+       print("or switch to Picard iteration.")
+       sys.exit(1)
+   ```
+3. Report timeout cause in Phase 5 summary with specific recommendations
+
+**Stall detection heuristic** (for solver progress monitoring):
+- If solver has not reduced residual by > 10x in the last 5 minutes of wall-clock
+  time (for production runs) or 30 seconds (for debug runs), flag as stalled
+- Stall is different from slow convergence: stall means no progress at all
+
+---
+
 ## 16. Quality Gate Escalation Protocol
 
 When the mathematician and reviewer cannot agree after 1 retry, present the disagreement
@@ -1059,6 +1250,7 @@ SKILL.md, not in a reference file).
 
 2D Poiseuille flow. Tests the entire pipeline without any user-specific physics.
 **Always start here** when the user has never run a FEniCSx simulation before.
+**Default mesh sizing**: 200-500 elements (2D). Always debug purpose.
 
 See: `examples/01-2d-channel-flow.md`
 
@@ -1066,6 +1258,7 @@ See: `examples/01-2d-channel-flow.md`
 
 2D user geometry + O2 transport with Michaelis-Menten and membrane BCs.
 Demonstrates the full two-phase workflow on a simple geometry.
+**Default mesh sizing**: 500-2,000 elements (2D). Always debug purpose.
 
 See: `examples/02-2d-oxygen-transport.md`
 
@@ -1073,6 +1266,8 @@ See: `examples/02-2d-oxygen-transport.md`
 
 2D or 3D STEP geometry + full coupled physics. Production-quality simulation with
 iterative solvers, Newton continuation, and validation suite.
+**Default mesh sizing**: Debug: 5,000-20,000 elements (3D). Production: 50,000-200,000 elements (3D).
+First run always defaults to debug. Override to production after validation passes.
 
 See: `examples/03-3d-cartridge-template.md`
 
@@ -1080,6 +1275,8 @@ See: `examples/03-3d-cartridge-template.md`
 
 Full 3D cartridge with mesh convergence study, publication-quality visualization,
 and complete reproducibility metadata. Always run with MPI on a workstation.
+**Default mesh sizing**: Debug: 10,000-50,000 elements (3D). Production: 200,000-1,000,000+ elements (3D).
+First run always defaults to debug. Override to production after validation passes.
 
 **Progression rule**: Suggest the user start at Tier 1 and progress upward. Do not
 jump to Tier 3 or 4 without first validating the environment at Tier 1.
@@ -1105,6 +1302,8 @@ session:
   skill_base_path: "/Users/davidangelesalbores/repos/claude/claude-config/skills/cfd-bioreactor"
   mode: "LITE"                    # DIRECT | LITE | FULL
   tier: 2                         # 1-4
+  run_purpose: "debug"            # debug | production
+  handoff_declined: false         # Set to true if user declines programming-pm handoff
   current_phase: 2                # 0-5
   status: "running"               # running | paused | complete | failed
 
@@ -1169,6 +1368,88 @@ On startup, check for existing state files:
 | Mathematical analysis | `cfd-mathematician` | Via Task tool. Variational formulations, stability analysis, convergence estimates. |
 | Adversarial review | `cfd-reviewer` | Via Task tool. Engineering review with severity-rated challenges and approval status. |
 | Multi-perspective analysis | Perspective agents (direct) | Via parallel Task invocations. FULL mode only. 3-5 CFD-specific perspectives at each decision point. |
+| Transition to software project | `programming-pm` | When simulation scripts evolve into a maintained software project (library packaging, tests/CI, multi-file project, parameter sweep framework). See Section 22b for handoff criteria. |
+
+### 22b. Programming-PM Handoff Criteria
+
+The cfd-bioreactor orchestrator generates standalone simulation scripts. When the user's
+needs evolve beyond one-off scripts into maintained software, recommend handoff to
+`programming-pm` for software development coordination.
+
+#### Handoff Trigger Conditions
+
+Recommend programming-pm when ANY of the following are detected:
+
+| Trigger | Detection Heuristic | Example User Request |
+|---------|---------------------|---------------------|
+| Library packaging | User mentions "package", "library", "module", "import from", "reusable", "API" | "Make this simulation into a library I can call with different parameters" |
+| Test/CI requirements | User mentions "pytest", "CI", "continuous integration", "coverage", "unit test" | "Add unit tests for the simulation pipeline" |
+| Version control integration | User mentions "git repo", "branch", "PR", "version", "release" | "Set up version control for the simulation code" |
+| Multi-file project growth | Session has generated >= 4 scripts AND user requests shared utilities | "Extract the mesh generation into a shared module" |
+| Parameter sweep framework | User wants automated parameter sweeps with result aggregation | "Run this simulation for 20 different inlet velocities and collect results" |
+
+#### Context Filtering Rules
+
+To prevent false-positive handoff triggers, apply these filters:
+
+1. **Phase filtering**: NEVER evaluate handoff triggers during Phases 2-4 (active
+   computation). Only evaluate at phase boundaries (Phase 0, Phase 5) or during
+   user interaction between phases.
+
+2. **Compound requirement**: Require keywords from 2+ different trigger categories
+   (e.g., "library" + "test") OR a single unambiguous keyword that has no alternate
+   interpretation in CFD context (e.g., "package this as a library", "set up CI").
+
+3. **Exclusion patterns**: Do NOT treat these as handoff triggers:
+   - "test" in "test this simulation", "test run", "test different parameters"
+     (means "try", not "unit test")
+   - "git" in "let me check" or "let me get" (not version control)
+   - "version" in "FEniCSx version", "Python version" (not software versioning)
+   - "module" in "Python module not found" (import error, not packaging)
+
+4. **Handoff decline suppression**: If user selects option (B) Continue in the
+   handoff recommendation, set `handoff_declined: true` in session state. Do NOT
+   re-suggest programming-pm handoff for the remainder of this session.
+
+#### Handoff Recommendation Format
+
+When a trigger condition passes context filtering, present to the user:
+
+```
+HANDOFF RECOMMENDATION: Software Development Coordination
+
+Your simulation work is evolving into a software project:
+- Trigger: [which trigger was detected]
+- Current state: [N scripts generated, current tier/mode]
+
+Recommendation: Hand off to programming-pm for:
+- Architecture design (module structure, shared utilities)
+- Testing strategy (unit tests for simulation components)
+- Code review and quality gates
+- Version control integration
+
+Options:
+(A) Hand off to programming-pm now (recommended)
+(B) Continue with cfd-bioreactor (standalone scripts only)
+(C) Complete current simulation phase, then hand off
+```
+
+#### What Gets Handed Off
+
+When handing off to programming-pm, provide:
+- All generated scripts from `{session_dir}/scripts/`
+- Session state summary (tier, mode, run_purpose, phases completed)
+- Physical parameters and validation results
+- List of scripts and their purposes
+
+#### When NOT to Hand Off
+
+Do NOT recommend programming-pm for:
+- Standard tier progression (Tier 1 -> 2 -> 3 -> 4)
+- Mesh convergence studies (these are cfd-bioreactor Phase 4)
+- One-off parameter variations (just re-run with different inputs)
+- Visualization enhancements (cfd-bioreactor Phase 4)
+- Any session where `handoff_declined` is already `true`
 
 ---
 
