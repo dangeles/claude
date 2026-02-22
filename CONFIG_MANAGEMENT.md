@@ -163,6 +163,9 @@ git status
 # Create planning entry
 ./sync-config.py plan --title "Description"
 
+# Create planning entry and open in editor
+./sync-config.py plan --title "Description" --edit
+
 # Validate JSON
 jq . claude-config/settings.json
 
@@ -171,6 +174,11 @@ jq . claude-config/settings.json
 
 # Apply to ~/.claude/
 ./sync-config.py push
+
+# Non-interactive (for agents/scripts)
+./sync-config.py push --yes             # Push without prompts (source wins)
+./sync-config.py push --yes --delete    # Push and remove orphaned files
+./sync-config.py push --yes --dry-run --delete  # Preview deletions
 
 # Commit changes
 git add claude-config/ planning/
@@ -228,7 +236,7 @@ If something goes wrong:
 **User request**: "Add investment calculation example to calculator skill"
 
 **Workflow**:
-1. Pre-check: `git status` → clean ✓
+1. Pre-check: `git status` -> clean
 2. Planning: `./sync-config.py plan --title "Add investment example to calculator"`
 3. Implementation:
    ```bash
@@ -237,8 +245,8 @@ If something goes wrong:
    [content...]
    EOF
    ```
-4. Analysis: Check format matches existing examples ✓
-5. Preview: `./sync-config.py push --dry-run` → shows calculator will update ✓
+4. Analysis: Check format matches existing examples
+5. Preview: `./sync-config.py push --dry-run` -> shows calculator will update
 6. Sync: `./sync-config.py push`
 7. Test: Invoke calculator skill, verify example appears
 8. Commit:
@@ -254,7 +262,7 @@ If something goes wrong:
 **User request**: "Create skill for API documentation generation"
 
 **Workflow**:
-1. Pre-check: `git status` → clean ✓
+1. Pre-check: `git status` -> clean
 2. Planning: `./sync-config.py plan --title "Create API documentation skill"`
 3. Implementation:
    ```bash
@@ -272,7 +280,7 @@ If something goes wrong:
    [skill content...]
    EOF
    ```
-4. Analysis: Validate YAML frontmatter, check structure ✓
+4. Analysis: Validate YAML frontmatter, check structure
 5. Preview: `./sync-config.py push --dry-run`
 6. Sync: `./sync-config.py push`
 7. Test: Invoke skill in Claude Code session
@@ -284,14 +292,14 @@ If something goes wrong:
 **User request**: "Increase max tokens globally"
 
 **Workflow**:
-1. Pre-check: `git status` → clean ✓
+1. Pre-check: `git status` -> clean
 2. Planning: `./sync-config.py plan --title "Increase max tokens"`
 3. Implementation:
    ```bash
    jq '.maxTokens = 200000' claude-config/settings.json > tmp.json
    mv tmp.json claude-config/settings.json
    ```
-4. Analysis: Validate JSON ✓, value is reasonable ✓
+4. Analysis: Validate JSON, value is reasonable
 5. Preview: `./sync-config.py push --dry-run`
 6. Sync: `./sync-config.py push`
 7. Test: Restart Claude Code, verify new token limit
@@ -331,11 +339,15 @@ Before syncing changes to `~/.claude/`:
 ## Integration with Existing Tools
 
 **With sync-config.py:**
-- `status` - Check divergence between repository and ~/.claude/
+- `status` - Check divergence and detect orphaned files in ~/.claude/
 - `pull` - Sync changes from ~/.claude/ to repository (for manual changes)
 - `push --dry-run` - Preview what will be synced
 - `push` - Apply repository changes to ~/.claude/
-- `plan --title` - Create planning journal entry
+- `push --yes` - Apply without interactive prompts (source always wins)
+- `push --delete` - Remove files in ~/.claude/ that have no repo counterpart
+- `push --yes --delete` - Non-interactive push with orphan cleanup (for agents)
+- `plan --title` - Create planning journal entry (prints path)
+- `plan --title --edit` - Create planning journal entry and open in editor
 
 **With Planning Journal:**
 - Document all configuration changes
@@ -351,12 +363,14 @@ Before syncing changes to `~/.claude/`:
 
 ## Anti-Patterns to Avoid
 
-❌ **Don't** modify `~/.claude/` directly - always modify `claude-config/` in repository first
-❌ **Don't** sync without testing - always preview with `--dry-run`
-❌ **Don't** skip planning journal - always document why changes are made
-❌ **Don't** commit untested changes - always verify in Claude Code first
-❌ **Don't** forget to sync to ~/.claude/ after committing - changes won't take effect
-❌ **Don't** make changes on multiple machines simultaneously - causes conflicts
+-- **Don't** modify `~/.claude/` directly - always modify `claude-config/` in repository first
+-- **Don't** sync without testing - always preview with `--dry-run`
+-- **Don't** skip planning journal - always document why changes are made
+-- **Don't** commit untested changes - always verify in Claude Code first
+-- **Don't** forget to sync to ~/.claude/ after committing - changes won't take effect
+-- **Don't** make changes on multiple machines simultaneously - causes conflicts
+-- **Don't** use `--delete` without `--dry-run` first - always preview what will be removed
+-- **Don't** use `push --yes --delete` in scripts without validating exit code - it may abort on safety threshold
 
 ## Special Cases
 
@@ -417,13 +431,13 @@ When multiple people share this configuration:
 
 **Workflow Summary:**
 ```
-git status → create plan → modify claude-config/ → analyze →
-preview sync → sync to ~/.claude/ → test → commit → update plan → push
+git status -> create plan -> modify claude-config/ -> analyze ->
+preview sync -> sync to ~/.claude/ -> test -> commit -> update plan -> push
 ```
 
 This workflow ensures all global configuration changes are:
-- ✅ Version controlled
-- ✅ Analyzed for quality
-- ✅ Tested before deployment
-- ✅ Documented for future reference
-- ✅ Reversible if issues arise
+- Version controlled
+- Analyzed for quality
+- Tested before deployment
+- Documented for future reference
+- Reversible if issues arise

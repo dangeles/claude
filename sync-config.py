@@ -42,10 +42,13 @@ class Colors:
 
 
 class ConfigSync:
-    def __init__(self, config_path: str = "sync.config.yaml", dry_run: bool = False, verbose: bool = False):
+    def __init__(self, config_path: str = "sync.config.yaml", dry_run: bool = False,
+                 verbose: bool = False, auto_yes: bool = False, delete_mode: bool = False):
         self.config_path = Path(config_path)
         self.dry_run = dry_run
         self.verbose = verbose
+        self.auto_yes = auto_yes
+        self.delete_mode = delete_mode
         self.repo_root = self.config_path.parent.resolve()
 
         # Load configuration
@@ -55,11 +58,22 @@ class ConfigSync:
         # Expand paths
         self.source_dir = Path(self.config['source_dir']).expanduser()
         self.target_dir = (self.repo_root / self.config['target_dir']).resolve()
-        self.project_config_target = (self.repo_root / self.config['project_configs']['target_dir']).resolve()
 
-        # Create directories if needed
+        # Lazy: resolve project config path but do NOT create directory yet
+        project_cfg = self.config.get('project_configs', {})
+        project_target = project_cfg.get('target_dir', '')
+        if project_target:
+            self.project_config_target = (self.repo_root / project_target).resolve()
+        else:
+            self.project_config_target = None
+
+        # Create main target directory if needed (but NOT project_config_target)
         if not self.dry_run:
             self.target_dir.mkdir(parents=True, exist_ok=True)
+
+    def _ensure_project_config_target(self):
+        """Create project_config_target directory on first use (lazy initialization)."""
+        if self.project_config_target and not self.dry_run:
             self.project_config_target.mkdir(parents=True, exist_ok=True)
 
     def print_info(self, message: str):
@@ -79,7 +93,12 @@ class ConfigSync:
         print(f"{Colors.FAIL}[ERROR]{Colors.ENDC} {message}")
 
     def is_excluded(self, path: Path, relative_to: Path) -> bool:
-        """Check if path matches any exclusion pattern"""
+        """Check if path matches any exclusion pattern.
+
+        Exclusion patterns are matched against the relative path from relative_to.
+        A pattern like 'debug/' or 'debug' excludes the directory and all contents.
+        A pattern like 'settings.local.json' excludes that exact file.
+        """
         try:
             rel_path = path.relative_to(relative_to)
         except ValueError:
@@ -88,17 +107,201 @@ class ConfigSync:
         rel_str = str(rel_path)
 
         for exclusion in self.config['exclusions']:
-            exclusion = exclusion.rstrip('/')
+            # Normalize: strip trailing slash for uniform matching
+            exclusion_normalized = exclusion.rstrip('/')
 
-            # Directory exclusion (ends with /)
-            if exclusion.endswith('/'):
-                if rel_str.startswith(exclusion):
-                    return True
-            # Exact match or prefix match
-            elif rel_str == exclusion or rel_str.startswith(exclusion + '/'):
+            # Match: exact name, or path starts with exclusion as a directory prefix
+            if rel_str == exclusion_normalized or rel_str.startswith(exclusion_normalized + '/'):
                 return True
 
         return False
+
+    def normalize_path_for_comparison(self, rel_path: Path) -> str:
+        """Normalize a relative path for set comparison.
+
+        On macOS (case-insensitive APFS), lowercases the path.
+        On Linux (case-sensitive), returns as-is.
+        """
+        s = str(rel_path)
+        if sys.platform == 'darwin':
+            return s.lower()
+        return s
+
+    def walk_target_no_symlinks(self, target_dir: Path) -> List[Path]:
+        """Walk target directory yielding regular files, never following symlinks.
+
+        Skips symlinks entirely (both symlinked files and symlinked directories).
+        Logs a warning for each symlink encountered.
+
+        Returns: List of Path objects (absolute) that are regular files.
+        """
+        results = []
+        if not target_dir.exists():
+            return results
+
+        for item in target_dir.rglob('*'):
+            if item.is_symlink():
+                self.print_warning(f"Skipping symlink: {item} -> {os.readlink(item)}")
+                continue
+            if item.is_file():
+                results.append(item)
+        return results
+
+    def find_orphans(self, sync_rule_path: str) -> List[Tuple[Path, Path]]:
+        """Find files in target (e.g. ~/.claude/<path>/) that have no counterpart in source (repo).
+
+        Only operates on directory-type sync rules.
+
+        Args:
+            sync_rule_path: The path from the sync rule (e.g. "skills/")
+
+        Returns:
+            List of (absolute_target_path, relative_path) tuples for orphaned files.
+            relative_path is in original case for display/deletion.
+        """
+        source_base = self.target_dir / sync_rule_path    # repo side: claude-config/<path>
+        target_base = self.source_dir / sync_rule_path    # live side: ~/.claude/<path>
+
+        if not source_base.is_dir() or not target_base.is_dir():
+            return []
+
+        # Build source file set (normalized for comparison)
+        source_files_norm = set()
+        for item in source_base.rglob('*'):
+            if item.is_file() and not self.is_excluded(item, source_base):
+                rel = item.relative_to(source_base)
+                source_files_norm.add(self.normalize_path_for_comparison(rel))
+
+        # Build target file set (walk without following symlinks)
+        target_files = self.walk_target_no_symlinks(target_base)
+        orphans = []
+        for item in target_files:
+            if self.is_excluded(item, target_base):
+                continue
+            rel = item.relative_to(target_base)
+            norm = self.normalize_path_for_comparison(rel)
+            if norm not in source_files_norm:
+                orphans.append((item, rel))
+
+        return orphans
+
+    def delete_orphans(self, orphans: List[Tuple[Path, Path]], target_base: Path,
+                       total_target_files: int) -> int:
+        """Delete orphaned files with safety checks.
+
+        Args:
+            orphans: List of (absolute_path, relative_path) tuples from find_orphans
+            target_base: The resolved base directory (e.g. ~/.claude/skills/)
+            total_target_files: Total number of non-excluded files in target_base
+
+        Returns:
+            Number of files actually deleted (0 if dry_run)
+        """
+        if not orphans:
+            return 0
+
+        # Safety threshold (RISK-09): abort if deletions > 50% of target files
+        if total_target_files > 0:
+            ratio = len(orphans) / total_target_files
+            if ratio > 0.5:
+                self.print_error(
+                    f"Safety threshold exceeded: {len(orphans)} of {total_target_files} files "
+                    f"({ratio:.0%}) would be deleted. This usually indicates a misconfigured "
+                    f"source path. Aborting. Use --dry-run to inspect."
+                )
+                sys.exit(1)
+
+        # Print deletion manifest (always, even in --yes mode, for audit trail)
+        print(f"\n{Colors.WARNING}Files to delete ({len(orphans)}):{Colors.ENDC}")
+        for abs_path, rel_path in orphans:
+            print(f"  {Colors.FAIL}-{Colors.ENDC} {rel_path}")
+
+        # Dry run: stop here
+        if self.dry_run:
+            self.print_info(f"Would delete {len(orphans)} orphaned file(s)")
+            return 0
+
+        # Interactive confirmation (unless --yes)
+        if not self.auto_yes:
+            response = input(
+                f"\n{Colors.BOLD}Delete {len(orphans)} orphaned file(s)? [y/N]:{Colors.ENDC} "
+            ).strip().lower()
+            if response != 'y':
+                self.print_info("Deletion cancelled")
+                return 0
+
+        # Execute deletions
+        deleted_count = 0
+        resolved_base = target_base.resolve()
+
+        for abs_path, rel_path in orphans:
+            # Safety: verify path is still within target_base after resolution
+            try:
+                resolved = abs_path.resolve()
+                if not resolved.is_relative_to(resolved_base):
+                    self.print_warning(
+                        f"Skipping {rel_path}: resolves outside target directory"
+                    )
+                    continue
+            except OSError:
+                self.print_warning(f"Skipping {rel_path}: cannot resolve path")
+                continue
+
+            # Safety: never delete symlinks (double-check; walk_target should have skipped them)
+            if abs_path.is_symlink():
+                self.print_warning(f"Skipping symlink: {rel_path}")
+                continue
+
+            try:
+                abs_path.unlink()
+                self.print_info(f"Deleted: {rel_path}")
+                deleted_count += 1
+            except OSError as e:
+                self.print_error(f"Failed to delete {rel_path}: {e}")
+
+        # Clean up empty directories (bottom-up)
+        self._cleanup_empty_dirs(target_base)
+
+        return deleted_count
+
+    def _cleanup_empty_dirs(self, base_dir: Path):
+        """Remove empty directories under base_dir, bottom-up. Never removes base_dir itself."""
+        if not base_dir.is_dir():
+            return
+        # Walk bottom-up: sorted by depth (deepest first)
+        dirs = sorted(
+            [d for d in base_dir.rglob('*') if d.is_dir() and not d.is_symlink()],
+            key=lambda p: len(p.parts),
+            reverse=True
+        )
+        for d in dirs:
+            if d == base_dir:
+                continue
+            try:
+                d.rmdir()  # Only succeeds if empty
+                if self.verbose:
+                    self.print_info(f"Removed empty directory: {d.relative_to(base_dir)}")
+            except OSError:
+                pass  # Directory not empty, skip
+
+    def validate_source_paths(self) -> bool:
+        """Pre-flight check: verify all sync rule source directories exist.
+
+        Returns True if all valid, False if any missing.
+        When used with --delete, a missing source would cause all target files
+        to be classified as orphans, so this is a critical safety gate.
+        """
+        all_valid = True
+        for rule in self.config['sync_rules']['always']:
+            path = rule['path']
+            source = self.target_dir / path  # repo side
+            if not source.exists():
+                self.print_error(
+                    f"Source path does not exist: {source} (sync rule: {path}). "
+                    f"Cannot run --delete with missing sources."
+                )
+                all_valid = False
+        return all_valid
 
     def compute_checksum(self, file_path: Path) -> str:
         """Compute SHA256 checksum of file"""
@@ -146,6 +349,10 @@ class ConfigSync:
 
         Returns: 'source', 'target', 'skip', or 'abort'
         """
+        if self.auto_yes:
+            self.print_info(f"[AUTO] Overwriting {target} with {source} (--yes mode)")
+            return 'source'
+
         print(f"\n{Colors.WARNING}Conflict detected:{Colors.ENDC}")
         print(f"  Source: {source}")
         if source.exists():
@@ -323,15 +530,24 @@ class ConfigSync:
         """Push configuration from repo to ~/.claude"""
         self.print_warning(f"About to modify system Claude Code configuration at: {self.source_dir}")
 
-        if not self.dry_run:
+        if self.delete_mode:
+            self.print_warning("--delete is enabled: orphaned files will be removed from target")
+
+        if not self.dry_run and not self.auto_yes:
             response = input(f"{Colors.BOLD}Continue? [y/N]:{Colors.ENDC} ").strip().lower()
             if response != 'y':
                 self.print_info("Push cancelled")
                 return
 
+        # Pre-flight validation for --delete
+        if self.delete_mode:
+            if not self.validate_source_paths():
+                self.print_error("Aborting: fix source paths before using --delete")
+                sys.exit(1)
+
         self.print_info(f"Pushing configuration from {self.target_dir} to {self.source_dir}")
 
-        # Sync each configured item
+        # --- Copy phase (existing logic) ---
         for rule in self.config['sync_rules']['always']:
             path = rule['path']
             source = self.target_dir / path
@@ -347,6 +563,33 @@ class ConfigSync:
                 self.copy_tree(source, target, check_conflict=True)
             else:
                 self.copy_file(source, target, check_conflict=True)
+
+        # --- Deletion phase (only if --delete) ---
+        if self.delete_mode:
+            total_deleted = 0
+            for rule in self.config['sync_rules']['always']:
+                path = rule['path']
+                source_base = self.target_dir / path
+                target_base = self.source_dir / path
+
+                # Only process directory-type rules for orphan detection
+                if not source_base.is_dir():
+                    continue
+
+                self.print_info(f"Scanning for orphans: {path}")
+                orphans = self.find_orphans(path)
+
+                if orphans:
+                    # Count total non-excluded files in target for threshold calculation
+                    target_files = self.walk_target_no_symlinks(target_base)
+                    non_excluded = [f for f in target_files if not self.is_excluded(f, target_base)]
+                    total_deleted += self.delete_orphans(orphans, target_base, len(non_excluded))
+                else:
+                    if self.verbose:
+                        self.print_info(f"No orphans found in {path}")
+
+            if total_deleted > 0:
+                self.print_success(f"Deleted {total_deleted} orphaned file(s)")
 
         self.print_success("Push complete!")
 
@@ -397,6 +640,12 @@ class ConfigSync:
 
     def pull_project_configs(self, project_name: Optional[str] = None):
         """Pull project-specific configurations to repo"""
+        self._ensure_project_config_target()
+
+        if self.project_config_target is None:
+            self.print_warning("project_configs.target_dir is not configured. Skipping.")
+            return
+
         self.print_info("Discovering projects with Claude Code configuration...")
 
         projects = self.discover_projects()
@@ -440,6 +689,12 @@ class ConfigSync:
 
     def push_project_configs(self, project_name: Optional[str] = None):
         """Push project-specific configurations from repo"""
+        self._ensure_project_config_target()
+
+        if self.project_config_target is None:
+            self.print_warning("project_configs.target_dir is not configured. Skipping.")
+            return
+
         self.print_info("Finding project configurations in repository...")
 
         if not self.project_config_target.exists():
@@ -500,6 +755,60 @@ class ConfigSync:
                 else:
                     self.copy_file(source, target, check_conflict=True)
 
+        # --- Deletion phase for project configs (only if --delete) ---
+        if self.delete_mode:
+            total_deleted = 0
+            for project_dir in project_dirs:
+                name = project_dir.name
+
+                # Find the project's live path
+                project_path = None
+                for search_path in self.config['project_configs']['search_paths']:
+                    sp = Path(search_path).expanduser()
+                    if '*' in str(sp):
+                        parent = Path(str(sp).split('*')[0])
+                        potential_path = parent / name
+                        if potential_path.exists():
+                            project_path = potential_path
+                            break
+
+                if not project_path:
+                    continue
+
+                # Check each config directory for orphans
+                for config_file in self.config['project_configs']['config_files']:
+                    source_dir = project_dir / config_file
+                    target_dir = project_path / config_file
+
+                    if not source_dir.is_dir() or not target_dir.is_dir():
+                        continue
+
+                    # Build source file set
+                    source_files_norm = set()
+                    for item in source_dir.rglob('*'):
+                        if item.is_file() and not self.is_excluded(item, source_dir):
+                            rel = item.relative_to(source_dir)
+                            source_files_norm.add(self.normalize_path_for_comparison(rel))
+
+                    # Build target file set
+                    target_files = self.walk_target_no_symlinks(target_dir)
+                    orphans = []
+                    for item in target_files:
+                        if self.is_excluded(item, target_dir):
+                            continue
+                        rel = item.relative_to(target_dir)
+                        norm = self.normalize_path_for_comparison(rel)
+                        if norm not in source_files_norm:
+                            orphans.append((item, rel))
+
+                    if orphans:
+                        non_excluded = [f for f in target_files if not self.is_excluded(f, target_dir)]
+                        self.print_info(f"Scanning for orphans in project {name}/{config_file}")
+                        total_deleted += self.delete_orphans(orphans, target_dir, len(non_excluded))
+
+            if total_deleted > 0:
+                self.print_success(f"Deleted {total_deleted} orphaned project config file(s)")
+
         self.print_success("Project config push complete!")
 
     def show_status(self):
@@ -554,9 +863,33 @@ class ConfigSync:
         if changes:
             print(f"\n{Colors.WARNING}Changes detected:{Colors.ENDC}")
             for path, status in changes:
-                print(f"  {Colors.WARNING}•{Colors.ENDC} {path}: {status}")
+                print(f"  {Colors.WARNING}*{Colors.ENDC} {path}: {status}")
         else:
             print(f"\n{Colors.OKGREEN}No changes detected{Colors.ENDC}")
+
+        # --- Orphan detection (files in ~/.claude/ but not in repo) ---
+        all_orphans = []
+        for rule in self.config['sync_rules']['always']:
+            path = rule['path']
+            source_base = self.target_dir / path
+            target_base = self.source_dir / path
+
+            if not source_base.is_dir() or not target_base.is_dir():
+                continue
+
+            orphans = self.find_orphans(path)
+            for abs_path, rel_path in orphans:
+                all_orphans.append((path, rel_path))
+
+        if all_orphans:
+            print(f"\n{Colors.WARNING}Orphaned files ({len(all_orphans)}):{Colors.ENDC}")
+            print(f"  (present in {self.source_dir} but not in {self.target_dir})")
+            for rule_path, rel_path in all_orphans:
+                print(f"  {Colors.FAIL}-{Colors.ENDC} {rule_path}{rel_path}")
+            print(f"\n  Use {Colors.BOLD}push --delete{Colors.ENDC} to remove orphaned files")
+        else:
+            if self.verbose:
+                print(f"\n{Colors.OKGREEN}No orphaned files detected{Colors.ENDC}")
 
         # Project configurations
         print(f"\n{Colors.BOLD}Project configurations:{Colors.ENDC}")
@@ -564,7 +897,7 @@ class ConfigSync:
         if projects:
             print(f"  Found {len(projects)} project(s) with configuration:")
             for name, path in projects:
-                print(f"    {Colors.OKCYAN}•{Colors.ENDC} {name} ({path})")
+                print(f"    {Colors.OKCYAN}*{Colors.ENDC} {name} ({path})")
         else:
             print("  No projects found")
 
@@ -572,7 +905,7 @@ class ConfigSync:
         """Detect machine hostname"""
         return platform.node().split('.')[0]  # Remove domain if present
 
-    def create_plan_entry(self, title: str, status: str = "Planned"):
+    def create_plan_entry(self, title: str, status: str = "Planned", open_editor: bool = False):
         """Create new planning journal entry"""
         hostname = self.detect_hostname()
         date = datetime.now().strftime("%Y-%m-%d")
@@ -607,12 +940,15 @@ class ConfigSync:
                 f.write(content)
             self.print_success(f"Created planning entry: {filepath}")
 
-            # Open in editor if available
-            editor = os.environ.get('EDITOR', 'nano')
-            try:
-                subprocess.run([editor, str(filepath)])
-            except FileNotFoundError:
-                self.print_info(f"Edit file at: {filepath}")
+            # Open in editor only if --edit was passed
+            if open_editor:
+                editor = os.environ.get('EDITOR', 'nano')
+                try:
+                    subprocess.run([editor, str(filepath)])
+                except FileNotFoundError:
+                    self.print_info(f"Edit file at: {filepath}")
+            else:
+                self.print_info(f"Created: {filepath}. Use --edit to open in editor.")
 
         return filepath
 
@@ -673,10 +1009,13 @@ def main():
 Examples:
   ./sync-config.py pull                    # Pull user-wide config
   ./sync-config.py push                    # Push user-wide config
+  ./sync-config.py push --yes              # Push without prompts
+  ./sync-config.py push --yes --delete     # Push and remove orphaned files
   ./sync-config.py pull-projects           # Pull all project configs
   ./sync-config.py push-projects bioreactor  # Push specific project config
   ./sync-config.py status                  # Show differences
   ./sync-config.py plan --title "Enable new plugin"
+  ./sync-config.py plan --title "Enable new plugin" --edit
   ./sync-config.py plan --list             # List all plans
         """
     )
@@ -689,17 +1028,25 @@ Examples:
     parser.add_argument('--verbose', '-v', action='store_true', help="Verbose output")
     parser.add_argument('--config', default='sync.config.yaml', help="Config file path")
     parser.add_argument('--no-backup', action='store_true', help="Disable backups")
+    parser.add_argument('--yes', '-y', action='store_true',
+                        help="Skip all interactive prompts; source always wins conflicts")
+    parser.add_argument('--delete', action='store_true',
+                        help="Remove orphaned files in target that have no source counterpart "
+                             "(only within sync_rules paths)")
 
     # Plan command options
     parser.add_argument('--title', help="Title for new planning entry")
     parser.add_argument('--status', help="Status for planning entry")
     parser.add_argument('--list', dest='list_plans', action='store_true', help="List planning entries")
     parser.add_argument('--machine', help="Filter by machine hostname")
+    parser.add_argument('--edit', action='store_true',
+                        help="Open editor after creating plan entry (default: just create file)")
 
     args = parser.parse_args()
 
     # Create sync instance
-    sync = ConfigSync(args.config, dry_run=args.dry_run, verbose=args.verbose)
+    sync = ConfigSync(args.config, dry_run=args.dry_run, verbose=args.verbose,
+                      auto_yes=args.yes, delete_mode=args.delete)
 
     # Disable backups if requested
     if args.no_backup:
@@ -724,7 +1071,7 @@ Examples:
                 if not args.title:
                     parser.error("--title required for creating planning entry")
                 status = args.status or "Planned"
-                sync.create_plan_entry(args.title, status)
+                sync.create_plan_entry(args.title, status, open_editor=args.edit)
 
     except KeyboardInterrupt:
         print(f"\n{Colors.WARNING}Interrupted by user{Colors.ENDC}")

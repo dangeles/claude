@@ -11,7 +11,7 @@ project_configs:
   enabled: true
   search_paths:
     - "~/repos/*"
-  target_dir: "./project-configs"
+  target_dir: "./claude-config/project-configs"
   config_files:
     - ".claude-project.json"
     - ".claude/"
