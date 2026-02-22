@@ -190,7 +190,7 @@ On track for 4:30 PM completion.
 
 ### State Tracking Across Sessions
 
-Leverage Claude 4.5's extended context for multi-turn workflows:
+Leverage Claude's extended context for multi-turn workflows:
 
 **At start of each turn**:
 - Briefly summarize current state: "Continuing from last turn: Calculator working on sensitivity analysis (60% complete), Synthesizer waiting for handoff"

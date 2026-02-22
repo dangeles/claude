@@ -118,14 +118,14 @@ When estimating, think in powers of 10:
 - Is this a $100 item, $1,000, $10,000, or $100,000?
 - Don't agonize over the difference between $2,500 and $3,500
 
-Cost categories for R&D bioreactor work:
+General R&D cost categories:
 | Category | Typical Range | Examples |
 |----------|---------------|----------|
-| Basic lab supplies | $10-100/experiment | Culture media, disposables |
-| Specialized reagents | $100-1,000 | Enzymes, antibodies |
-| Small equipment | $1,000-10,000 | Pumps, sensors |
-| Major equipment | $10,000-100,000 | Bioreactors, microscopes |
-| Specialized systems | $100,000+ | Custom bioreactor builds |
+| Consumables | $10-100/experiment | Disposables, common reagents |
+| Specialized reagents | $100-1,000 | Enzymes, antibodies, probes |
+| Small equipment | $1,000-10,000 | Pumps, sensors, instruments |
+| Major equipment | $10,000-100,000 | Instruments, systems |
+| Specialized systems | $100,000+ | Custom builds, integrated systems |
 
 ## Outputs
 

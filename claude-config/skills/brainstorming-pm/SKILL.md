@@ -98,13 +98,13 @@ Model selection is currently advisory. All components inherit the orchestrator's
 
 | Component | Current | Target |
 |-----------|---------|--------|
-| Orchestrator | Inherited | Claude Opus 4.5 |
-| Perspective Agents | Inherited | Claude Sonnet 4.5 |
+| Orchestrator | Inherited | Claude Opus 4.6 |
+| Perspective Agents | Inherited | Claude Sonnet 4.6 |
 | LLM Grouping | Inherited (inline) | Claude Haiku 4.5 |
 
 For full rationale and fallback chains, see `references/model-selection.md`.
 
-**Note**: When the Task tool gains a `model` parameter, update Stage 2 Task invocations to specify `claude-sonnet-4-5` and Stage 3 grouping calls to specify `claude-haiku-4-5`.
+**Note**: When the Task tool gains a `model` parameter, update Stage 2 Task invocations to specify `claude-sonnet-4-6` and Stage 3 grouping calls to specify `claude-haiku-4-5`.
 
 ## State Anchoring
 

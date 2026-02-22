@@ -177,13 +177,13 @@ researcher-plan.md +
 
 If resuming from a previous session: Read `{session_dir}/session-state.json` to confirm Phase 0 is complete.
 
-**Owner**: research-architect (Sonnet 4.5)
+**Owner**: research-architect (Sonnet 4.6)
 **Duration**: ~12 minutes
 **Timeout**: 15 minutes
 
 1. Ask user: "Please describe your dataset and research goals"
 2. If uncertainty detected ("not sure", "maybe"):
-   - Fan-out to analysis-brainstormer and method-brainstormer (Haiku)
+   - Fan-out to analysis-brainstormer and method-brainstormer (Haiku 4.5)
    - Present brainstorming suggestions
 3. Generate research-structure.md with 3-7 chapters
 
@@ -201,7 +201,7 @@ If resuming from a previous session: Read `{session_dir}/session-state.json` to 
 
 Before starting Phase 2: Read `{session_dir}/session-state.json`. Confirm Phases 0-1 are complete.
 
-**Owner**: analysis-planner (Sonnet 4.5)
+**Owner**: analysis-planner (Sonnet 4.6)
 **Duration**: ~12 minutes for 3 chapters
 **Timeout**: 20 minutes total
 
@@ -258,7 +258,7 @@ Approve / Request changes / Reject? [A/c/r]
 
 Before starting Phase 4: Read `{session_dir}/session-state.json`. Confirm Phases 0-3 are complete.
 
-**Owner**: notebook-reviewer (Sonnet 4.5)
+**Owner**: notebook-reviewer (Sonnet 4.6)
 **Duration**: ~10 minutes
 **Timeout**: 15 minutes total
 
@@ -351,7 +351,7 @@ Template guidelines:
 
 Before starting Phase 6: Read `{session_dir}/session-state.json`. Confirm Phases 0-5 are complete.
 
-**Owner**: statistical-fact-checker (Sonnet 4.5)
+**Owner**: statistical-fact-checker (Sonnet 4.6)
 **Duration**: ~10-20 minutes
 **Timeout**: 30 minutes
 

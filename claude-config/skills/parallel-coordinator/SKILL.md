@@ -2,7 +2,7 @@
 name: parallel-coordinator
 version: 1.0
 last_updated: 2026-01-29
-description: Orchestrate multiple independent agents running simultaneously, leveraging Claude Sonnet 4.5's parallel tool execution capabilities to maximize throughput on multi-task requests.
+description: Orchestrate multiple independent agents running simultaneously, leveraging Claude's parallel tool execution capabilities to maximize throughput on multi-task requests.
 success_criteria:
   - Independent tasks correctly identified and parallelized
   - All parallel tasks completed successfully
@@ -16,7 +16,7 @@ success_criteria:
 
 ## Purpose
 
-The Parallel Coordinator skill enables orchestration of multiple independent agents executing simultaneously. By leveraging Claude Sonnet 4.5's native capability to execute multiple tool calls in a single message, this skill maximizes throughput when users present requests containing multiple independent tasks.
+The Parallel Coordinator skill enables orchestration of multiple independent agents executing simultaneously. By leveraging Claude's native capability to execute multiple tool calls in a single message, this skill maximizes throughput when users present requests containing multiple independent tasks.
 
 This skill transforms sequential bottlenecks into parallel workflows, reducing overall completion time and improving user experience when handling complex, multi-faceted requests.
 
@@ -78,7 +78,7 @@ The Parallel Coordinator follows a structured four-phase approach:
 
 ### Phase 3: Parallel Execution
 
-**Objective**: Launch all independent tasks simultaneously using Claude Sonnet 4.5's parallel tool execution.
+**Objective**: Launch all independent tasks simultaneously using Claude's parallel tool execution.
 
 1. **Create Task Definitions**: Use TaskCreate to define each independent task with:
    - Clear, actionable subject in imperative form
@@ -89,7 +89,7 @@ The Parallel Coordinator follows a structured four-phase approach:
 
 3. **Monitor Progress**: Track task completion status without blocking
 
-**Technical Implementation**: Execute multiple tool calls simultaneously in a single function_calls block. This is Claude Sonnet 4.5's key strength - the ability to fire off multiple independent operations at once.
+**Technical Implementation**: Execute multiple tool calls simultaneously in a single function_calls block. This is Claude's key strength - the ability to fire off multiple independent operations at once.
 
 ### Phase 4: Result Integration
 
@@ -327,9 +327,9 @@ Structure the final response to:
 
 ## Technical Considerations
 
-### Claude Sonnet 4.5 Parallel Execution
+### Claude Parallel Execution
 
-Claude Sonnet 4.5 has native support for executing multiple tool calls in a single message. Key characteristics:
+Claude has native support for executing multiple tool calls in a single message. Key characteristics:
 
 - **True Parallelism**: When multiple independent tool calls are provided in one function_calls block, they execute concurrently
 - **I/O Optimization**: Particularly effective for I/O-bound operations (file reads, web requests)
@@ -387,6 +387,6 @@ When this skill is invoked:
 
 ## Conclusion
 
-The Parallel Coordinator skill unlocks Claude Sonnet 4.5's ability to execute multiple independent operations simultaneously. By carefully analyzing task dependencies, structuring parallel execution, and synthesizing results, this skill dramatically reduces completion time for multi-faceted requests.
+The Parallel Coordinator skill unlocks Claude's ability to execute multiple independent operations simultaneously. By carefully analyzing task dependencies, structuring parallel execution, and synthesizing results, this skill dramatically reduces completion time for multi-faceted requests.
 
 Use this skill when independence is clear, dependencies are absent, and the user's request naturally decomposes into concurrent operations. The result is faster, more efficient responses that maintain quality while maximizing throughput.

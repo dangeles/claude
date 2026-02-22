@@ -8,7 +8,7 @@ tools:
   - Task
   - Grep
   - Glob
-model: opus-4.5
+model: opus
 permissionMode: default
 skills:
   - senior-developer

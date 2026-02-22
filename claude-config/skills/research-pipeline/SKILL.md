@@ -144,7 +144,7 @@ pipeline:
 
 ### Step 2: Execute Stage 1 - Researcher
 
-**Invoke**: `Skill(researcher, topic="{topic}", constraints={...})`
+**Invoke**: researcher via Task tool with topic and constraints in prompt
 
 **Researcher executes**:
 - Literature search via PubMed, bioRxiv, OpenAlex
@@ -166,7 +166,7 @@ pipeline:
 
 ### Step 3: Execute Stage 2 - Synthesizer
 
-**Invoke**: `Skill(synthesizer, handoff="{handoff-file}")`
+**Invoke**: synthesizer via Task tool with handoff file path in prompt
 
 **Synthesizer executes**:
 - Read researcher's output via handoff
@@ -185,7 +185,7 @@ pipeline:
 
 ### Step 4: Execute Stage 3 - Devil's Advocate
 
-**Invoke**: `Skill(devils-advocate, handoff="{handoff-file}")`
+**Invoke**: devils-advocate via Task tool with handoff file path in prompt
 
 **Devil's Advocate executes**:
 - Identify thesis of synthesized document
@@ -206,7 +206,7 @@ pipeline:
 
 ### Step 5: Execute Stage 4 - Fact-Checker
 
-**Invoke**: `Skill(fact-checker, handoff="{handoff-file}")`
+**Invoke**: fact-checker via Task tool with handoff file path in prompt
 
 **Fact-Checker executes**:
 - Inventory all quantitative claims
@@ -228,7 +228,7 @@ pipeline:
 
 ### Step 6: Execute Stage 5 - Editor
 
-**Invoke**: `Skill(editor, handoff="{handoff-file}")`
+**Invoke**: editor via Task tool with handoff file path in prompt
 
 **Editor executes**:
 - Apply CLAUDE.md style guidelines

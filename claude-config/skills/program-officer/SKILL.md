@@ -36,7 +36,7 @@ Coordinate complex research tasks that require multiple specialists (researcher,
 
 **Don't use when**:
 - Straightforward task with established methods
-- Single specialist sufficient (invoke researcher/calculator directly)
+- Single specialist sufficient (invoke researchercalculator (Task tool) directly)
 - No coordination needed
 
 ## Decision Escalation Framework
@@ -63,11 +63,11 @@ When in doubt about escalation, use AskUserQuestion or report to domain coordina
 
 ### 2. Coordinate Specialists
 
-Invoke specialists in dependency order using `/specialist-name` syntax:
-- `/researcher` - Literature review, paper extraction
-- `/calculator` - Quantitative validation, power analysis
-- `/synthesizer` - Cross-source integration, theme identification
-- `/fact-checker` - Claim verification, assumption validation
+Invoke specialists in dependency order using the Task tool for context isolation:
+- **researcher** via Task tool - Literature review, paper extraction
+- **calculator** via Task tool - Quantitative validation, power analysis
+- **synthesizer** via Task tool - Cross-source integration, theme identification
+- **fact-checker** via Task tool - Claim verification, assumption validation
 
 **Dependency management**:
 - Sequential: Researcher → Synthesizer (need papers before synthesis)
@@ -131,34 +131,34 @@ While coordination not complete:
 | **calculator** | Quantitative analysis, power calculations, feasibility checks | 30-60 minutes |
 | **fact-checker** | Verify claims, validate assumptions, check citations | 15-30 minutes |
 
-**Invocation**: Use `/specialist-name` syntax (e.g., `/researcher` not `Skill(skill="researcher")`)
+**Invocation**: Use Task tool for each specialist (e.g., `Task(researcher, "Research topic X...")`) for context isolation and parallel execution capability.
 
 ### Coordination Patterns
 
 **Pattern 1: Literature-Informed Method Selection**
 ```
-1. /researcher - Review papers on candidate methods (1-2 hours)
-2. /synthesizer - Compare methods across literature (30 min)
-3. /calculator - Test methods quantitatively (45 min)
-4. /fact-checker - Verify performance claims (20 min)
+1. researcher (Task tool) - Review papers on candidate methods (1-2 hours)
+2. synthesizer (Task tool) - Compare methods across literature (30 min)
+3. calculator (Task tool) - Test methods quantitatively (45 min)
+4. fact-checker (Task tool) - Verify performance claims (20 min)
 → Deliverable: Validated method recommendation
 ```
 
 **Pattern 2: Quantitative Feasibility Check**
 ```
-1. /calculator - Run power analysis, check assumptions (45 min)
-2. /researcher - Find similar studies in literature (1 hour)
-3. /fact-checker - Verify data meets requirements (15 min)
-4. /synthesizer - Integrate evidence (30 min)
+1. calculator (Task tool) - Run power analysis, check assumptions (45 min)
+2. researcher (Task tool) - Find similar studies in literature (1 hour)
+3. fact-checker (Task tool) - Verify data meets requirements (15 min)
+4. synthesizer (Task tool) - Integrate evidence (30 min)
 → Deliverable: Go/no-go recommendation with justification
 ```
 
 **Pattern 3: Multi-Source Validation**
 ```
-1. /researcher - Check literature for precedent (1-2 hours)
-2. /calculator - Test alternative explanations (45 min)
-3. /fact-checker - Verify technical details (20 min)
-4. /synthesizer - Integrate evidence across sources (45 min)
+1. researcher (Task tool) - Check literature for precedent (1-2 hours)
+2. calculator (Task tool) - Test alternative explanations (45 min)
+3. fact-checker (Task tool) - Verify technical details (20 min)
+4. synthesizer (Task tool) - Integrate evidence across sources (45 min)
 → Deliverable: Validity assessment with confidence level
 ```
 
@@ -213,14 +213,14 @@ If conflicting evidence:
 **Scenario**: Literature review for method selection
 
 ```
-14:00 - Invoke /researcher: "Review papers on single-cell normalization methods"
+14:00 - Invoke researcher (Task tool): "Review papers on single-cell normalization methods"
 15:30 - Check: "Progress? Papers reviewed?"
 15:32 - Researcher: "Reviewed 5 papers, found 3 candidate methods"
 17:00 - Check: "Status update?"
 17:05 - Researcher: "Found 8 more papers, expanding to proteomics methods too"
 17:06 - INTERVENTION: "Original scope: single-cell RNA-seq. Stick to that domain."
 17:45 - Researcher complete: 12 papers reviewed, 3 methods identified
-17:50 - Invoke /synthesizer: "Compare scran, SCTransform, Pearson residuals"
+17:50 - Invoke synthesizer (Task tool): "Compare scran, SCTransform, Pearson residuals"
 ```
 
 ## Progress Update Template
@@ -318,13 +318,13 @@ Return to domain coordinator with:
 ```
 14:00 - PI delegates: "Research normalization methods for sparse single-cell data"
 14:05 - Program Officer assesses: Need researcher + synthesizer + calculator + fact-checker
-14:10 - /researcher: "Review papers on sparse single-cell normalization (last 3 years)"
+14:10 - researcher (Task tool): "Review papers on sparse single-cell normalization (last 3 years)"
 16:30 - Researcher complete: 12 papers, 3 methods (scran, SCTransform, Pearson residuals)
-16:35 - /synthesizer: "Compare scran vs SCTransform vs Pearson residuals from literature"
+16:35 - synthesizer (Task tool): "Compare scran vs SCTransform vs Pearson residuals from literature"
 17:15 - Synthesizer complete: scran most cited, SCTransform for non-UMI
-17:20 - /calculator: "Test scran vs SCTransform on example sparse dataset"
+17:20 - calculator (Task tool): "Test scran vs SCTransform on example sparse dataset"
 18:00 - Calculator complete: scran 15% better for sparsity >80%
-18:05 - /fact-checker: "Verify scran implementation requirements and assumptions"
+18:05 - fact-checker (Task tool): "Verify scran implementation requirements and assumptions"
 18:20 - Fact-checker complete: Assumptions met, validated
 18:25 - Program Officer integrates findings
 18:30 - Deliver to PI: "Recommendation: scran for sparse UMI data (literature + validation)"
@@ -439,15 +439,15 @@ Return to domain coordinator with:
 
 **Coordination sequence**:
 ```
-14:05 - /researcher: "Review recent papers (2020-2024) on single-cell clustering algorithms, focus on Louvain vs Leiden"
+14:05 - researcher (Task tool): "Review recent papers (2020-2024) on single-cell clustering algorithms, focus on Louvain vs Leiden"
 15:30 - Progress check: "Papers reviewed so far?"
 15:32 - Researcher: "Found 8 papers, clear preference for Leiden"
 16:15 - Researcher complete: 12 papers reviewed, Leiden preferred in 80%
-16:20 - /synthesizer: "Compare Louvain vs Leiden based on literature findings"
+16:20 - synthesizer (Task tool): "Compare Louvain vs Leiden based on literature findings"
 16:50 - Synthesizer complete: Leiden advantages documented
-16:55 - /calculator: "Test Leiden vs Louvain on sample dataset, compare stability"
+16:55 - calculator (Task tool): "Test Leiden vs Louvain on sample dataset, compare stability"
 17:40 - Calculator complete: Leiden 12% more stable
-17:45 - /fact-checker: "Verify performance claims on our data type"
+17:45 - fact-checker (Task tool): "Verify performance claims on our data type"
 18:00 - Fact-checker complete: Claims verified
 18:05 - Integrate findings
 ```
@@ -510,10 +510,10 @@ Return to domain coordinator with:
 
 **Your coordination**:
 ```
-/calculator: "Power analysis for mixed-effects model with n=4 batches, 20 samples"
-/calculator: "Check mixed-effects assumptions on sample data (normality, homoscedasticity)"
-/researcher: "Find papers using mixed-effects for similar bulk RNA-seq batch correction"
-/fact-checker: "Verify our data structure meets mixed-effects requirements (balanced design, batch variation)"
+calculator (Task tool): "Power analysis for mixed-effects model with n=4 batches, 20 samples"
+calculator (Task tool): "Check mixed-effects assumptions on sample data (normality, homoscedasticity)"
+researcher (Task tool): "Find papers using mixed-effects for similar bulk RNA-seq batch correction"
+fact-checker (Task tool): "Verify our data structure meets mixed-effects requirements (balanced design, batch variation)"
 ```
 
 **Your deliverable**:
@@ -551,10 +551,10 @@ Return to domain coordinator with:
 
 **Your coordination**:
 ```
-/researcher: "Check literature for similar unexpected upregulation of housekeeping genes"
-/calculator: "Test alternative explanations (normalization artifact, batch effect, outlier contamination)"
-/fact-checker: "Verify preprocessing steps (QC thresholds, filtering, normalization method)"
-/synthesizer: "Integrate evidence - is this real biology or technical artifact?"
+researcher (Task tool): "Check literature for similar unexpected upregulation of housekeeping genes"
+calculator (Task tool): "Test alternative explanations (normalization artifact, batch effect, outlier contamination)"
+fact-checker (Task tool): "Verify preprocessing steps (QC thresholds, filtering, normalization method)"
+synthesizer (Task tool): "Integrate evidence - is this real biology or technical artifact?"
 ```
 
 **Your deliverable**:
