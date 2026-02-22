@@ -41,7 +41,7 @@ All changes implemented and synced. Five edits across 2 files. All 53 skills pas
 
 ## Related Commits
 
-- [pending]: docs(references): document micromamba shell hook pattern for Claude Code Bash sessions
+- ca8ec27: docs(references): document micromamba shell hook pattern for Claude Code Bash sessions
 
 ## Next Steps
 
