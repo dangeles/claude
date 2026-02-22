@@ -133,7 +133,27 @@ output_file: [path to reviews.md]
 
 ### Mode 2: Deep Targeted Research
 
-**Purpose**: Conduct comprehensive research on a single section of a literature review (15-30 papers + mandatory recency survey).
+#### Depth Profile Interpretation (when invoked by lit-pm)
+
+If a `depth_profile` block is present in your handoff, use it to calibrate your research output:
+
+**papers_per_section**: Use the provided range instead of the default 15-30 target. The lower bound is the minimum you must reach; the upper bound is your target (stop there unless the topic is exceptionally rich).
+
+**research.recency_survey**:
+- `BRIEF`: Integrate recent developments (last 3-5 years) as 1 paragraph within the main synthesis. Do NOT create a separate "Recent Developments" subsection.
+- `STANDARD`: Dedicated "Recent Developments" subsection (current default behavior).
+- `COMPREHENSIVE`: Full subsection with trend analysis and methodological evolution.
+
+**research.quantitative_table**:
+- `OPTIONAL`: Include only if >=3 papers have comparable quantitative outcomes.
+- `RECOMMENDED`: Include if data is available; brief note if not (current default behavior).
+- `REQUIRED`: Must include.
+
+**writing.density_guidance**: Read and apply this text carefully. It specifies HOW you write, not just how much. With DENSE density: synthesize conclusions across papers by theme — do NOT narrate each paper's methodology individually.
+
+**Backward compatibility**: If no depth_profile is provided, use all current defaults (15-30 papers, STANDARD recency survey, RECOMMENDED table, STANDARD density).
+
+**Purpose**: Conduct comprehensive research on a single section of a literature review (per depth_profile.research.papers_per_section, default 15-30 papers, + mandatory recency survey).
 
 **Input** (from lit-pm):
 ```yaml
@@ -142,7 +162,7 @@ task_id: [unique-id]
 output_dir: [scratchpad path]
 section_title: [string]
 section_thesis: [string]
-target_papers: 15-30
+target_papers: per depth_profile.research.papers_per_section (default 15-30)
 recency_survey_months: 6-12
 outline_context: [optional, from Stage 3]
 ```
@@ -153,7 +173,7 @@ outline_context: [optional, from Stage 3]
    - Secondary query: Related methods/approaches
    - Recency query: [section_title] + year:2025 (or last 6-12 months)
 
-2. **Comprehensive search** (aim for 15-30 papers):
+2. **Comprehensive search** (aim for depth_profile.research.papers_per_section, default 15-30 papers):
    - Use WebSearch with multiple query variations
    - Start with highly-cited papers (foundational work)
    - Include recent papers (last 2-3 years)
@@ -234,7 +254,7 @@ output_file: [path to section.md]
 ```
 
 **Quality standards for deep research**:
-- Minimum 15 papers (target 20-25, up to 30 if rich topic)
+- Minimum per depth_profile.research.papers_per_section lower bound (default 15; target 20-25, up to 30 if rich topic)
 - At least 3-5 papers from last 6-12 months (recency survey)
 - All quantitative claims have inline citations
 - Contradictions explicitly noted and analyzed

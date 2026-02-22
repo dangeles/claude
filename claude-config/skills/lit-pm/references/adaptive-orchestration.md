@@ -133,6 +133,100 @@ Based on complexity tier, lit-pm proposes this checkpoint plan:
 
 ---
 
+## Depth Profile System
+
+The depth profile extends the complexity tier classification to calibrate output depth, length, and detail for all downstream specialists. It is generated alongside the checkpoint plan and propagates through every specialist handoff.
+
+### Schema
+
+```yaml
+depth_profile:
+  tier: string          # mirrors complexity tier: Simple|Medium|Complex|High-Stakes
+
+  # Qualitative directive — the "soul" of the profile, prepended to every specialist prompt
+  directive: string
+
+  sections:
+    target_count: string      # range: "2-3" | "3-4" | "3-5" | "4-6"
+    depth_per_section: string # FOCUSED | STANDARD | COMPREHENSIVE
+
+  research:
+    papers_per_section: string  # range: "10-15" | "12-20" | "15-25" | "15-30"
+    recency_survey: string      # BRIEF | STANDARD | COMPREHENSIVE
+    quantitative_table: string  # OPTIONAL | RECOMMENDED | REQUIRED
+
+  writing:
+    density: string             # DENSE | STANDARD | EXPANSIVE
+    density_guidance: string    # explicit behavioral translation (see table below)
+
+  synthesis:
+    augmentation_budget: string   # minimal | moderate | generous
+    introduction_scope: string    # BRIEF | STANDARD | COMPREHENSIVE
+    conclusion_scope: string      # BRIEF | STANDARD | COMPREHENSIVE
+```
+
+### Tier-to-Depth Mapping
+
+| Dimension | Simple | Medium | Complex | High-Stakes |
+|-----------|--------|--------|---------|-------------|
+| **directive** | "Prioritize succinctness. Every sentence must earn its place. Prefer one precise sentence over two hedged ones." | "Balance thoroughness with readability. Prefer concise coverage; expand only when complexity demands it." | "Cover thoroughly but avoid redundancy. Add depth where it genuinely matters; trim where it does not." | "Be comprehensive and rigorous. Depth and detail are expected; cover all angles." |
+| **sections.target_count** | 2-3 | 3-4 | 3-5 | 4-6 |
+| **sections.depth_per_section** | FOCUSED | STANDARD | STANDARD | COMPREHENSIVE |
+| **research.papers_per_section** | 10-15 | 12-20 | 15-25 | 15-30 |
+| **research.recency_survey** | BRIEF | STANDARD | STANDARD | COMPREHENSIVE |
+| **research.quantitative_table** | OPTIONAL | RECOMMENDED | RECOMMENDED | REQUIRED |
+| **writing.density** | DENSE | DENSE | STANDARD | EXPANSIVE |
+| **synthesis.augmentation_budget** | minimal | moderate | moderate | generous |
+| **synthesis.introduction_scope** | BRIEF | STANDARD | STANDARD | COMPREHENSIVE |
+| **synthesis.conclusion_scope** | BRIEF | STANDARD | STANDARD | COMPREHENSIVE |
+
+**Default for absent profile**: If no depth_profile is provided to a specialist (e.g., standalone invocation), all specialists fall back to High-Stakes/COMPREHENSIVE defaults — equivalent to current behavior.
+
+### Density Guidance (Behavioral Translations)
+
+These values for `writing.density_guidance` give specialists explicit behavioral instructions to prevent inconsistent interpretation of density enum values:
+
+**DENSE** (Simple and Medium tiers):
+> State conclusions directly with 1-2 supporting citations. Do NOT narrate each paper's methodology individually. Merge findings by theme, not by paper. Eliminate hedging phrases ("it may be argued that", "one could speculate"). Prefer active voice. No paragraph should restate a point made in the preceding paragraph. The goal is integration of information, not enumeration.
+
+**STANDARD** (Complex tier):
+> Balance coverage and readability. Each major finding warrants 2-3 sentences. Methodological context is appropriate when it affects interpretation. Transitions are encouraged. Let content determine length within quality gate ranges.
+
+**EXPANSIVE** (High-Stakes tier):
+> Cover methodological nuances, contradictions, and subtleties. Extended discussion of limitations is expected. Transitional analysis connecting sections is encouraged. This is a comprehensive reference document.
+
+### User Presentation Format
+
+After generating the checkpoint plan, also generate the depth_profile and present both together:
+
+```
+ORCHESTRATION PLAN
+
+**Complexity Tier**: [TIER] — [one-sentence rationale]
+
+**Checkpoint Plan**: [checkpoint plan table]
+
+**Depth Profile**: [TIER] — "[directive first sentence]"
+- Sections: [target_count] sections (depth: [depth_per_section])
+- Research: [papers_per_section] papers/section | recency: [recency_survey] | table: [quantitative_table]
+- Writing: [density] density
+- Synthesis: [augmentation_budget] augmentation | intro: [introduction_scope] | conclusion: [conclusion_scope]
+
+Override options:
+1. **Accept** — proceed with this profile
+2. **More depth** — upgrade to next tier's profile
+3. **Less depth** — use minimal depth (all FOCUSED/BRIEF dimensions)
+4. **Custom** — specify what to change
+
+[Existing checkpoint override options continue here]
+```
+
+### Mid-Pipeline Depth Profile Adaptation
+
+When the complexity tier is upgraded or downgraded mid-pipeline (see Mid-Pipeline Adaptation section below), the depth_profile MUST also be updated to match the new tier. The updated profile must be explicitly communicated to any downstream specialists not yet invoked. Already-completed sections are not retroactively changed, but a note should be added to the session state flagging the inconsistency for the synthesizer.
+
+---
+
 ## User Override
 
 After proposing checkpoint plan, present to user for approval:
@@ -251,6 +345,7 @@ Would you like to:
 - Cannot remove checkpoints mid-pipeline (only add)
 - Cannot adapt after Stage 7 begins
 - Maximum 2 adaptations per workflow (prevent thrashing)
+- When tier changes, depth_profile MUST also be updated to match the new tier (see Depth Profile System section above)
 
 ### Mid-Pipeline Adaptation: Devil's Advocate Triggers
 

@@ -117,6 +117,18 @@ lit-synthesizer has **three operational modes** corresponding to different stage
 
 ### Mode 2: Introduction Writing (Stage 4)
 
+#### Depth Profile (when provided by lit-pm)
+
+Apply the `depth_profile` directive throughout as your guiding principle.
+Apply `depth_profile.writing.density_guidance` to control prose style.
+
+**introduction_scope**:
+- `BRIEF`: Write 1-2 paragraphs. Include: research question/gap + roadmap only. Omit extended field context and significance section.
+- `STANDARD`: Current behavior (2-4 paragraphs, full structure).
+- `COMPREHENSIVE`: Extended, 3-5 paragraphs with full framing.
+
+**Backward compatibility**: If no profile, use STANDARD behavior.
+
 **Input**: Approved outline from Stage 3
 
 **Task**: Write complete introduction that frames the entire review
@@ -148,6 +160,24 @@ lit-synthesizer has **three operational modes** corresponding to different stage
 ---
 
 ### Mode 3: Final Synthesis & Augmentation (Stage 7)
+
+#### Depth Profile (when provided by lit-pm)
+
+Apply the `depth_profile` directive throughout.
+
+**augmentation_budget**:
+- `minimal`: Focus on smooth transitions and a well-structured conclusion ONLY. Do NOT add new subsections. Do NOT add extensive connecting material. Target: <5% content addition. When in doubt, do not add.
+- `moderate`: Apply transitions and connecting analysis. May add brief framing paragraphs. Target: <15% addition. Default conservatively.
+- `generous`: Full current behavior — may restructure, add subsections, extend analysis. Target: <20% addition.
+
+**conclusion_scope**:
+- `BRIEF`: 2-3 paragraphs. Key takeaways + primary implication only.
+- `STANDARD`: Current behavior.
+- `COMPREHENSIVE`: Extended with future directions and specific recommendations.
+
+With `minimal` augmentation: the most impressive synthesis is one that needs no additions. Resist the urge to add.
+
+**Backward compatibility**: If no profile, use STANDARD/generous behavior.
 
 **Input**: All sections from Stage 6 (post-fact-check), introduction, outline
 

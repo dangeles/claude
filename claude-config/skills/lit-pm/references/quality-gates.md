@@ -57,7 +57,7 @@ These require agent evaluation:
 
 | Check | Type | Threshold | Automated | Blocking |
 |-------|------|-----------|-----------|----------|
-| Section count | Range | 3-5 | Yes | Yes |
+| Section count | Range | [depth_profile.sections.target_count, default 3-5] (Simple: 2-3, Medium: 3-4, Complex: 3-5, High-Stakes: 4-6) | Yes | Yes |
 | Minimum sections | Count | >= 2 | Yes | Yes |
 | Each section has thesis | Presence | All sections | Yes | Yes |
 | Theses are specific | Semantic | Testable claims | No | Yes |
@@ -70,7 +70,7 @@ These require agent evaluation:
 | Check | Type | Threshold | Automated | Blocking |
 |-------|------|-----------|-----------|----------|
 | Introduction present | Presence | Not empty | Yes | Yes |
-| Word count | Range | 300-800 | Yes | No |
+| Word count | Range | Per depth_profile.synthesis.introduction_scope: BRIEF 150-400, STANDARD 300-800 (default), COMPREHENSIVE 500-1200 | Yes | No |
 | Structure preview present | Semantic | Sections mentioned | No | Yes |
 | Matches outline | Semantic | Consistent | No | Yes |
 | Editor polish applied | Presence | True | Yes | Yes |
@@ -79,14 +79,14 @@ These require agent evaluation:
 
 | Check | Type | Threshold | Automated | Blocking |
 |-------|------|-----------|-----------|----------|
-| Primary papers cited | Count | >= 15 | Yes | Yes |
-| Maximum papers | Count | <= 30 | Yes | No |
-| Recency survey present | Presence | Subsection exists | Yes | Yes |
+| Primary papers cited | Count | >= depth_profile.research.papers_per_section lower bound (Simple: >= 10, default: >= 15) | Yes | Yes |
+| Maximum papers | Count | <= depth_profile.research.papers_per_section upper bound (default <= 30) | Yes | No |
+| Recency survey present | Presence | Subsection exists (format per depth_profile.research.recency_survey) | Yes | Yes |
 | Recency papers (6-12 mo) | Count | >= 3 | Yes | Yes |
 | Section addresses thesis | Semantic | Agent judgment | No | Yes |
 | No contradictions with intro | Semantic | Agent judgment | No | Yes |
 | No placeholder text | Pattern | 0 matches | Yes | Yes |
-| Word count | Range | 2000-3000 | Yes | No |
+| Word count | Range | Per depth_profile.sections.depth_per_section: FOCUSED 1000-2000, STANDARD 1500-2500 (default), COMPREHENSIVE 2000-3500 | Yes | No |
 
 **Placeholder Patterns to Detect**:
 ```regex
@@ -97,13 +97,13 @@ TODO|FIXME|\[CITE\]|\[INSERT\]|\[TBD\]|\[PLACEHOLDER\]|XXX
 
 | Check | Type | Threshold | Automated | Blocking |
 |-------|------|-----------|-----------|----------|
-| Paper count | Count | >= 15 | Yes | Yes |
+| Paper count | Count | >= depth_profile.research.papers_per_section lower bound (Simple: >= 10, default: >= 15) | Yes | Yes |
 | Recency survey | Presence | True | Yes | Yes |
 | Recency paper count | Count | >= 3 | Yes | Yes |
 | Citations have dates | Pattern | All citations | Yes | No |
 | Thesis addressed | Semantic | Agent judgment | No | Yes |
 | No placeholders | Pattern | 0 matches | Yes | Yes |
-| Word count range | Range | 1500-3500 | Yes | No |
+| Word count range | Range | Per depth_profile.sections.depth_per_section: FOCUSED 1000-2000, STANDARD 1500-2500, COMPREHENSIVE 2000-3500 (default 1500-3500) | Yes | No |
 
 ### Stage 6b: Comprehensive Fact-Check
 

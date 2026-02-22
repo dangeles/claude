@@ -282,7 +282,7 @@ review_collection:
 
 ### Process
 1. **lit-pm reads all reviews, creates high-level structure**:
-   - 3-5 sections (not too broad, not too narrow)
+   - [depth_profile.sections.target_count] sections (not too broad, not too narrow)
    - Each section has: Title, Core thesis (testable claim or question), Key question to address
 
 2. **For each section: Assign detail-work to literature-researcher agent**:
@@ -311,7 +311,7 @@ outline:
 ```
 
 ### Quality Gate Checklist
-- [ ] 3-5 sections (balanced scope)
+- [ ] [depth_profile.sections.target_count] sections (balanced scope)
 - [ ] Each section has specific thesis (testable claim or question)
 - [ ] Sections cover all major themes from reviews
 - [ ] Section balance (~15-30% of total per section)
@@ -389,7 +389,7 @@ Section writers conduct:
 - **Recent papers** (last 2-3 years) that reviews might have missed
 
 ### Paper Requirements per Section
-- **15-30 papers total**:
+- **[depth_profile.research.papers_per_section] papers total**:
   - 10-15 foundational papers (established findings)
   - 5-10 recent papers (last 2-3 years)
   - 3-5 very recent papers (last 6-12 months) for recency survey
@@ -409,6 +409,8 @@ suggesting [implication] [citation].
 These developments suggest [emerging trend], though [remaining uncertainty].
 ```
 
+**Depth Profile Controls**: Recency survey format is controlled by `depth_profile.research.recency_survey` (BRIEF/STANDARD/COMPREHENSIVE). Quantitative table inclusion is controlled by `depth_profile.research.quantitative_table` (OPTIONAL/RECOMMENDED/REQUIRED). See `references/adaptive-orchestration.md` Depth Profile System for details.
+
 ### Writer Autonomy (Moderate Flexibility)
 - **Must address assigned thesis** - Core question cannot be changed
 - **Can add subsections** - If research reveals need
@@ -416,17 +418,17 @@ These developments suggest [emerging trend], though [remaining uncertainty].
 - **Cannot expand scope** - Stay within section boundaries
 
 ### Output
-- Drafted section with 15-30 papers cited
+- Drafted section with [depth_profile.research.papers_per_section] papers cited
 - Recency survey subsection included
 - Ready for Stage 6a validation
 
 ### Quality Gate Checklist
-- [ ] 15-30 primary papers cited (not just reviews)
+- [ ] [depth_profile.research.papers_per_section] primary papers cited (not just reviews)
 - [ ] Recency survey present (3-5 papers from last 6-12 months)
 - [ ] Citations include publication dates
 - [ ] Section addresses assigned thesis
 - [ ] No placeholder text ("TODO", "[CITE]", "[INSERT]")
-- [ ] Length reasonable (2000-3000 words)
+- [ ] Length reasonable (per depth_profile.sections.depth_per_section: FOCUSED 1000-2000, STANDARD 1500-2500, COMPREHENSIVE 2000-3500; default 2000-3000 words)
 
 ### Failure Handling
 - Timeout: Proceed without section, flag gap for synthesis stage
@@ -445,14 +447,14 @@ These developments suggest [emerging trend], though [remaining uncertainty].
 - Completed section draft
 
 ### Quick Checks
-- [ ] 15-30 primary papers cited (not just reviews)
+- [ ] [depth_profile.research.papers_per_section] primary papers cited (not just reviews)
 - [ ] Recency survey present (3-5 papers from last 6-12 months)
 - [ ] Citations include publication dates
 - [ ] Quantitative data with units and measurement context
 - [ ] Section addresses assigned thesis
 - [ ] No contradictions with introduction
 - [ ] No placeholder text ("TODO", "[CITE]", "[INSERT]")
-- [ ] Length reasonable (2000-3000 words)
+- [ ] Length reasonable (per depth_profile.sections.depth_per_section: FOCUSED 1000-2000, STANDARD 1500-2500, COMPREHENSIVE 2000-3500; default 2000-3000 words)
 
 ### Output
 - PASS or REVISION-NEEDED with specific issues

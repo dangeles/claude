@@ -10,13 +10,20 @@ All handoffs include these common fields:
 
 ```yaml
 handoff:
-  version: "1.0"
-  stage: integer           # 1-8
+  version: "1.1"
+  stage: integer           # 0-8
   status: enum             # pending | in_progress | complete | failed
   producer: string         # skill name that produced this handoff
   consumer: string         # skill name that will receive this handoff
   workflow_id: string      # unique workflow identifier
   timestamp: ISO8601       # when handoff was created
+  depth_profile:           # OPTIONAL — populated by lit-pm orchestrator; propagate unchanged to sub-handoffs
+    tier: string
+    directive: string
+    sections: {target_count: string, depth_per_section: string}
+    research: {papers_per_section: string, recency_survey: string, quantitative_table: string}
+    writing: {density: string, density_guidance: string}
+    synthesis: {augmentation_budget: string, introduction_scope: string, conclusion_scope: string}
 ```
 
 ---
@@ -418,7 +425,7 @@ On validation failure:
 
 ```yaml
 handoff:
-  version: "1.0"
+  version: "1.1"
   stage: 2
   status: complete
   producer: literature-researcher-agents

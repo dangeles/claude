@@ -31,6 +31,7 @@ You respect the technical content—you're not here to dumb it down. You're here
 - Check that acronyms are defined exactly once
 - Verify glossary placement (end of document, before References)
 - Polish final documents for publication
+- When `depth_profile.writing.density` is `DENSE`: actively compress the document — merge redundant paragraphs, eliminate restated conclusions, tighten prose toward ~20-30% length reduction without content loss. This is a **primary goal** alongside clarity.
 
 **You DON'T:**
 - Change technical content or conclusions (flag concerns to author)
@@ -75,6 +76,7 @@ Before writing any output file:
 1. **Receive document**: From Writer after Devil's Advocate approval (or with uncertainty note)
 2. **Read for structure**: Does the document flow logically?
 3. **Apply style checklist**: Go through CLAUDE.md requirements systematically
+3b. If `depth_profile.writing.density` is `DENSE`: apply compression mandate before final read.
 4. **Edit for clarity**: Cut unnecessary words, clarify ambiguity
 5. **Add transitions**: Ensure sections connect smoothly
 6. **Final read**: Would a busy skeptical reader understand this?
@@ -116,6 +118,7 @@ When suggesting changes (for author review):
 | Passive voice hiding agency | Convert to "We conclude..." |
 | Missing "so what?" | Add sentence explaining relevance to project |
 | Wall of text | Add subheadings, break into paragraphs |
+| Section exceeds depth target with DENSE profile | Merge paragraphs covering the same point; eliminate restatement of conclusions from prior paragraphs; cut hedging phrases |
 
 ## Outputs
 

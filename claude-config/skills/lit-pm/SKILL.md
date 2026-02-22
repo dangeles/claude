@@ -218,6 +218,12 @@ If resuming: Read workflow state to confirm Stage 0 is complete.
 
 Clarify research question, define success criteria, set boundaries. Complexity detection determines checkpoint plan. User approves scope + checkpoint plan.
 
+After classifying complexity tier, generate the depth_profile for this tier using the Depth Profile System table in `references/adaptive-orchestration.md`.
+
+Store depth_profile in workflow_state.depth_profile.
+
+Present both checkpoint plan and depth profile to user for approval using the combined format in `references/adaptive-orchestration.md` (User Presentation Format). Apply user overrides if requested.
+
 **Quality Gate**: Specific research question, measurable criteria, clear boundaries.
 
 **Stage Transition**: Stage 1 complete (scope approved) -> PROCEED to Stage 2: Parallel Review Discovery
@@ -244,9 +250,9 @@ You create the outline structure (orchestrator task). Delegate section detail pr
 **Checkpoint**: MEDIUM/COMPLEX/HIGH-STAKES
 **Duration**: 30-60 minutes
 
-Create 3-5 section outline with specific theses. Each section gets detailed subsection proposals and assigned reviews.
+Create [depth_profile.sections.target_count] section outline with specific theses. Each section gets detailed subsection proposals and assigned reviews.
 
-**Quality Gate**: 3-5 balanced sections, specific theses, user approval (if checkpoint).
+**Quality Gate**: [depth_profile.sections.target_count] balanced sections, specific theses, user approval (if checkpoint).
 
 **Stage Transition**: Stage 3 complete -> PROCEED to Stage 4: Introduction Writing
 
@@ -258,6 +264,8 @@ Before starting Stage 4: Read workflow state. Confirm Stages 0-3 are complete.
 **Duration**: 30-45 minutes
 
 lit-synthesizer writes introduction framing research question and previewing structure. Editor applies quick polish.
+
+Include the full depth_profile YAML block under a "DEPTH PROFILE:" header in the lit-synthesizer handoff prompt.
 
 **Quality Gate**: Clear framing, structure preview matches outline.
 
@@ -324,6 +332,8 @@ Before starting Stage 7: Read workflow state. Confirm Stages 0-6c are complete.
 
 Senior author reads all sections, identifies cross-cutting themes, restructures for narrative flow, writes conclusion. Authority to add subsections and rewrite transitions. Flags additions >20%.
 
+Include the full depth_profile YAML block under a "DEPTH PROFILE:" header in the lit-synthesizer handoff prompt. The synthesizer must respect depth_profile.synthesis.augmentation_budget and depth_profile.synthesis.conclusion_scope.
+
 **Quality Gate**: Logical flow, themes identified, gaps filled, conclusion synthesizes findings.
 
 **Stage Transition**: Stage 7 complete -> CHECK: Did synthesis add >=20% content OR is complexity HIGH-STAKES? If YES -> PROCEED to Stage 7.5. If NO -> SKIP to Stage 8: Editorial Polish.
@@ -348,6 +358,8 @@ Before starting Stage 8: Read workflow state. Confirm all prior stages are compl
 **Duration**: 30-60 minutes
 
 Incorporate P0/P1 revisions from Stage 6b, polish for clarity, ensure voice consistency, final formatting.
+
+Include the full depth_profile YAML block under a "DEPTH PROFILE:" header in the editor handoff prompt. The editor must respect depth_profile.writing.density and depth_profile.writing.density_guidance.
 
 **Quality Gate**: Revisions incorporated, consistent voice, formatted, final read complete.
 
@@ -490,7 +502,7 @@ Launch section writers in parallel using Task tool (max 3 concurrent):
 For each section in the approved outline:
   Launch literature-researcher via Task tool.
   Description: "Literature researcher: Write section '{section_title}'"
-  Prompt: Include section thesis, assigned reviews, subsection structure. Conduct targeted research (15-30 papers). Write output to `{session_dir}/sections/{section_id}.md`.
+  Prompt: Include section thesis, assigned reviews, subsection structure. Include the full depth_profile YAML block under a "DEPTH PROFILE:" header. Conduct targeted research (per depth_profile.research.papers_per_section). Write output to `{session_dir}/sections/{section_id}.md`.
 
 As each section completes: Send immediately to Stage 6a for quick validation.
 If a section times out: Proceed without it, flag the gap for user review.
@@ -589,6 +601,7 @@ workflow_state:
     session_dir: string           # /tmp/lit-pm-session-{...}/
     archival_guidelines_path: string
     cleanup_on_complete: boolean  # Default true
+  depth_profile: {}  # Full depth_profile block from adaptive-orchestration.md Depth Profile System
   artifacts:
     scope: "/path/to/scope.yaml"
     reviews: "/path/to/reviews.yaml"
