@@ -34,10 +34,11 @@ The senior-developer skill is responsible for translating architecture specifica
 1. **Implements Python code** for assigned components (production-quality)
 2. **Makes architecture decisions** within assigned scope (not system-level)
 3. **Decomposes tasks** for junior-developer when appropriate
-4. **Reviews junior-developer code** (max 3 revision cycles)
-5. **Writes integration tests** spanning component boundaries
-6. **Documents code** with docstrings, type hints, and inline comments
-7. **Validates implementations** against mathematician/statistician specifications
+4. **Evaluates delegation**: When receiving multi-subtask assignments via programming-pm dispatch, evaluates and documents whether subtasks can be delegated to junior-developer
+5. **Reviews junior-developer code** (max 3 revision cycles)
+6. **Writes integration tests** spanning component boundaries
+7. **Documents code** with docstrings, type hints, and inline comments
+8. **Validates implementations** against mathematician/statistician specifications
 
 ### What senior-developer does NOT do
 
@@ -248,10 +249,35 @@ architecture_context:
 1. **Receive task** from programming-pm with specifications
 2. **Analyze requirements** - Read existing code, understand context
 3. **Plan implementation** - Identify components, dependencies, test strategy
-4. **Implement** - Write code following specifications
-5. **Test locally** - Run full test suite, verify coverage
-6. **Self-review** - Complete checklist, fix issues
-7. **Create handoff** - Document changes for code review
+4. **Evaluate junior-developer delegation** -- MANDATORY when the task dispatch includes a "Delegation Instruction" section:
+   - Count independently implementable subtasks in this component
+   - For each subtask, evaluate: Is scope single-function/class? Are inputs/outputs clearly specified in the architecture? Does it require design judgment?
+   - If >= 2 subtasks qualify: Delegate them to junior-developer via Task tool using the junior_task specification format
+   - Document delegation decision in code handoff YAML:
+     ```yaml
+     delegation:
+       evaluated: true
+       subtasks_identified: <int>
+       subtasks_delegated: <int>
+       delegated_tasks: []   # task IDs
+       retained_rationale: "<Why remaining tasks were not delegated>"
+     ```
+   - **If NO subtasks qualify**: Document "All subtasks require senior judgment" and proceed.
+   - **Escalation after 3 failed junior-developer cycles**:
+     1. Reclaim the subtask
+     2. Implement it directly
+     3. In the code handoff, add to delegation_failures:
+        ```yaml
+        delegation_failures:
+          - task_id: "<id>"
+            reason: "3 revision cycles exhausted, tests still failing"
+            resolution: "Reclaimed and implemented by senior-developer"
+        ```
+     4. Flag to programming-pm that delegation overhead exceeded budget
+5. **Implement** - Write code following specifications
+6. **Test locally** - Run full test suite, verify coverage
+7. **Self-review** - Complete checklist, fix issues
+8. **Create handoff** - Document changes for code review
 
 ### Delegating to junior-developer
 

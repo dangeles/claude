@@ -500,7 +500,7 @@ def validate_handoff(handoff_path: Path, schema: dict) -> list[str]:
 
 Handoff schema version is included in each handoff.
 
-Current version: **1.2**
+Current version: **1.3**
 
 ### Version History
 
@@ -509,12 +509,144 @@ Current version: **1.2**
 | 1.0 | Initial schema |
 | 1.1 | Added Phase 0 (Archival Setup), session context in all handoffs, phase range 0-6 |
 | 1.2 | Added architecture_context fields to architecture_handoff and code_handoff schemas |
+| 1.3 | Added copilot_dispatch, copilot_review_return, specialist_dispatch, specialist_return schemas (not yet validated by validate-handoff.py) |
 
 ### Compatibility
 
 - Minor version changes (1.x) are backwards compatible
 - Major version changes (x.0) may break compatibility
 - programming-pm checks version compatibility at validation
+
+---
+
+## New Schemas (added in v1.3)
+
+> **Schema version bump**: These schemas were added in handoff-schema.md v1.3.
+> **IMPORTANT**: These schemas are NOT yet validated by `validate-handoff.py`. Do NOT add validation bash blocks for these schema types in workflow scripts. This is a known gap for a follow-up change.
+> **Note on YAML anchors**: The `<<: *base_handoff` notation throughout this document is documentation shorthand meaning "include all fields from the Base Handoff Format above." These are NOT functional YAML anchors -- they are illustrative. When instantiating an actual handoff file, include all base fields explicitly.
+
+---
+
+### programming-pm -> copilot (Phase 5 dispatch)
+
+```yaml
+copilot_dispatch:
+  # NOTE: Not yet validated by validate-handoff.py (validation support pending)
+  <<: *base_handoff
+
+  review_scope:
+    python_files_to_review:
+      - path: string
+        changes_summary: string
+        lines_changed: int
+    non_python_files_for_awareness:
+      - path: string
+        file_type: string
+    total_python_files: int
+    total_python_lines_changed: int
+
+  review_context:
+    requirements_summary: string
+    critical_risks: []   # from Phase 2
+    architecture_components: []  # from Phase 3
+
+  output:
+    review_document_path: string   # Full absolute path where review should be written
+    expected_format: "CRITICAL/MAJOR/MINOR/GOOD + VERDICT line required"
+```
+
+---
+
+### copilot -> programming-pm (Phase 5 return)
+
+```yaml
+copilot_review_return:
+  # NOTE: Not yet validated by validate-handoff.py (validation support pending)
+  <<: *base_handoff
+
+  review:
+    verdict: "APPROVED" | "NEEDS_REVISION"
+    critical_count: int
+    major_count: int
+    minor_count: int
+
+  critical_issues:
+    - location: string  # file:line
+      description: string
+      impact: string
+      suggested_fix: string
+
+  major_issues:
+    - location: string
+      description: string
+      suggestion: string
+
+  risk_coverage:
+    risks_checked: int
+    risks_covered: int
+    uncovered_risks: []  # risk IDs not addressed in code
+```
+
+---
+
+### programming-pm -> specialist (generic task dispatch)
+
+```yaml
+specialist_dispatch:
+  # NOTE: Not yet validated by validate-handoff.py (validation support pending)
+  <<: *base_handoff
+
+  task:
+    id: string
+    description: string
+    assigned_to: string  # specialist skill name
+
+  context:
+    requirements_summary: string
+    architecture_component: string
+    archival_context: {}  # from Phase 0
+
+  deliverables:
+    expected_outputs: []
+    output_directory: string
+    handoff_path: string  # where to write return handoff YAML
+
+  constraints:
+    time_limit: string
+    dependencies: []
+```
+
+---
+
+### specialist -> programming-pm (generic task return)
+
+```yaml
+specialist_return:
+  # NOTE: Not yet validated by validate-handoff.py (validation support pending)
+  <<: *base_handoff
+
+  task:
+    id: string
+    status: "complete" | "partial" | "blocked"
+
+  deliverables:
+    files_produced:
+      - path: string
+        type: string
+        description: string
+
+  issues:
+    blockers: []
+    questions: []
+    assumptions_made: []
+
+  # OPTIONAL -- Include ONLY when producer is senior-developer. Omit entirely for other specialists.
+  delegation:
+    evaluated_for_junior: boolean
+    tasks_delegated: int
+    delegation_rationale: string
+    delegation_failures: []  # populated if any junior-developer tasks failed after 3 cycles
+```
 
 ### Session Cleanup
 

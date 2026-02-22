@@ -23,6 +23,15 @@ metadata:
       - Technology stack selection with competing options
       - Design pattern selection for novel problem domains
 allowed-tools: [Read, Write, Bash]
+handoff:
+  accepts_from:
+    - programming-pm
+  provides_to:
+    - programming-pm
+    - senior-developer
+    - junior-developer
+  schema_version: "3.0"
+  schema_type: universal
 ---
 
 # Systems Architect Skill

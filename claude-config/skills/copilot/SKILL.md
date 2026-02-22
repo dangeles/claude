@@ -14,6 +14,16 @@ metadata:
     workflow: [notebook-analysis, software-development]
     integrates-with: [bioinformatician, software-developer]
 allowed-tools: [Read, Edit]
+handoff:
+  accepts_from:
+    - programming-pm
+    - senior-developer
+    - software-developer
+  provides_to:
+    - programming-pm
+    - senior-developer
+  schema_version: "3.0"
+  schema_type: universal
 ---
 
 # Copilot Skill
@@ -281,6 +291,53 @@ Issues → Iterate until resolved
     ↓
 Final approval before handoff
 ```
+
+## Integration with programming-pm Pipeline
+
+When invoked by programming-pm during Phase 5 (Code Review and Testing), copilot acts as an adversarial reviewer with the following contract:
+
+**Note**: Copilot performs static code review (Read-based analysis only). Automated checks (linting, testing, coverage) are run by programming-pm in Phase 5 Step 1, before this invocation.
+
+### Input Expected
+
+- List of Python files to review with change summaries
+- Requirements context (problem statement, success criteria)
+- Pre-mortem risks to verify are handled in code
+- Architecture component descriptions to verify implementation matches design
+- Full absolute path where the review document should be written
+
+### Output Required
+
+Write a review document to the exact path specified in the dispatch (use the full absolute path provided). Structure:
+
+```markdown
+# Copilot Code Review
+
+## Summary
+[1-2 sentence overall assessment]
+
+## Verdict: [APPROVED | NEEDS REVISION]
+
+## Critical Issues
+[Each: file:line -- problem -- impact -- suggested fix]
+
+## Major Issues
+[Each: file:line -- suggestion]
+
+## Minor Issues
+[List of suggestions]
+
+## Good Practices
+[Positive observations]
+
+## Pre-Mortem Risk Coverage
+- [Risk description]: [Handled / Not Handled] -- [Evidence in code]
+
+## Architecture Compliance
+- [Component]: [Matches design / Drifted] -- [Details]
+```
+
+The final line of the document must be `VERDICT: APPROVED` or `VERDICT: NEEDS REVISION`.
 
 ## References
 

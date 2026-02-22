@@ -13,6 +13,7 @@ handoff:
     - requirements-analyst
     - mathematician
     - statistician
+    - copilot
     - skill-editor
   schema_version: "3.0"
   schema_type: universal
@@ -89,6 +90,204 @@ If a required specialist is unavailable, stop and inform the user. Do not attemp
 Default to Task tool when in doubt. Self-check: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
 
 **Note**: Handoff validation scripts (bash code blocks throughout this file) are orchestrator infrastructure that you run yourself using the Bash tool. They are not specialist invocations. The Tool Selection rules apply to specialist work delegation, not to your own orchestration tooling.
+
+## Dispatch Templates
+
+When invoking any specialist via Task tool, use the corresponding dispatch template below. Fill all `{placeholder}` values from session state and handoff files before dispatching.
+
+**Pre-conditions** (verify before filling ANY template):
+1. Session directory exists: confirm `SESSION_DIR` is set and the directory is readable
+2. Session state file is readable: `${SESSION_DIR}/session-state.json` exists and parses
+3. Source handoff files exist before pasting their content
+4. No unresolved `{placeholder}` strings remain in the filled template
+
+**Content validation** for Phase 1 handoff:
+Before pasting requirements into any template, verify:
+- `requirements.problem_statement` is non-empty (> 50 characters)
+- `requirements.success_criteria` has at least 1 entry
+If either check fails: Do NOT proceed with the dispatch. Return to Phase 1 for requirements clarification.
+
+**Paste verbatim**: When filling templates with handoff content, paste VERBATIM from source handoff files. Do not summarize, paraphrase, or editorialize. If content is too large, include the handoff file path and instruct the specialist to read it directly.
+
+---
+
+### Template: Dispatch to systems-architect (Phase 3)
+
+```
+Use the systems-architect skill to design the system architecture.
+
+## Requirements Summary
+{paste verbatim from Phase 1 handoff: problem_statement, success_criteria, scope}
+
+## Risk Assessment Summary
+{paste verbatim from Phase 2 handoff: critical risks, architecture implications}
+
+## Archival Context
+{paste archival_context block from Phase 0}
+
+## Expected Deliverables
+1. Architecture document with components, data flow, technology choices
+2. Architecture Context Document (.architecture/context.md) if applicable
+3. Architecture handoff YAML at: {SESSION_DIR}/handoffs/phase3-architecture-handoff.yaml
+
+## Required Handoff Field
+Your architecture handoff YAML MUST include: `producer: "systems-architect"`
+
+## Constraints
+- Output must follow architecture_handoff schema (see handoff-schema.md)
+- All components must have defined interfaces (inputs/outputs)
+- Implementation order must be specified
+- SIMPLE mode minimum: at least 1 component with interfaces, 1 technology choice rationale, 1 testing strategy
+```
+
+---
+
+### Template: Dispatch to senior-developer (Phase 4)
+
+```
+Use the senior-developer skill to implement the following component.
+
+## Task Assignment
+- Task ID: {task_id}
+- Component: {component_name}
+- Description: {component_description}
+
+## Architecture Specification
+{paste verbatim relevant component spec from Phase 3 handoff}
+
+## Architecture Context
+- Context document path: {path to .architecture/context.md, or "none" if not generated}
+- Component tier: {tier from context doc, or "unknown" if context doc not available}
+
+## Dependencies
+- Upstream: {list of completed tasks this depends on}
+- Downstream: {list of tasks waiting on this}
+
+## Acceptance Criteria
+{list from task decomposition}
+
+## Archival Context
+{paste archival_context block}
+
+## Deliverables
+- Implementation files in: {output directory}
+- Test files in: {test directory}
+- Code handoff YAML at: {SESSION_DIR}/handoffs/phase4-code-handoff-{task_id}.yaml
+
+## Delegation Instruction
+If this task contains multiple independently implementable subtasks, you MUST evaluate
+whether any subtasks are suitable for junior-developer delegation (see your Delegation
+Evaluation step). Document your delegation decision in your code handoff regardless of
+the outcome.
+```
+
+---
+
+### Template: Dispatch to junior-developer (Phase 4)
+
+```
+Use the junior-developer skill to implement the following well-scoped task.
+
+## Task Specification
+{paste junior_task YAML from senior-developer decomposition}
+
+## Archival Context
+{paste archival_context block}
+
+## Review Process
+- Submit deliverable for senior-developer review
+- Maximum 3 revision cycles
+- Escalate if blocked after 3 cycles (senior-developer will reclaim and implement)
+
+## Output Location
+- Code: {output path}
+- Tests: {test path}
+- Deliverable YAML: {SESSION_DIR}/deliverables/{task_id}-junior-deliverable.yaml
+```
+
+---
+
+### Template: Dispatch to copilot (Phase 5)
+
+```
+Use the copilot skill to perform adversarial code review on the following implementation.
+
+Note: Copilot performs static code review (Read-based analysis only). Automated checks
+(linting, testing, coverage) were already run in Phase 5 Step 1, before this invocation.
+
+## Review Scope
+- Python files to review: {list all Python files changed in Phase 4, from code handoffs}
+- Non-Python files (YAML, Docker, shell, etc.) are listed for awareness only; copilot review focuses on Python. Non-Python validation relies on automated checks.
+- Total Python files: {count}
+
+## Review Focus Areas
+1. Correctness: Logic errors, off-by-one, wrong operators
+2. Edge cases: Empty input, boundary values, missing data
+3. Performance: Vectorization, memory efficiency, algorithmic complexity
+4. Security: Input validation, injection, unsafe operations
+
+## Requirements Context
+{paste verbatim problem_statement and success_criteria from Phase 1 handoff}
+
+## Pre-Mortem Risks to Verify
+{paste verbatim critical and high risks from Phase 2 — verify these are handled in code}
+
+## Architecture Context
+{paste verbatim component descriptions from Phase 3 — verify implementation matches design}
+
+## Expected Output
+Write a review document to: {SESSION_DIR}/deliverables/copilot-review.md
+
+The review MUST include:
+- CRITICAL issues (must fix before merge) — with file:line, description, impact, fix
+- MAJOR issues (should fix) — with file:line and suggestion
+- MINOR issues (nice to have)
+- GOOD practices observed
+- Final line: `VERDICT: APPROVED` or `VERDICT: NEEDS REVISION`
+```
+
+---
+
+### Template: Dispatch to mathematician (Phase 4)
+
+```
+Use the mathematician skill to design the algorithm for the following component.
+
+## Problem Description
+{paste verbatim algorithm requirements from architecture handoff}
+
+## Performance Constraints
+{paste verbatim performance requirements from architecture}
+
+## Expected Deliverables
+1. Algorithm specification with pseudocode
+2. Complexity analysis (time and space)
+3. Numerical stability assessment
+4. Implementation guidance for senior-developer
+5. Math handoff YAML at: {SESSION_DIR}/handoffs/phase4-math-handoff-{task_id}.yaml
+```
+
+---
+
+### Template: Dispatch to statistician (Phase 4)
+
+```
+Use the statistician skill to design the statistical approach for the following component.
+
+## Statistical Problem
+{paste verbatim statistical requirements from architecture handoff}
+
+## Data Characteristics
+{paste verbatim data description from requirements}
+
+## Expected Deliverables
+1. Method selection with rationale
+2. Validation criteria and diagnostic checks
+3. Implementation guidance for senior-developer
+4. Stats handoff YAML at: {SESSION_DIR}/handoffs/phase4-stats-handoff-{task_id}.yaml
+```
+
+---
 
 ## State Anchoring
 
@@ -638,10 +837,14 @@ Before starting Phase 3: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Co
 **Objective**: Design system architecture with clear component boundaries.
 
 **Steps**:
-1. Invoke `systems-architect` with requirements and risk assessment
-2. Review architecture for completeness
-3. Present architecture to user for approval
-4. Generate Architecture Context Document
+1. **Self-check**: "Am I about to design the architecture myself?" If yes, STOP and use the Task tool dispatch instead.
+2. **Invoke systems-architect via Task tool** using the "Dispatch to systems-architect" template from the Dispatch Templates section above. Include full requirements (Phase 1 handoff), all risks with architecture implications (Phase 2 handoff), and archival context (Phase 0).
+3. **Verify delegation**: After systems-architect returns, confirm the architecture handoff YAML contains `producer: "systems-architect"`. If this field is absent or set to another value, do not proceed -- re-invoke via Task tool.
+4. **Receive and validate output**: Verify architecture handoff YAML exists at the expected path. Note if Architecture Context Document was generated or skipped.
+5. **Review architecture** against Quality Gate 3 criteria.
+6. **Present architecture to user** for approval.
+
+**Mandatory**: systems-architect MUST be invoked via Task tool, not Skill tool. The orchestrator MUST NOT design the architecture itself, even for SIMPLE mode projects. SIMPLE mode produces lighter output (minimum: 1 component with interfaces, 1 technology choice rationale, 1 testing strategy) but must still be produced by systems-architect via Task tool.
 
 #### Architecture Context Document
 
@@ -734,7 +937,7 @@ if command -v yq &> /dev/null; then
       SPECIALIST="statistician"
     elif echo "$COMPONENT_DESC" | grep -qiE "notebook|jupyter|ipynb|jupytext|interactive.analysis|parameter.sweep|analysis.report|visualization.notebook|reproducible.analysis|data.exploration"; then
       SPECIALIST="notebook-writer"
-    elif echo "$COMPONENT_DESC" | grep -qiE "simple|utility|helper|wrapper"; then
+    elif echo "$COMPONENT_DESC" | grep -qiE "simple|utility|helper|wrapper|validation|config|parser|formatter|converter|serializer|loader|constants|enum|data[._-]class|type[._-]definition|test[._-]fixture|test[._-]helper|boilerplate|scaffold"; then
       SPECIALIST="junior-developer"
     fi
 
@@ -769,6 +972,50 @@ task:
     component: "module_name"  # Component/module being implemented
     tier: 0  # 0=foundation, 1=core, 2=application (extracted from context doc)
 ```
+
+#### Step 1b: Junior-Developer Evaluation (Mandatory for STANDARD/EXTENDED mode; optional for SIMPLE mode unless task count >= 6)
+
+The grep-based assignment in Step 1a is a first-pass heuristic. Step 1b is a mandatory second-pass evaluation that reads and may update `task-assignments.txt`. Even if Step 1a assigned no tasks to junior-developer, Step 1b may reassign some.
+
+**Evaluation criteria** -- evaluate junior-developer for a task if ANY of these are true:
+1. Total task count >= 4 (any mode) or >= 6 (SIMPLE mode only)
+2. The task has ALL of the following:
+   - Single function or single class scope
+   - Clear input/output specification derivable from the architecture handoff
+   - No cross-module dependencies
+   - Does not require design judgment or architectural decisions
+3. Architecture identifies utility modules, helper functions, data validation, configuration handling, or test fixtures
+4. The task is test-writing separate from implementation logic
+
+**Process**:
+1. Count total tasks from `task-assignments.txt`
+2. For each task currently assigned to senior-developer, evaluate against criteria above
+3. If any tasks qualify AND junior-developer skill is available (`~/.claude/skills/junior-developer/SKILL.md` exists): reassign in `task-assignments.txt`
+4. If any tasks qualify BUT junior-developer is unavailable: document "junior-developer skill not available, all tasks retained by senior-developer"
+5. Document the evaluation in session state:
+
+```json
+{
+  "junior_developer_evaluation": {
+    "evaluated": true,
+    "total_tasks": "<int>",
+    "tasks_evaluated_for_junior": "<int>",
+    "tasks_reassigned_to_junior": "<int>",
+    "reassigned_tasks": [],
+    "rationale": "<Why tasks were or were not reassigned>"
+  }
+}
+```
+
+Use jq to write this to session state:
+```bash
+jq '.junior_developer_evaluation = {"evaluated": true, "total_tasks": '$TOTAL', "tasks_evaluated_for_junior": '$EVALUATED', "tasks_reassigned_to_junior": '$REASSIGNED', "reassigned_tasks": [], "rationale": "'"$RATIONALE"'"}' \
+  "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.json.tmp" && \
+  mv "${SESSION_DIR}/session-state.json.tmp" "${SESSION_DIR}/session-state.json"
+```
+
+**If NO tasks qualify**: Document "No tasks suitable for junior-developer: all require senior judgment" and proceed.
+**SIMPLE mode**: Skip this evaluation unless task count >= 6.
 
 #### Step 2: Wave-Based Parallel Execution
 
@@ -1025,12 +1272,22 @@ Before starting Phase 5: Read `/tmp/programming-pm-state-{workflow-id}.yaml`. Co
 **Objective**: Validate implementation quality through automated and manual review.
 
 **Steps**:
-1. Run automated checks (linting, type checking, tests)
-2. Invoke `copilot` for code review support
-3. If deliverables include notebooks: invoke `notebook-writer` to verify reproducibility standards, Jupytext format compliance, environment documentation, and session info
-4. Have `senior-developer` review all code (especially junior-developer outputs)
-5. Address feedback and re-run checks
-6. Check for architecture drift and update context document if needed
+1. **Run automated checks**: linting (`ruff check .`), type checking (`mypy --strict src/`), tests (`pytest --cov`)
+2. **Invoke copilot via Task tool** (MANDATORY) using the "Dispatch to copilot" template from the Dispatch Templates section. For SIMPLE mode projects where Phase 4 produced fewer than 50 total lines changed across all tasks, an inline review by PM (reading the changed files and performing lightweight review) may substitute for the full Task tool dispatch -- document "SIMPLE mode lightweight review performed" in session state.
+3. **Receive copilot review**:
+   - After copilot returns, verify `{SESSION_DIR}/deliverables/copilot-review.md` exists
+   - If NOT found: search session directory for `copilot-review.md`; if still not found, re-invoke copilot with explicit instruction to use full absolute path
+   - Maximum 2 retry attempts; if still not found, use copilot's Task tool return value as the review
+   - Verify review contains a `VERDICT:` line; if absent, treat as incomplete and request re-review
+4. **Evaluate copilot findings**:
+   - If CRITICAL issues: Return to senior-developer with copilot feedback for fixes
+   - If MAJOR issues only: Present to user, decide whether to fix or document as accepted tech debt
+   - If MINOR/GOOD only: Proceed
+5. **Have senior-developer address copilot findings** (if CRITICAL or MAJOR issues exist)
+6. **Re-run copilot** if CRITICAL issues were found and fixed (max 2 copilot review cycles)
+   - If CRITICAL issues remain after 2 cycles: Present remaining issues to user -- user decides to fix manually or accept as tech debt with explicit documentation
+7. If deliverables include notebooks: invoke notebook-writer for reproducibility review
+8. Check for architecture drift and update context document if needed
 
 #### Architecture Drift Check
 
@@ -1052,18 +1309,25 @@ If `.architecture/context.md` exists, check whether implementation introduced st
 **Note**: This is a lightweight check. Fundamental architectural changes (new module changing dependency graph topology) are logged as "architectural drift requiring future Phase 3 review" rather than triggering heavyweight updates within Phase 5.
 
 **Quality Gate 4: Code Review Approval**:
-- Type: Human judgment (senior-developer review)
+- Type: Human judgment (senior-developer + copilot review)
 - Automated checks (must all pass):
   - [ ] `ruff check .` returns 0 errors
   - [ ] `mypy --strict src/` returns 0 errors (warnings acceptable)
   - [ ] Test coverage >= 80% for new code
+- Copilot review (must complete):
+  - [ ] Copilot invoked and review document produced (or SIMPLE mode inline review documented)
+  - [ ] No CRITICAL issues remain unaddressed
+  - [ ] MAJOR issues addressed or documented as accepted tech debt
+  - Override: programming-pm can approve with "tech debt" tag if deadline critical
+    - Override CANNOT skip copilot review entirely unless copilot invocation fails after 2 attempts
+    - If copilot is unreachable: document "copilot unavailable" in session state and proceed with senior-developer review only (EMERGENCY override, must be reported to user)
+    - Override CAN accept MAJOR issues as tech debt
 - Human review:
   - [ ] Code matches requirements specification
   - [ ] Edge cases from pre-mortem are handled
   - [ ] Documentation present (docstrings, type hints)
   - [ ] No obvious security issues
 - Fail Action: Return to developer with specific feedback
-- Override: programming-pm can approve with "tech debt" tag if deadline critical
 
 **Quality Gate 5: Test Pass**:
 - Type: Automated (test execution)
