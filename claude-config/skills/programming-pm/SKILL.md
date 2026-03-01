@@ -361,6 +361,7 @@ The programming-pm skill serves as the central coordinator for Python-focused so
 - **Bug fixes**: For small changes to existing code, use software-developer or copilot
 - **Research coordination**: For literature reviews, use lit-pm
 - **General coordination**: For non-software multi-agent work, use technical-pm
+- **General feature work (non-bioinformatics)**: For software features not requiring the bioinformatics specialist team, use `feature-dev` for a lighter 7-phase workflow (explore → clarify → architect → implement → review)
 
 **When to use technical-pm instead**:
 - Coordinating research, writing, or analysis (not code)
@@ -1460,7 +1461,7 @@ Before starting Phase 5: Read `~/.claude/programming-pm-sessions/{workflow-id}/s
 **Objective**: Validate implementation quality through automated and manual review.
 
 **Steps**:
-1. **Run automated checks**: linting (`ruff check .`), type checking (`mypy --strict src/`), tests (`pytest --cov`)
+1. **Run automated checks**: linting (`ruff check .`), type checking (`mypy --strict src/` or `pyright src/`), tests (`pytest --cov`)
 2. **Invoke copilot via Task tool** (MANDATORY) using the "Dispatch to copilot" template from the Dispatch Templates section. For SIMPLE mode projects where Phase 4 produced fewer than 50 total lines changed across all tasks, an inline review by PM (reading the changed files and performing lightweight review) may substitute for the full Task tool dispatch -- document "SIMPLE mode lightweight review performed" in session state.
 3. **Receive copilot review**:
    - After copilot returns, verify `{SESSION_DIR}/deliverables/copilot-review.md` exists
@@ -1474,6 +1475,7 @@ Before starting Phase 5: Read `~/.claude/programming-pm-sessions/{workflow-id}/s
 5. **Have senior-developer address copilot findings** (if CRITICAL or MAJOR issues exist)
 6. **Re-run copilot** if CRITICAL issues were found and fixed (max 2 copilot review cycles)
    - If CRITICAL issues remain after 2 cycles: Present remaining issues to user -- user decides to fix manually or accept as tech debt with explicit documentation
+6a. **(Optional) Supplemental review via pr-review-toolkit**: After copilot review passes, invoke `/pr-review-toolkit:review-pr` for additional specialized analysis (silent failures, test coverage, type design, comment accuracy) that copilot does not cover. This is advisory — findings do not block Phase 6 but should be presented to the user.
 7. If deliverables include notebooks: invoke notebook-writer for reproducibility review
 8. Check for architecture drift and update context document if needed
 
@@ -1500,7 +1502,7 @@ If `.architecture/context.md` exists, check whether implementation introduced st
 - Type: Human judgment (senior-developer + copilot review)
 - Automated checks (must all pass):
   - [ ] `ruff check .` returns 0 errors
-  - [ ] `mypy --strict src/` returns 0 errors (warnings acceptable)
+  - [ ] Type checking passes: `mypy --strict src/` or `pyright src/` returns 0 errors (warnings acceptable)
   - [ ] Test coverage >= 80% for new code
 - Copilot review (must complete):
   - [ ] Copilot invoked and review document produced (or SIMPLE mode inline review documented)
@@ -1558,6 +1560,10 @@ fi
 Before starting Phase 6: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-5 are complete.
 
 **Objective**: Integrate changes with sync-config.py and version control.
+
+#### Optional: Commit Commands Shortcut
+
+For straightforward projects where no branching complexity is involved, the `commit-commands` plugin provides a single-action alternative: `/commit-push-pr` handles commit + push + PR creation in one step. Use this instead of the manual Steps 2–3 below when the git strategy is simple.
 
 #### Optional: Git Strategy Advisory
 

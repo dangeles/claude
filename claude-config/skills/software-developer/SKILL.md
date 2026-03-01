@@ -81,6 +81,7 @@ Before writing any output file:
 - Integration tests
 - Edge case coverage
 - >80% code coverage goal
+- Static type checking (`pyright src/` or `mypy --strict src/`)
 
 ### 4. Documentation
 - Docstrings (Google style)
@@ -300,6 +301,7 @@ During implementation:
 Before delivery:
 - [ ] All code passes tests (pytest)
 - [ ] >80% test coverage
+- [ ] Type checking passes (`pyright src/` returns 0 errors)
 - [ ] All public functions documented
 - [ ] Error messages are actionable
 - [ ] CLI help message clear
@@ -328,6 +330,7 @@ Code is ready for production when:
 - [ ] Implements full specification
 - [ ] All tests pass
 - [ ] Coverage >80%
+- [ ] Type checking passes (`pyright src/`)
 - [ ] Documentation complete
 - [ ] CLI functional
 - [ ] Copilot approved

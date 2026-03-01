@@ -56,6 +56,7 @@ Do NOT use this skill when:
 - **Non-skill changes**: Modifying agents, settings, or other configuration
 - **Urgent hotfixes**: Emergency fixes that can't wait for full workflow
 - **Exploratory work**: Just browsing or understanding skills (use Read or Explore agent)
+- **New skills from scratch (no quality gates needed)**: Use `skill-creator` for a lightweight create-draft-eval-iterate loop without the full 4-phase workflow
 
 ## Delegation Mandate
 
@@ -424,6 +425,8 @@ For each file in implementation plan:
 
 #### Step 7: Update Planning Journal
 `./sync-config.py plan --title "[Brief description from refined spec]"`
+
+Optionally run `claude-md-management:revise-claude-md` to incorporate any workflow learnings into CLAUDE.md documentation.
 
 #### Optional: Git Strategy Advisory
 Before committing, MAY invoke `git-strategy-advisor` via Task tool in post-work mode for scope-adaptive git recommendations. This is advisory only — Step 8 logic takes precedence.
