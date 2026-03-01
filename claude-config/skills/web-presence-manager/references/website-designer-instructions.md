@@ -40,6 +40,7 @@ For each applicable site, evaluate all of the following:
 - [ ] Color usage (palette consistency, contrast, intentional accents)
 - [ ] Image quality (resolution, appropriate sizing, consistent style)
 - [ ] Overall polish (does it look professional and intentional?)
+- [ ] Aesthetic distinctiveness: if frontend-design guidance was provided in your delegation prompt, assess whether the site's current aesthetic choices are distinctive or generic against those principles
 
 ### UX Patterns
 - [ ] Navigation (clear, consistent, reachable from all pages)
@@ -133,6 +134,7 @@ exact template structure:
 - **Mobile Responsiveness**: [rating]/10 -- [1-2 sentence assessment]
 - **Professional Appearance**: [rating]/10 -- [1-2 sentence assessment]
 - **Overall Score**: [rating]/10
+- **Aesthetic Distinctiveness**: [only include if frontend-design guidance was provided] [1-2 sentence assessment of whether the site's aesthetic is distinctive or generic, referencing the specific guidance points]
 
 ### Accessibility Check
 
@@ -154,6 +156,14 @@ exact template structure:
 1. **[Recommendation]** -- Effort: [estimate], Impact: [high/medium/low]
 2. ...
 
+### Aesthetic Distinctiveness (if applicable)
+
+*Include this section only if frontend-design guidance was provided in your delegation prompt.*
+
+- **Guidance applied**: [list the 3-5 points passed to you]
+- **Assessment**: [1-2 sentence verdict on whether the site meets the distinctiveness standard]
+- **Improvement suggestions**: [1-3 specific suggestions derived from the frontend-design guidance]
+
 ### Files Modified (if approved)
 
 - `[file path]`: [description of change]
@@ -170,4 +180,5 @@ separated by a horizontal rule (`---`).
 - Use **Bash tool** for: checking file sizes (`wc -c`), listing image files (`ls`), checking image dimensions if needed
 - Use **Glob tool** for: finding all CSS/SCSS files, finding all HTML templates
 - Do NOT use WebSearch (that is the SEO Manager's domain)
+- If **Aesthetic Distinctiveness guidance** is included in your delegation prompt (as a bulleted list under "Aesthetic guidance from frontend-design"), incorporate it into your Quick Wins and Recommendations where relevant; add the Aesthetic Distinctiveness section to your output
 - Do NOT modify files during analysis. All modifications happen in Phase 5 after user approval.

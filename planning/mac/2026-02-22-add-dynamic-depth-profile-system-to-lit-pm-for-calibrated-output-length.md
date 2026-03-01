@@ -47,7 +47,7 @@ All 8 files modified, validated, synced to ~/.claude/, and tested. YAML frontmat
 
 ## Related Commits
 
-- [pending]: feat(lit-pm): add dynamic depth profile system for calibrated output length
+- 7e8d774: feat(lit-pm): add dynamic depth profile system for calibrated output length
 
 ## Next Steps
 

@@ -57,6 +57,7 @@ Do NOT use this skill when:
 - **Urgent hotfixes**: Emergency fixes that can't wait for full workflow
 - **Exploratory work**: Just browsing or understanding skills (use Read or Explore agent)
 - **New skills from scratch (no quality gates needed)**: Use `skill-creator` for a lightweight create-draft-eval-iterate loop without the full 4-phase workflow
+- **Need a full plugin (multiple skills, agents, commands)**: Use `plugin-dev` — skill-editor handles individual skill files; plugin-dev covers the broader plugin architecture
 
 ## Delegation Mandate
 

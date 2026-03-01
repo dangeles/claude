@@ -70,6 +70,55 @@ over your memory. Update state after each phase transition.
 | Git operations (clone, commit, push) | Bash tool | Repository operations |
 | Build validation (Jekyll, LaTeX) | Bash tool | Pre-push safety check |
 | User decisions (approvals, mode selection) | Direct interaction | Human-in-the-loop gates |
+| Before Website Designer delegation (jekyll/custom sites) | Skill tool (`frontend-design:frontend-design`) | Aesthetic guidance to pass as context to sub-agent |
+| Before Phase 5 CSS/Styling edit (jekyll/custom sites) | Skill tool (`frontend-design:frontend-design`) | Design principles to apply during CSS implementation |
+| Before Phase 5 Content edit | Skill tool (`editor`) | Prose quality guidance to apply during content implementation |
+| Before Phase 5 Content edit (if style profile exists) | Skill tool (`essay-voice-matcher`) | Voice consistency notes to apply during content implementation |
+| Before Quick-edit CSS/Styling (jekyll/custom sites) | Skill tool (`frontend-design:frontend-design`) | Aesthetic guidance before applying CSS change |
+
+## Skill Invocation Pattern
+
+The orchestrator invokes external skills BEFORE delegating to sub-agents. Key guidance is extracted and passed as inline context. This pattern ensures:
+- Correct invocation ordering (guidance before edit, not after)
+- Graceful degradation (skill failure never blocks the workflow)
+- Site-type filtering (only invoke for applicable site types)
+- Context compactness (pass 3-5 key points, not full skill output)
+
+### When to Invoke
+
+| Skill | Invoke when | Site-type guard | Edit-type guard |
+|-------|-------------|-----------------|-----------------|
+| `frontend-design:frontend-design` | Before Website Designer delegation (Phase 2), before CSS/Styling Phase 5 edit, before CSS quick-edit | `jekyll`, `custom` only | CSS/Styling edits only |
+| `editor` | Before Content Phase 5 edit | `jekyll`, `custom`, `github-readme` (all content-bearing types) | Content updates only |
+| `essay-voice-matcher` | Before Content Phase 5 edit (conditional) | `jekyll`, `custom`, `github-readme` | Content updates only; skip if no style profile |
+
+### Style Profile Check (essay-voice-matcher only)
+
+Before invoking `essay-voice-matcher`, check whether a style profile exists:
+
+```
+STYLE_PROFILE_PATH="~/.web-presence-audits/style-profile.md"
+# OR per-session: {SESSION_DIR}/style-profile.md
+```
+
+If no profile is found at either location: skip essay-voice-matcher invocation. Log: "essay-voice-matcher skipped -- no style profile found."
+
+### Graceful Degradation
+
+If any Skill tool invocation fails (skill not found, returns empty output, or returns fewer than 50 words):
+- Log: "Skill [name] invocation: [reason for skip/failure]. Continuing without guidance."
+- Do NOT block the workflow.
+- Do NOT retry.
+- Proceed as if the skill was not invoked.
+
+### Guidance Extraction
+
+After invoking a skill, extract only what is needed:
+- **frontend-design**: Extract 3-5 specific aesthetic principles relevant to the site's current state (e.g., typography choices, color guidance, spacing principles). Discard general philosophy.
+- **editor**: Extract 3-5 prose quality guidelines relevant to the content being written (e.g., sentence length, tone, specific weaknesses to avoid).
+- **essay-voice-matcher**: Extract 2-3 voice consistency notes (e.g., "use first-person active voice", "avoid passive constructions").
+
+Pass extracted points as a compact bullet list in the delegation prompt or edit context.
 
 ## Error Handling
 
@@ -80,6 +129,8 @@ over your memory. Update state after each phase transition.
 | Git push failure | STOP all pushes. Report which repos succeeded and which failed. Offer: retry failed push, revert successful pushes, or accept inconsistency. |
 | Build validation failure | Block push for that repo. Show build errors. Offer: revert changes in working copy, attempt fix, or skip push for this repo. |
 | Missing Phase 2 report | Pass warning to Phase 3/4. Coherence Manager and Suggestion Engine handle incomplete data per their instructions. |
+| Skill invocation failure (skill not found or empty output) | Log warning and skip. Continue workflow without skill guidance. Never block or retry. |
+| essay-voice-matcher: style profile not found | Skip invocation silently. Log: "No style profile found -- skipping voice check." |
 
 Graceful degradation levels:
 - **Full** (5/5 sub-functions): normal operation
@@ -181,8 +232,9 @@ Quick-edit mode skips audit phases (1–4) when the user's intent is precise eno
 **Precise path** (all 3 components confirmed):
 1. Complete Quick-Edit Setup (above)
 2. Show micro-context preview: read the target file, display the relevant section + 5 lines of surrounding context
-3. Apply edit using the Phase 5 Edit Pattern Matrix for the appropriate edit type
-4. Proceed to Gate 5 safety checks (NEVER skipped — see below)
+3. If edit type is CSS/Styling AND site type is `jekyll` or `custom`: invoke `frontend-design:frontend-design` via Skill tool, extract 3-5 aesthetic principles. If edit type is Content: invoke `editor` via Skill tool, extract 3-5 prose guidelines; also invoke `essay-voice-matcher` if style profile exists. (Graceful degradation applies -- skip if invocation fails.)
+4. Apply edit using the Phase 5 Edit Pattern Matrix for the appropriate edit type (skill guidance from step 3 incorporated)
+5. Proceed to Gate 5 safety checks (NEVER skipped — see below)
 
 **Vague path** (any component missing):
 1. Determine relevant sub-function from the request area (Website Designer for CSS/layout, SEO Manager for SEO, Portfolio Manager for portfolio)
@@ -214,7 +266,9 @@ Quick-edit sessions are **non-resumable by default**. The session directory and 
 
 Phase 1: **Setup** -- Pre-flight checks, clone repos, load previous audit, initialize session. See `references/monthly-review-checklist.md` for full protocol.
 
-Phase 2: **Parallel Analysis** -- Launch Website Designer, Portfolio Manager, and SEO Manager via Task tool **in a single message with 3 Task tool calls** (parallel execution). All three receive their instruction file path, site data, and output location via the delegation templates below. The Task tool waits for all three to return before proceeding. After all three complete, update session state as a batch (three simultaneous "running" statuses are expected; no sequential ordering dependency exists). Validate via Gate 2. Total Phase 2 wall-clock time: up to 15 minutes (bounded by slowest agent, not sum of agents).
+Phase 2: **Parallel Analysis** -- Before launching sub-functions: for sites of type `jekyll` or `custom`, invoke the `frontend-design:frontend-design` skill via Skill tool. Extract 3-5 key aesthetic guidance points (see Skill Invocation Pattern above). Resolve `{FRONTEND_DESIGN_GUIDANCE}` in the Website Designer delegation template with this compact summary. If invocation fails or site types exclude design analysis, set `{FRONTEND_DESIGN_GUIDANCE}` to empty string and omit the guidance block from the template.
+
+Then launch Website Designer, Portfolio Manager, and SEO Manager via Task tool **in a single message with 3 Task tool calls** (parallel execution). All three receive their instruction file path, site data, and output location via the delegation templates below. The Task tool waits for all three to return before proceeding. After all three complete, update session state as a batch (three simultaneous "running" statuses are expected; no sequential ordering dependency exists). Validate via Gate 2. Total Phase 2 wall-clock time: up to 15 minutes (bounded by slowest agent, not sum of agents).
 
 Phase 3: **Coherence Audit** -- After Gate 2 passes, launch Coherence Manager via Task tool. It reads all repos plus Phase 2 outputs. Produces coherence-audit.md. Validate via Gate 3.
 
@@ -230,8 +284,8 @@ When implementing action items in Phase 5, use this matrix to identify files, va
 
 | Edit Type | Jekyll Site | GitHub README/Profile | LaTeX CV |
 |-----------|-------------|----------------------|----------|
-| **CSS/Styling** | Files: `_sass/**/*.scss` or `assets/css/*.css`. Gem theme check: if `_config.yml` has `theme:`, local `_sass/` may not exist -- create override file. Build: `bundle exec jekyll build` (required). Rollback: capture full file content before edit. | N/A -- no CSS layer. | N/A -- use LaTeX styling commands instead. |
-| **Content update** | Files: `_posts/*.md`, `_pages/*.md`, `index.md`. YAML frontmatter: validate after every write (see YAML Validation below). Rollback: capture original frontmatter. Build: per registry `build_validation` field. | File: `README.md`. Direct markdown edit. No build step required. Rollback: capture full file content. | Files: `*.tex` (target section). No YAML. Build: `latexmk` or `pdflatex`. Rollback: capture original content. |
+| **CSS/Styling** | **Step 1**: Invoke `frontend-design:frontend-design` via Skill tool. Extract 3-5 aesthetic principles. (Graceful degradation applies -- skip if invocation fails.) **Step 2**: Read target file. Apply edit incorporating extracted guidance. Files: `_sass/**/*.scss` or `assets/css/*.css`. Gem theme check: if `_config.yml` has `theme:`, local `_sass/` may not exist -- create override file. Build: `bundle exec jekyll build` (required). Rollback: capture full file content before edit. | N/A -- no CSS layer. | N/A -- use LaTeX styling commands instead. |
+| **Content update** | **Step 1**: Invoke `editor` via Skill tool. Extract 3-5 prose quality guidelines. **Step 2**: If style profile exists (see Skill Invocation Pattern), invoke `essay-voice-matcher`. Extract 2-3 voice notes. **Step 3**: Write content applying both sets of guidance. Files: `_posts/*.md`, `_pages/*.md`, `index.md`. YAML frontmatter: validate after every write (see YAML Validation below). Rollback: capture original frontmatter. Build: per registry `build_validation` field. (Graceful degradation applies to Steps 1-2 -- proceed without skill guidance if invocations fail.) | **Step 1**: Invoke `editor` via Skill tool. Extract 3-5 prose quality guidelines. **Step 2**: Write content applying guidance. File: `README.md`. Direct markdown edit. No build step required. Rollback: capture full file content. (Graceful degradation applies.) | Files: `*.tex` (target section). No YAML. Build: `latexmk` or `pdflatex`. Rollback: capture original content. |
 | **SEO fixes** | Files: `_config.yml` (plugins, url, description), `_includes/head.html` (meta tags). Batch all `_config.yml` edits (see Shared File Coordination below). Build: required. Rollback: capture original content of each file. | File: `README.md` (keywords in bio, section headings for discoverability). No build. Rollback: capture full file content. | N/A -- CV does not have web SEO. |
 | **Portfolio entries** | Files: `_projects/*.md` (new post) or `_data/projects.yml` (append). YAML frontmatter: validate after create/edit. May require adding collection to `_config.yml`. Batch `_config.yml` changes. Build: required. Rollback: capture pre-edit state of each modified file. | File: `README.md` (add entry to pinned projects section). Direct markdown append. No build. | Files: `*.tex` (append entry to projects or publications section). No YAML. Build: `latexmk`. |
 
@@ -289,10 +343,22 @@ Analyze these sites:
 
 Skip sites not listed above.
 
+{AESTHETIC_GUIDANCE_BLOCK}
+
 Write your output to: {SESSION_DIR}/outputs/design-review.md
 
 You have access to: Read, Bash, Glob tools. Do NOT modify site files.
 ````
+
+Where `{AESTHETIC_GUIDANCE_BLOCK}` resolves to either:
+- **If frontend-design guidance was obtained**:
+  ```
+  Aesthetic guidance from frontend-design (apply these principles to your Quick Wins and Recommendations):
+  {FRONTEND_DESIGN_GUIDANCE}
+
+  Add an "Aesthetic Distinctiveness" subsection to the Current Assessment in your output (see output template in your instructions).
+  ```
+- **If no guidance** (skill failed, wrong site type, or no applicable sites): omit the block entirely.
 
 ### Template: Portfolio Manager (Phase 2)
 
