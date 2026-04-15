@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-15
 **Machine**: mac
-**Status**: In Progress
+**Status**: Success
 
 ## Objective
 
@@ -29,11 +29,14 @@ structured interactive review with per-claim status table and concrete revised c
 
 ## Actual Outcome
 
-[After implementation: What actually happened?]
+Skill created in `claude-config/skills/patent-review/`, synced to `~/.claude/`, committed as
+2c2a79d. SKILL.md follows plugin-dev:skill-development standards (third-person description,
+imperative writing, progressive disclosure with references/). Benchmark results confirmed:
+100% with-skill, 68% without-skill.
 
 ## Assessment
 
-**Result**: [Success / Partial / Failed]
+**Result**: Success
 
 **Improvements**:
 - Benchmark shows +32% pass rate vs. baseline; two discriminating patterns: per-claim status table
@@ -49,7 +52,8 @@ structured interactive review with per-claim status table and concrete revised c
 
 ## Related Commits
 
-- [pending]
+- 2c2a79d: feat(skills): add patent-review skill
+- fab7177, 733adf3, 0f18d91: design spec iterations (2026-04-14)
 
 ## Next Steps
 
