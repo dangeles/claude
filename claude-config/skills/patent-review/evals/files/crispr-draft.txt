@@ -1,0 +1,35 @@
+UNITED STATES PATENT APPLICATION
+
+TITLE: Base Editing Compositions for Correction of Sickle Cell Disease Mutations
+
+BACKGROUND
+Sickle cell disease (SCD) is caused by a single nucleotide mutation in the HBB gene encoding beta-globin, specifically an A-to-T transversion at codon 6 (E6V). Traditional CRISPR-Cas9 approaches generate double-strand breaks (DSBs) to correct this mutation, but DSBs risk undesired indels and chromosomal rearrangements. Base editors, which couple a catalytically impaired Cas9 (nickase or dead Cas9) with a deaminase domain, enable precise single-nucleotide changes without DSBs. Adenine base editors (ABEs) catalyze A-to-G transitions. Since the SCD mutation is an A-to-T transversion, correction to the wild-type adenine at codon 6 requires a T-to-A reversion, which is not achievable with current ABEs.
+
+SUMMARY
+The present invention provides novel base editor compositions and guide RNAs for correction of the sickle cell disease mutation in hematopoietic stem and progenitor cells (HSPCs). The base editors comprise a cytosine base editor (CBE) paired with a guide RNA that positions the target cytosine on the non-template strand within the editing window.
+
+DETAILED DESCRIPTION
+The SCD mutation (HBB c.17A>T; p.Glu6Val) can be corrected to wild-type sequence using a cytosine base editor targeting the complementary strand, where the mutant thymine appears as a cytosine. The CBE of the present invention comprises a nCas9 (D10A nickase) fused to an evolved rAPOBEC1 deaminase with reduced bystander editing, connected by a 16-amino acid XTEN linker.
+
+The guide RNA is designed with a 20-nucleotide spacer sequence that positions the target C (corresponding to the mutant T on the coding strand) at position 4 of the editing window (positions 4-8 counting from the PAM-distal end of the protospacer).
+
+The PAM sequence used is NGG (SpCas9 PAM). A suitable guide RNA spacer sequence is: 5'-GTAACGGCAGACTTCTCCTC-3'.
+
+Editing efficiency in CD34+ HSPCs from SCD donors reaches 40-65% of alleles following electroporation of ribonucleoprotein (RNP) complexes.
+
+CLAIMS
+
+1. A base editor composition comprising:
+(a) a Cas9 nickase (nCas9) having the D10A mutation; and
+(b) a cytosine deaminase domain.
+
+2. The base editor composition of claim 1, wherein the cytosine deaminase domain is an evolved rAPOBEC1 deaminase.
+
+3. The base editor composition of claim 1, further comprising a guide RNA comprising a spacer sequence complementary to a region of the HBB gene containing the sickle cell mutation.
+
+4. A method of correcting the sickle cell disease mutation in a cell, comprising introducing into the cell the base editor composition of claim 1 and a guide RNA targeting the HBB sickle cell mutation.
+
+5. The method of claim 4, wherein the cell is a hematopoietic stem cell.
+
+ABSTRACT
+Base editor compositions comprising a Cas9 nickase fused to a cytosine deaminase are provided for precise correction of the sickle cell disease mutation in HBB. Methods of correcting the SCD mutation in hematopoietic stem cells are also provided.

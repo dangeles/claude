@@ -1,0 +1,35 @@
+UNITED STATES PATENT APPLICATION
+
+TITLE: Compositions and Methods for AAV-Mediated Delivery of Dystrophin Microgenes
+
+BACKGROUND
+Duchenne muscular dystrophy (DMD) is caused by mutations in the dystrophin gene, which encodes a 427 kDa cytoskeletal protein. Current gene therapy approaches use adeno-associated virus (AAV) vectors to deliver truncated dystrophin constructs ("microgenes") to muscle tissue. AAV vectors have a packaging limit of approximately 4.5 kb, which is insufficient to accommodate the full-length dystrophin cDNA of 14 kb. Accordingly, microgene strategies omit non-essential rod domain repeats while preserving the N-terminal actin-binding domain and C-terminal dystrophin-associated protein complex (DAPC) binding domain.
+
+SUMMARY
+The present invention provides recombinant AAV (rAAV) vectors comprising a dystrophin microgene that retains spectrin-like repeats 1, 2, 3, and 24 of the rod domain, along with the N-terminal actin-binding domain and the C-terminal cysteine-rich domain. The vectors of the present invention achieve greater than 80% restoration of wild-type dystrophin expression in mdx mouse models following a single intramuscular injection.
+
+DETAILED DESCRIPTION
+The dystrophin microgene of the present invention comprises, from N-terminus to C-terminus: the actin-binding domain (amino acids 1-246), spectrin-like repeats 1-3 (amino acids 337-686), spectrin-like repeat 24 (amino acids 1873-1972), the cysteine-rich domain (amino acids 3080-3360), and a truncated C-terminal domain (amino acids 3361-3685).
+
+The rAAV vector preferably uses an AAV9 capsid, which exhibits tropism for both cardiac and skeletal muscle. The vector is administered at a dose of 1×10^14 vector genomes per kilogram body weight (vg/kg) via intravenous infusion.
+
+The promoter driving microgene expression is the muscle creatine kinase (MCK) promoter, which provides muscle-specific expression.
+
+Suitable subjects include human patients with confirmed DMD mutations including exon deletions amenable to the reading frame restoration strategy.
+
+CLAIMS
+
+1. A recombinant adeno-associated virus (rAAV) vector comprising a dystrophin microgene, wherein the microgene encodes a truncated dystrophin protein comprising: (a) the N-terminal actin-binding domain; (b) spectrin-like repeats 1, 2, 3, and 24; (c) the cysteine-rich domain; and (d) a C-terminal domain.
+
+2. The rAAV vector of claim 1, wherein the AAV capsid is AAV9.
+
+3. The rAAV vector of claim 1, wherein the microgene is operably linked to a muscle creatine kinase (MCK) promoter.
+
+4. The rAAV vector of claim 1, wherein the microgene has a length of less than 4.5 kb.
+
+5. A pharmaceutical composition comprising the rAAV vector of claim 1 and a pharmaceutically acceptable carrier.
+
+6. A method of treating Duchenne muscular dystrophy in a subject in need thereof, comprising administering to the subject the rAAV vector of claim 1 at a dose of 1×10^14 vg/kg.
+
+ABSTRACT
+Recombinant AAV vectors comprising dystrophin microgenes are provided for the treatment of Duchenne muscular dystrophy. The microgenes encode truncated dystrophin proteins that retain key functional domains. Methods of treating DMD by administering these vectors are also provided.

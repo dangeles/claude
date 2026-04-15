@@ -1,0 +1,40 @@
+UNITED STATES PATENT APPLICATION
+
+TITLE: Selective KRAS G12C Inhibitors and Methods of Use
+
+BACKGROUND
+KRAS is the most frequently mutated oncogene in human cancers, with mutations found in approximately 25% of all tumors. The G12C mutation (glycine to cysteine substitution at codon 12) accounts for roughly 13% of KRAS mutations and is particularly prevalent in non-small cell lung cancer (NSCLC). The G12C mutation locks KRAS in a constitutively active GTP-bound state by impairing GTPase activity. Small molecule inhibitors that covalently bind the mutant cysteine residue in the GDP-bound (inactive) state of KRAS G12C have emerged as a promising therapeutic approach.
+
+SUMMARY
+The present invention provides novel compounds of Formula (I) that selectively and irreversibly inhibit KRAS G12C by forming a covalent bond with Cys12 in the switch II pocket (S-IIP). The compounds exhibit IC50 values of less than 10 nM against KRAS G12C in biochemical assays, and demonstrate greater than 100-fold selectivity against wild-type KRAS and other RAS family members.
+
+DETAILED DESCRIPTION
+
+Formula (I) compounds comprise an acrylamide warhead for irreversible covalent engagement with Cys12, connected via a linker to a core scaffold that occupies the S-IIP. Preferred compounds include those wherein the core scaffold is a tetrahydroisoquinoline (THIQ) moiety substituted at the 6-position with a fluorine atom and at the 2-position with a sulfonyl group.
+
+In vitro studies demonstrate that exemplary compound 7a inhibits KRAS G12C with an IC50 of 3.2 nM and shows >200-fold selectivity versus wild-type KRAS (IC50 = 685 nM). In cellular assays using the NCI-H358 NSCLC cell line (homozygous KRAS G12C), compound 7a inhibits pERK levels with an IC50 of 18 nM.
+
+The compounds are administered orally. Suitable doses range from 100 mg to 600 mg once daily.
+
+CLAIMS
+
+1. A compound of Formula (I):
+[Formula I structure]
+wherein:
+R1 is H or C1-C4 alkyl;
+R2 is a sulfonyl group;
+R3 is halogen;
+or a pharmaceutically acceptable salt thereof.
+
+2. The compound of claim 1, wherein R3 is fluoro.
+
+3. The compound of claim 1, wherein the compound covalently binds Cys12 of KRAS G12C.
+
+4. A pharmaceutical composition comprising a compound of claim 1 and a pharmaceutically acceptable excipient.
+
+5. A method of inhibiting KRAS G12C in a cell, comprising contacting the cell with an effective amount of a compound of claim 1.
+
+6. A method of treating cancer in a subject, comprising administering to the subject a therapeutically effective amount of a compound of claim 1, wherein the cancer harbors a KRAS G12C mutation.
+
+ABSTRACT
+Novel compounds of Formula (I) that selectively inhibit KRAS G12C through irreversible covalent bond formation are described, along with pharmaceutical compositions and methods of treating KRAS G12C-mutant cancers.

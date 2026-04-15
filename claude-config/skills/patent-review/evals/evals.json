@@ -1,0 +1,45 @@
+{
+  "skill_name": "patent-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to review this gene therapy patent draft for our DMD program. Please help me check the science and see if we're missing any important claims.\n\n[Read and review the patent at: evals/files/gene-therapy-draft.txt]",
+      "expected_output": "Interactive phased review: triage identifies gene therapy / DMD domain; accuracy pass flags the extremely high dose in Claim 6 and any other technical errors; gap pass identifies missing IV administration method claims, alternative AAV serotype claims, and pediatric dosing claims; language pass proposes concrete revised/new claim text; final report with all required sections and all 6 claims in Claims Analysis table.",
+      "files": ["evals/files/gene-therapy-draft.txt"],
+      "expectations": [
+        "Triage correctly identifies the domain as gene therapy / Duchenne muscular dystrophy (or neuromuscular disease)",
+        "At least one [ACCURACY] issue is raised in the claims or description",
+        "At least two [GAP] issues are raised (e.g., missing IV administration method claim, alternative AAV serotypes, pediatric dosing, or amino acid coordinate claims)",
+        "At least one revised or new claim is proposed with concrete claim language",
+        "The final report contains all four required sections: Executive Summary, Section-by-Section Findings, Claims Analysis, and Recommendations",
+        "All six original claims (1-6) appear in the Claims Analysis table with an explicit status"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Can you review this KRAS inhibitor patent? I'm a medicinal chemist and I want to make sure the claims cover our compound series properly and that the science is correct.\n\n[Read and review the patent at: evals/files/small-molecule-draft.txt]",
+      "expected_output": "Interactive phased review: triage identifies KRAS G12C covalent inhibitor oncology patent; accuracy/gap passes catch that the acrylamide warhead essential for covalent binding is not recited in the Markush Claim 1; gap pass also identifies missing combination therapy claims, specific compound claims, and process claims; language pass proposes revised Claim 1 explicitly reciting the electrophilic warhead; final report covers all 6 claims.",
+      "files": ["evals/files/small-molecule-draft.txt"],
+      "expectations": [
+        "Triage correctly identifies this as a small-molecule oncology patent targeting KRAS G12C (or covalent inhibitor / oncology)",
+        "The missing acrylamide warhead in Claim 1 is identified as a [GAP] issue — the covalent binding mechanism is described but not recited in the Markush claim",
+        "At least one additional gap is identified beyond the warhead (combination therapy, specific compound 7a, process of manufacture, or prodrug forms)",
+        "A revised Claim 1 that explicitly recites the acrylamide warhead or electrophilic group is proposed",
+        "The Claims Analysis table covers all six original claims (1-6) with an explicit status for each"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I'm reviewing this base editing patent for our sickle cell program. There's something that feels off scientifically but I can't put my finger on it. Can you do a full review?\n\n[Read and review the patent at: evals/files/crispr-draft.txt]",
+      "expected_output": "Interactive phased review: triage identifies base editing / sickle cell disease; accuracy pass catches the scientific inconsistency in Background/Summary regarding CBE strand targeting vs. ABE limitations; gap pass identifies missing guide RNA sequence claim, missing ex vivo vs. in vivo claim; issues surfaced one at a time with accept/modify/dismiss; final report covers all 5 claims.",
+      "files": ["evals/files/crispr-draft.txt"],
+      "expectations": [
+        "The scientific inconsistency regarding editing chemistry is identified as a critical [ACCURACY] issue — specifically the confusion about CBE strand targeting and/or the muddled explanation of how a CBE corrects what the Background calls a non-ABE-correctable mutation",
+        "The missing claim for the specific guide RNA spacer sequence (5'-GTAACGGCAGACTTCTCCTC-3') is identified as a [GAP]",
+        "At least one additional gap is identified: ex vivo vs. in vivo delivery context, RNP delivery method, or off-target editing considerations",
+        "Issues are surfaced individually (the transcript does not dump all issues as a single bulk list — each issue gets its own accept/modify/dismiss decision)",
+        "The final report covers all five original claims (1-5) with an explicit status for each"
+      ]
+    }
+  ]
+}

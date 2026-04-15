@@ -1,6 +1,22 @@
 # Skills Changelog
 All notable changes to the Claude skills ecosystem.
 
+## [Unreleased] - 2026-04-15
+
+### Added - patent-review
+
+New skill for scientist-led review of lawyer-drafted patent drafts.
+
+- 5-phase interactive workflow: Ingest → Triage → Deep Review → Synthesis → optional Literature
+- Phase 3 issues surfaced one-at-a-time with accept/modify/dismiss decisions and full decision log
+- Accuracy, Gap, and Language passes over claims; per-claim status table in report
+- Concrete revised claim language produced (not prose summaries)
+- Literature review optional, triggered only at explicit user request
+- Benchmarked: 100% pass rate with skill vs. 68% baseline across 3 eval cases (DMD gene therapy,
+  KRAS inhibitor, SCD base editing)
+- References: `references/report-template.md` for exact report structure
+- Evals: `evals/evals.json` with 3 test cases and patent draft fixtures
+
 ## [3.0.0] - 2026-02-21
 
 ### skill-editor v3.0 — Major Refactor
