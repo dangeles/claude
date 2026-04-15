@@ -11,18 +11,29 @@ A Claude Code skill (`/patent-review`) that guides a scientist through a structu
 
 **Primary user:** A scientist (domain expert) reviewing a patent drafted by a patent attorney.
 **Domain:** Domain-agnostic — the skill makes no assumptions about the field of science.
-**Input formats:** Plain text pasted into the conversation, or a `.docx` file path.
+**Input formats:** Plain text pasted into the conversation, or a `.docx` file path. PDF input is out of scope (patent PDFs vary widely in extraction quality; users should convert to `.docx` or paste text).
 **Output:** Interactive review session + a saved Markdown report.
 
 ---
 
 ## Workflow Phases
 
-The skill progresses through five phases. Phases 1–4 run sequentially and automatically. Phase 5 is optional and user-triggered at any point during Phases 3 or 4.
+The skill progresses through five phases. Phases 1–4 run sequentially and automatically. Phase 5 is optional and user-triggered at any point during Phase 3, or at the explicit Phase 4 entry prompt (see Phase 4).
+
+## Invocation
+
+The skill is invoked as `/patent-review` with no required arguments. Optionally, the user may provide a `.docx` file path as the first argument:
+
+```
+/patent-review
+/patent-review path/to/draft.docx
+```
+
+If a file path is provided on invocation, Phase 1 skips the input prompt and proceeds directly to extraction. If no argument is given, Phase 1 prompts the user to paste text or enter a file path interactively.
 
 ### Phase 1 — Ingest
 
-The skill prompts the user to either paste the patent text or provide a `.docx` file path. For `.docx` files, the skill extracts text using available tooling. The document is then parsed into named sections:
+The skill prompts the user to either paste the patent text or provide a `.docx` file path. For `.docx` files, text is extracted using `markitdown` (preferred) or `python-docx` as a fallback. If neither is available, the skill instructs the user to paste the text manually. The document is then parsed into named sections:
 
 - Title
 - Abstract
@@ -67,12 +78,19 @@ The core phase. The skill works through the document section by section in this 
 4. **Abstract** (reviewed last)
    - Once the claims are finalized, the abstract is checked to ensure it accurately reflects the agreed-upon scope
 
-**Interaction model:** At each step, the skill surfaces one issue at a time, explains the concern, and asks the scientist to: (a) accept the suggested fix, (b) modify it, or (c) dismiss it. All decisions — accepted, modified, and dismissed — are logged for the final report.
+**Interaction model:** This pattern applies uniformly across all Phase 3 sub-sections (Background, Detailed Description, and Claims). At each step, the skill surfaces one issue at a time, explains the concern, and asks the scientist to: (a) accept the suggested fix, (b) modify it, or (c) dismiss it. All decisions — accepted, modified, and dismissed — are logged for the final report.
 
 ### Phase 4 — Synthesis
 
-The skill compiles all logged findings into a structured Markdown report saved to the working directory as:
+**Phase 4 entry prompt:** Before compiling, the skill presents a single prompt:
 
+> "Ready to generate the report. Where should I save it? [default: ./] — or type 'literature' to run a literature search first."
+
+This is the last opportunity to trigger Phase 5. After the user responds, Phase 5 is no longer available for this session.
+
+The skill compiles all logged findings into a structured Markdown report. Default save location is the current working directory. If the user specifies a custom path, that path is used. If the path is not writable, the skill alerts the user and asks once for an alternative. If the second path is also unwritable, the skill prints the full report to the conversation as a fenced Markdown block so the user can copy it manually.
+
+Report filename:
 ```
 YYYY-MM-DD-<patent-title>-review.md
 ```
@@ -89,7 +107,9 @@ YYYY-MM-DD-<patent-title>-review.md
 
 ### Phase 5 — Literature Review (Optional, On-Demand)
 
-**Trigger:** The scientist requests a literature search at any time during Phase 3 or 4 using natural language (e.g., "check the literature on X", "find prior art on Y", "are there papers about Z?").
+**Trigger:** The scientist requests a literature search at any time during Phase 3, or before the report is finalized at the start of Phase 4 (i.e., before the skill asks about the save path). Once the report is being written, Phase 5 cannot be triggered in that session. If triggered during Phase 4, the literature results are incorporated before the report is saved.
+
+Trigger examples: "check the literature on X", "find prior art on Y", "are there papers about Z?"
 
 **On trigger, the skill asks two quick questions:**
 1. Scope — scientific literature, prior art patents, or both?
@@ -113,6 +133,20 @@ The skill then runs the search, summarizes relevant hits, and flags any results 
 
 ---
 
+## Session Interruption
+
+Patent reviews can be long. If the session is interrupted (terminal closed, context reset), partial work is not automatically recoverable — Claude Code does not persist conversation state across sessions.
+
+**Defined behavior:**
+- The skill does not attempt to resume a prior session
+- If a session is interrupted mid-review, the user must restart by reinvoking `/patent-review` and re-providing the document
+- To mitigate loss, the skill offers a **checkpoint summary** at the end of each Phase 3 sub-section. The checkpoint is a fenced Markdown block, delimited with `--- CHECKPOINT START ---` and `--- CHECKPOINT END ---`, listing all logged findings to that point. The skill prompts: "Checkpoint saved above. Copy this block if you want a record in case the session is interrupted. Press Enter to continue." The user must press Enter before Phase 3 continues
+- The final report is only written at Phase 4; there is no auto-save of partial findings
+
+This is acceptable given the typical session length (one patent per sitting) and the checkpoint mitigation.
+
+---
+
 ## Out of Scope
 
 - Automated filing or submission to patent offices
@@ -124,7 +158,8 @@ The skill then runs the search, summarizes relevant hits, and flags any results 
 
 ## Success Criteria
 
-- The scientist can complete a full patent review in a single session
-- Every claim in the draft is explicitly assessed (accepted, revised, or flagged)
-- The final report is complete enough for the attorney to act on without follow-up questions
-- Literature review, when triggered, integrates cleanly into the session without disrupting the review flow
+- Every claim in the draft receives an explicit status: accepted, revised, or flagged — no claim is skipped
+- Every tagged finding in the report (`[ACCURACY]`, `[GAP]`, `[LANGUAGE]`) maps to a specific section and claim number, with a proposed resolution
+- The report contains a prioritized Recommendations section with at least one actionable item per critical finding
+- When Phase 5 is triggered, the Literature section of the report is populated with results, each annotated with whether it materially affects a specific claim. If Phase 5 is never triggered, the Literature section is omitted from the report entirely
+- The session completes and the report is saved without requiring the user to manually collate findings
