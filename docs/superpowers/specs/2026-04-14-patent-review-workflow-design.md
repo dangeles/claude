@@ -18,7 +18,7 @@ A Claude Code skill (`/patent-review`) that guides a scientist through a structu
 
 ## Workflow Phases
 
-The skill progresses through five phases. Phases 1–4 run sequentially and automatically. Phase 5 is optional and user-triggered at any point during Phase 3, or at the explicit Phase 4 entry prompt (see Phase 4).
+The skill progresses through five phases. Phases 1–4 run sequentially and automatically. Phase 5 is optional and user-triggered at any point during Phase 3, or by typing `literature` at the Phase 4 entry prompt — before the skill begins compiling the report (see Phase 4). After the entry prompt is answered with anything other than `literature`, Phase 5 is no longer available for that session.
 
 ## Invocation
 
@@ -80,6 +80,12 @@ The core phase. The skill works through the document section by section in this 
 
 **Interaction model:** This pattern applies uniformly across all Phase 3 sub-sections (Background, Detailed Description, and Claims). At each step, the skill surfaces one issue at a time, explains the concern, and asks the scientist to: (a) accept the suggested fix, (b) modify it, or (c) dismiss it. All decisions — accepted, modified, and dismissed — are logged for the final report.
 
+**Critical vs. minor classification:** When logging a finding, the skill assigns a severity:
+- **Critical** — the finding would affect claim validity, patentability, or scientific accuracy in a way the attorney must address (e.g., a technically impossible claim, a missing claim for a core embodiment)
+- **Minor** — the finding is a stylistic, terminology, or clarity improvement that is recommended but not legally or scientifically essential
+
+The severity is stated explicitly when the skill surfaces each issue ("This is a critical issue because…" / "This is a minor issue…"). The Executive Summary counts both categories separately.
+
 ### Phase 4 — Synthesis
 
 **Phase 4 entry prompt:** Before compiling, the skill presents a single prompt:
@@ -94,6 +100,8 @@ Report filename:
 ```
 YYYY-MM-DD-<patent-title>-review.md
 ```
+
+The `<patent-title>` slug is derived from the document title by: lowercasing, replacing spaces and special characters with hyphens, collapsing consecutive hyphens, and truncating to 60 characters. Example: `"Compositions and Methods for Treatment of Inflammatory Disease"` → `compositions-and-methods-for-treatment-of-inflammatory-disea`.
 
 **Report structure:**
 
@@ -140,7 +148,7 @@ Patent reviews can be long. If the session is interrupted (terminal closed, cont
 **Defined behavior:**
 - The skill does not attempt to resume a prior session
 - If a session is interrupted mid-review, the user must restart by reinvoking `/patent-review` and re-providing the document
-- To mitigate loss, the skill offers a **checkpoint summary** at the end of each Phase 3 sub-section. The checkpoint is a fenced Markdown block, delimited with `--- CHECKPOINT START ---` and `--- CHECKPOINT END ---`, listing all logged findings to that point. The skill prompts: "Checkpoint saved above. Copy this block if you want a record in case the session is interrupted. Press Enter to continue." The user must press Enter before Phase 3 continues
+- To mitigate loss, the skill offers a **checkpoint summary** at the end of each Phase 3 sub-section. The checkpoint is a fenced Markdown block, delimited with `--- CHECKPOINT START ---` and `--- CHECKPOINT END ---`, listing all logged findings to that point. The skill prompts: "Checkpoint above. Copy this block if you want a record in case the session is interrupted. Type `continue` to proceed." If the user does not respond (e.g., closes the terminal), the session simply ends — no further action is taken and the in-progress findings are lost. This is the defined and acceptable behavior; no background saving or retry is attempted
 - The final report is only written at Phase 4; there is no auto-save of partial findings
 
 This is acceptable given the typical session length (one patent per sitting) and the checkpoint mitigation.
