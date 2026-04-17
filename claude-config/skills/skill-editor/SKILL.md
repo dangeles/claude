@@ -1,6 +1,13 @@
 ---
 name: skill-editor
-description: Use when creating, modifying, or refactoring Claude Code skills that require structured multi-agent review and quality validation
+description: >
+  This skill should be used when creating, modifying, or refactoring any Claude Code skill in
+  this repository. It is the default entry point for all skill work — new skills from scratch,
+  targeted edits, refactoring, and quality review alike. Trigger on "create a skill", "add a
+  skill", "build a skill for", "make a skill that", "edit the X skill", "modify a skill",
+  "refactor a skill", "improve the X skill", or any time a user wants to add or change a skill
+  in this repository. Always prefer this over skill-creator or plugin-dev:skill-development for
+  skills that belong in claude-config/.
 
 # Handoff metadata (custom extension -- see workflow-coordinator/references/frontmatter-metadata-standard.md)
 handoff:
@@ -56,8 +63,12 @@ Do NOT use this skill when:
 - **Non-skill changes**: Modifying agents, settings, or other configuration
 - **Urgent hotfixes**: Emergency fixes that can't wait for full workflow
 - **Exploratory work**: Just browsing or understanding skills (use Read or Explore agent)
-- **New skills from scratch (no quality gates needed)**: Use `skill-creator` for a lightweight create-draft-eval-iterate loop without the full 4-phase workflow
 - **Need a full plugin (multiple skills, agents, commands)**: Use `plugin-dev` — skill-editor handles individual skill files; plugin-dev covers the broader plugin architecture
+
+Note on `skill-creator`: its grader, benchmark aggregator, and eval viewer are useful for
+quantitative validation of a newly-created skill. They can be invoked optionally during Phase 4
+after the skill is synced to `~/.claude/` — but skill-creator is not an alternative to this
+workflow for repo skills.
 
 ## Delegation Mandate
 

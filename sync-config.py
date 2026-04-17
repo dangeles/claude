@@ -15,6 +15,7 @@ Usage:
 """
 
 import argparse
+import fnmatch
 import hashlib
 import os
 import platform
@@ -110,9 +111,18 @@ class ConfigSync:
             # Normalize: strip trailing slash for uniform matching
             exclusion_normalized = exclusion.rstrip('/')
 
-            # Match: exact name, or path starts with exclusion as a directory prefix
-            if rel_str == exclusion_normalized or rel_str.startswith(exclusion_normalized + '/'):
-                return True
+            if any(c in exclusion_normalized for c in '*?['):
+                # Glob pattern: check if any prefix of the path matches.
+                # This lets "skills/*-workspace" exclude all contents of any
+                # directory whose name matches the glob (e.g. patent-review-workspace).
+                parts = rel_str.split('/')
+                for i in range(1, len(parts) + 1):
+                    if fnmatch.fnmatch('/'.join(parts[:i]), exclusion_normalized):
+                        return True
+            else:
+                # Exact/prefix matching (original behaviour)
+                if rel_str == exclusion_normalized or rel_str.startswith(exclusion_normalized + '/'):
+                    return True
 
         return False
 

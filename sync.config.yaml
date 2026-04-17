@@ -50,6 +50,7 @@ exclusions:
   - "paste-cache/"               # Clipboard cache
   - "downloads/"                 # Downloads
   - "plans/"                     # Claude's ephemeral plans (DO NOT SYNC)
+  - "*-workspace/"               # skill-creator eval workspaces (ephemeral, not version-controlled)
 
 # Conflict resolution
 conflict_resolution:
