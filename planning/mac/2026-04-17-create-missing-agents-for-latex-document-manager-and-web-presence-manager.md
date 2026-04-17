@@ -44,7 +44,7 @@ All 8 agent files created, YAML validated, synced to ~/.claude/agents/, and veri
 
 ## Related Commits
 
-- (pending): feat(agents): create missing agents for latex-document-manager and web-presence-manager
+- 3374680: feat(agents): create missing agents for latex-document-manager and web-presence-manager
 
 ## Next Steps
 
