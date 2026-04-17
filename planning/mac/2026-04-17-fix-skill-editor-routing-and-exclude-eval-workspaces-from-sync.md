@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-17
 **Machine**: mac
-**Status**: In Progress
+**Status**: Success
 
 ## Objective
 
@@ -37,24 +37,33 @@ Two related fixes:
 
 ## Actual Outcome
 
-[After implementation: What actually happened?]
+- skill-editor description rewritten; trigger phrases now explicit
+- skill-creator redirect removed from "When NOT to Use" section
+- sync.config.yaml exclusion added; sync-config.py updated with fnmatch glob
+  support (previously only exact prefix matching existed)
+- `sync-config.py status` now clean of workspace orphans
 
 ## Assessment
 
-**Result**: [Success / Partial / Failed]
+**Result**: Success
 
 **Improvements**:
-- [What got better?]
+- skill-editor is now the clear entry point for all repo skill work
+- skill-creator and plugin-dev:skill-development have defined supporting roles
+- Eval workspaces no longer pollute sync status
 
 **Issues**:
-- [What problems emerged?]
+- None
 
 **Lessons Learned**:
-- [What would you do differently?]
+- sync.config.yaml exclusion patterns didn't support globs — needed a code
+  change alongside the config change
+- Exclusion paths are relative to the *rule's subdirectory*, not the repo
+  root (e.g., `*-workspace` not `skills/*-workspace`)
 
 ## Related Commits
 
-- [pending]
+- 69db61f: fix(skill-editor): clarify routing and exclude eval workspaces from sync
 
 ## Next Steps
 
