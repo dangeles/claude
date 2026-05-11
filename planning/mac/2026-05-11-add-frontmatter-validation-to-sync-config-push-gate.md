@@ -60,7 +60,7 @@ The linter scanned 82 files (agents + SKILL.md) — fast enough that running it 
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- 7fe3357: feat(sync-config): add frontmatter validation as push-time gate
 
 ## Next Steps
 
