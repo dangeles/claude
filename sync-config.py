@@ -29,6 +29,12 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 
 
+# Files whose YAML frontmatter is parsed by the Claude Code loader.
+# The loader rejects any of these missing the listed required keys, so they
+# are validated as a pre-flight gate before push.
+REQUIRED_FRONTMATTER_FIELDS = ('name', 'description')
+
+
 class Colors:
     """ANSI color codes for terminal output"""
     HEADER = '\033[95m'
@@ -313,6 +319,90 @@ class ConfigSync:
                 all_valid = False
         return all_valid
 
+    def _parse_frontmatter(self, file_path: Path) -> Tuple[Optional[dict], Optional[str]]:
+        """Extract and parse YAML frontmatter from a markdown file.
+
+        Returns (frontmatter_dict, error_message). Exactly one is non-None:
+        on success, frontmatter_dict is the parsed YAML; on failure,
+        error_message describes why parsing did not yield a usable mapping.
+        """
+        try:
+            text = file_path.read_text(encoding='utf-8')
+        except OSError as e:
+            return None, f"could not read file: {e}"
+
+        lines = text.split('\n')
+        if not lines or lines[0].rstrip() != '---':
+            return None, "missing frontmatter (expected leading '---')"
+
+        end_idx = None
+        for i in range(1, len(lines)):
+            if lines[i].rstrip() == '---':
+                end_idx = i
+                break
+        if end_idx is None:
+            return None, "malformed frontmatter (no closing '---')"
+
+        yaml_block = '\n'.join(lines[1:end_idx])
+        try:
+            data = yaml.safe_load(yaml_block)
+        except yaml.YAMLError as e:
+            return None, f"invalid YAML in frontmatter: {e}"
+
+        if not isinstance(data, dict):
+            return None, "frontmatter is not a YAML mapping"
+
+        return data, None
+
+    def validate_frontmatter(self) -> bool:
+        """Pre-flight check: every agent and SKILL.md has required frontmatter.
+
+        The Claude Code agent and skill loaders reject any file whose
+        frontmatter is missing `name` or `description`. This check catches
+        that class of error at the repo boundary, before push contaminates
+        the live system.
+
+        Returns True if every checked file passes; False otherwise.
+        Errors are printed per file via print_error.
+        """
+        agents_dir = self.target_dir / 'agents'
+        skills_dir = self.target_dir / 'skills'
+
+        files: List[Path] = []
+        if agents_dir.is_dir():
+            files.extend(sorted(p for p in agents_dir.glob('*.md') if p.is_file()))
+        if skills_dir.is_dir():
+            files.extend(sorted(skills_dir.glob('*/SKILL.md')))
+
+        if not files:
+            self.print_warning("validate_frontmatter: no agent or skill files found")
+            return True
+
+        errors: List[Tuple[Path, str]] = []
+        for f in files:
+            data, err = self._parse_frontmatter(f)
+            if err is not None or data is None:
+                errors.append((f, err or "frontmatter parse returned no data"))
+                continue
+            missing = [k for k in REQUIRED_FRONTMATTER_FIELDS
+                       if k not in data or data[k] in (None, '')]
+            if missing:
+                errors.append((f, f"missing required frontmatter field(s): {', '.join(missing)}"))
+
+        if errors:
+            self.print_error(f"Frontmatter validation failed for {len(errors)} of {len(files)} file(s):")
+            for path, msg in errors:
+                try:
+                    rel = path.relative_to(Path.cwd())
+                except ValueError:
+                    rel = path
+                print(f"  {Colors.FAIL}*{Colors.ENDC} {rel}: {msg}")
+            return False
+
+        if self.verbose:
+            self.print_success(f"Frontmatter validation passed ({len(files)} file(s))")
+        return True
+
     def compute_checksum(self, file_path: Path) -> str:
         """Compute SHA256 checksum of file"""
         sha256 = hashlib.sha256()
@@ -538,6 +628,13 @@ class ConfigSync:
 
     def push_config(self):
         """Push configuration from repo to ~/.claude"""
+        # Pre-flight: reject the push if any agent or skill has broken
+        # frontmatter. Doing this before the prompt avoids the user being
+        # asked to confirm a push that would propagate loader-rejected files.
+        if not self.validate_frontmatter():
+            self.print_error("Aborting push: fix the frontmatter errors above and re-run.")
+            sys.exit(1)
+
         self.print_warning(f"About to modify system Claude Code configuration at: {self.source_dir}")
 
         if self.delete_mode:
@@ -1024,6 +1121,7 @@ Examples:
   ./sync-config.py pull-projects           # Pull all project configs
   ./sync-config.py push-projects bioreactor  # Push specific project config
   ./sync-config.py status                  # Show differences
+  ./sync-config.py validate                # Lint agent/skill frontmatter
   ./sync-config.py plan --title "Enable new plugin"
   ./sync-config.py plan --title "Enable new plugin" --edit
   ./sync-config.py plan --list             # List all plans
@@ -1031,7 +1129,8 @@ Examples:
     )
 
     parser.add_argument('command',
-                        choices=['pull', 'push', 'pull-projects', 'push-projects', 'status', 'plan'],
+                        choices=['pull', 'push', 'pull-projects', 'push-projects',
+                                 'status', 'validate', 'plan'],
                         help="Command to execute")
     parser.add_argument('project', nargs='?', help="Project name (for push-projects/pull-projects)")
     parser.add_argument('--dry-run', action='store_true', help="Preview changes without executing")
@@ -1074,6 +1173,10 @@ Examples:
             sync.push_project_configs(args.project)
         elif args.command == 'status':
             sync.show_status()
+        elif args.command == 'validate':
+            if not sync.validate_frontmatter():
+                sys.exit(1)
+            sync.print_success("Frontmatter validation passed")
         elif args.command == 'plan':
             if args.list_plans:
                 sync.list_plans(args.machine)
