@@ -54,7 +54,7 @@ All 6 agent files now have a valid `description:` field both in `claude-config/a
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- dbea4ee: fix(agents): add missing description frontmatter to archive-workflow agents
 
 ## Next Steps
 
