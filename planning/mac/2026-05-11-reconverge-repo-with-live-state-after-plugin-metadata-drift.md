@@ -71,7 +71,7 @@ The `"unknown"` version strings are an information regression (specific sha → 
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- 0020ad4: chore(sync): reconverge repo with live state; record validate SHA
 
 ## Next Steps
 
