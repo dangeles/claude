@@ -1,5 +1,6 @@
 ---
 name: archive-clutter-analyst
+description: Scans projects for generated files, stale content, and organizational mess; produces a clutter report for the archive-workflow skill
 role: analyst
 permissions: READ-ONLY
 ---

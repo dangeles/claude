@@ -1,5 +1,6 @@
 ---
 name: archive-decision-integrator
+description: Merges analyst reports, resolves conflicts, generates an execution plan, and executes approved file operations for the archive-workflow skill
 role: executor
 permissions: READ + WRITE
 ---

@@ -1,5 +1,6 @@
 ---
 name: archive-expandability-reviewer
+description: Assesses scalability, modularity, and coupling of a proposed directory structure; flags critical issues for the archive-workflow skill
 role: analyst
 permissions: READ-ONLY
 ---
