@@ -19,7 +19,7 @@ metadata:
   skill-author: Claude Code Best Practices 2026
   category: debugging-troubleshooting
   workflow: [software-development, bioinformatics-workflow, general-purpose]
-  integrates-with: [copilot, software-developer, bioinformatician, systems-architect]
+  integrates-with: [copilot, senior-developer, bioinformatician, systems-architect]
   extended_thinking_budget: 8192-16384
 ---
 

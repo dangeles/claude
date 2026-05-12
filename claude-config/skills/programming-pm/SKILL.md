@@ -358,7 +358,7 @@ The programming-pm skill serves as the central coordinator for Python-focused so
 
 - **Simple scripts**: For single-file Python scripts (<100 lines), use copilot directly
 - **Non-Python projects**: This skill is Python-first; use technical-pm for other languages
-- **Bug fixes**: For small changes to existing code, use software-developer or copilot
+- **Bug fixes**: For small changes to existing code, use senior-developer or copilot
 - **Research coordination**: For literature reviews, use lit-pm
 - **General coordination**: For non-software multi-agent work, use technical-pm
 - **General feature work (non-bioinformatics)**: For software features not requiring the bioinformatics specialist team, use `feature-dev` for a lighter 7-phase workflow (explore → clarify → architect → implement → review)

@@ -1,6 +1,17 @@
 # Skills Changelog
 All notable changes to the Claude skills ecosystem.
 
+## [Unreleased] - 2026-05-12
+
+### Deprecated - software-developer
+
+Confirmed duplicate of `senior-developer`. Tombstoned with redirect to `senior-developer`; directory retained for git history.
+
+- Closer-reading audit (planning/mac/2026-05-12-tier-2-deprecate-software-developer-skill.md) found identical responsibilities (production Python, tests, docs, type hints, error handling). The only unique signal was bioinformatics framing in prose examples.
+- Bioinformatics-specific work now chains via `bioinformatician` (analysis) → `senior-developer` (productionize) → `biologist-commentator` (validate).
+- Updated references in: programming-pm, principal-investigator (+ refs/examples), copilot, biologist-commentator, systematic-troubleshooter, systems-architect, perspective-swarm/refs/handoff-schema, skills/README.md.
+- Historical CHANGELOG entries mentioning software-developer preserved as-is.
+
 ## [Unreleased] - 2026-04-15
 
 ### Added - patent-review

@@ -16,7 +16,7 @@ metadata:
     skill-author: David Angeles Albores
     category: bioinformatics-workflow
     workflow: software-development
-    integrates-with: [bioinformatician, biologist-commentator, software-developer]
+    integrates-with: [bioinformatician, biologist-commentator, senior-developer]
     use_extended_thinking_for:
       - Complex architectural decisions with multiple trade-offs
       - Scalability planning for large-scale data processing

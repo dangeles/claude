@@ -12,7 +12,7 @@ metadata:
     skill-author: David Angeles Albores
     category: bioinformatics-workflow
     workflow: team-directed-research
-    integrates-with: [bioinformatician, software-developer, biologist-commentator, calculator, technical-pm, program-officer]
+    integrates-with: [bioinformatician, senior-developer, biologist-commentator, calculator, technical-pm, program-officer]
 allowed-tools: [Read, Write, Edit, Skill]
 ---
 
@@ -62,13 +62,13 @@ Least Technical → Most Technical
 1. biologist-commentator: Biological relevance, experimental design concerns
 2. bioinformatician: Data analysis approach, statistical methods
 3. calculator: Quantitative validation, feasibility checks
-4. software-developer: Implementation strategy, code architecture
+4. senior-developer: Implementation strategy, code architecture
 ```
 
 **For biological interpretation tasks** (manuscript writing, result interpretation):
 ```
 Most Technical → Least Technical
-1. software-developer: Technical accuracy, reproducibility
+1. senior-developer: Technical accuracy, reproducibility
 2. calculator: Statistical validity, quantitative claims
 3. bioinformatician: Analytical soundness, methodological rigor
 4. biologist-commentator: Biological significance, interpretation depth
@@ -82,7 +82,7 @@ Context-dependent ordering
 - Example: Choosing clustering method
   1. biologist-commentator (biological goals)
   2. bioinformatician (method appropriateness)
-  3. software-developer (implementation constraints)
+  3. senior-developer (implementation constraints)
 ```
 
 ### Step 2: Request Feedback
@@ -92,7 +92,7 @@ Invoke specialists in order using `Skill` tool:
 Skill(skill="biologist-commentator", args="Evaluate biological relevance of [task]")
 Skill(skill="bioinformatician", args="Assess analytical approach for [task]")
 Skill(skill="calculator", args="Validate feasibility of [task]")
-Skill(skill="software-developer", args="Review implementation strategy for [task]")
+Skill(skill="senior-developer", args="Review implementation strategy for [task]")
 ```
 
 ### Step 3: Synthesize and Decide
@@ -165,7 +165,7 @@ You have **full authority** to override team input. Common scenarios:
 **Common pattern**: Adopt some suggestions, reject others
 **Example**:
 - Accept bioinformatician's QC suggestions ✓
-- Reject software-developer's refactoring (time constraint) ✗
+- Reject senior-developer's refactoring (time constraint) ✗
 - Modify calculator's statistical test (simpler alternative) ~
 
 ### Synthesis Over Consensus
@@ -249,7 +249,7 @@ Skill(skill="calculator", args="Validate sample size sufficiency for DESeq2 with
 # → Feedback: "Adequate power for 2-fold changes. May miss subtle effects."
 
 # 4. Software-developer
-Skill(skill="software-developer", args="Review implementation strategy for DESeq2 pipeline in Jupyter notebook")
+Skill(skill="senior-developer", args="Review implementation strategy for DESeq2 pipeline in Jupyter notebook")
 # → Feedback: "Modularize functions. Add error handling. Use R via rpy2 or Python pyDESeq2."
 ```
 
@@ -257,7 +257,7 @@ Skill(skill="software-developer", args="Review implementation strategy for DESeq
 - Accept biologist's batch effect concern → include batch in design matrix
 - Accept bioinformatician's QC and LFC shrinkage suggestions
 - Note calculator's power limitation → interpret results accordingly
-- Adopt software-developer's modular approach
+- Adopt senior-developer's modular approach
 - **Decision**: Implement in Python using pyDESeq2, include batch effects, add comprehensive QC
 
 **Step 3 - Delegate**:
@@ -278,7 +278,7 @@ Implement bulk RNA-seq differential expression analysis:
 **Step 1 - Gather feedback** (most → least technical):
 ```python
 # 1. Software-developer
-Skill(skill="software-developer", args="Verify statistical testing code for subfamily enrichment is correct")
+Skill(skill="senior-developer", args="Verify statistical testing code for subfamily enrichment is correct")
 # → Feedback: "Code correct. FDR adjustment appropriate."
 
 # 2. Calculator
@@ -366,13 +366,13 @@ For detailed guidance:
 
 **Implementation tasks** (code, pipelines, tools):
 ```
-biologist-commentator → bioinformatician → calculator → software-developer
+biologist-commentator → bioinformatician → calculator → senior-developer
 (least technical → most technical)
 ```
 
 **Interpretation tasks** (writing, biology, significance):
 ```
-software-developer → calculator → bioinformatician → biologist-commentator
+senior-developer → calculator → bioinformatician → biologist-commentator
 (most technical → least technical)
 ```
 

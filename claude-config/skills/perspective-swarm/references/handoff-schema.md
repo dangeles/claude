@@ -48,7 +48,7 @@ handoff:
 | Category | Description | Example Skills |
 |----------|-------------|----------------|
 | `research` | Deep investigation, literature review | lit-pm, researcher |
-| `implementation` | Code/build artifacts | programming-pm, software-developer |
+| `implementation` | Code/build artifacts | programming-pm, senior-developer |
 | `analysis` | Quantitative/rigorous analysis | statistician, mathematician |
 | `architecture` | System/technical design | systems-architect |
 | `verification` | Fact-checking, validation | fact-checker |

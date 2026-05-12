@@ -12,7 +12,7 @@ metadata:
     skill-author: David Angeles Albores
     category: bioinformatics-workflow
     workflow: [notebook-analysis, software-development]
-    integrates-with: [bioinformatician, systems-architect, software-developer]
+    integrates-with: [bioinformatician, systems-architect, senior-developer]
 allowed-tools: [Read, WebSearch]
 ---
 

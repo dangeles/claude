@@ -43,7 +43,7 @@ See **[Skills by Domain](#skills-by-domain)** below for categorized lists, or us
 - **Research**: researcher, synthesizer, devil's-advocate, fact-checker
 - **Bioinformatics**: bioinformatician, notebook-writer, data-pipeline-manager
 - **Project Management**: technical-pm, program-officer, principal-investigator
-- **Code Development**: software-developer, copilot, systems-architect
+- **Code Development**: senior-developer, copilot, systems-architect
 - **Quality Assurance**: completion-verifier, consistency-auditor, copilot
 - **Parallel Coordination**: parallel-coordinator
 
@@ -87,16 +87,17 @@ See **[Skills by Domain](#skills-by-domain)** below for categorized lists, or us
 
 **Workflow**: strategist → technical-pm → program-officer → principal-investigator
 
-### 💻 Software Development (4 skills)
+### 💻 Software Development (5 skills)
 
 | Skill | Description | Key Features |
 |-------|-------------|--------------|
-| **software-developer** | Implement production-quality code | Testing standards, security awareness, documentation requirements |
+| **senior-developer** | Implement production-quality Python code | Testing standards, security awareness, documentation, delegates to junior-developer |
+| **junior-developer** | Implement well-scoped Python tasks under senior review | Unit tests, documented code, max 3 revision cycles |
 | **systems-architect** | Design software architecture | Extended thinking (8k-12k tokens), scalability planning, trade-off analysis |
 | **copilot** | Review code for quality and correctness | Parallel analysis (security + performance + style), adversarial feedback |
 | **completion-verifier** | Verify tasks are truly complete | 6-item checklist, domain-specific criteria, prevents 40% failure rate |
 
-**Workflow**: systems-architect → software-developer → copilot → completion-verifier
+**Workflow**: systems-architect → senior-developer (→ junior-developer) → copilot → completion-verifier
 
 ### 🐛 Debugging & Troubleshooting (3 skills)
 
@@ -372,7 +373,7 @@ completion-verifier (verify task complete)
 ```
 systems-architect (design architecture with extended thinking)
     ↓
-software-developer (implement code)
+senior-developer (implement code, optionally delegating to junior-developer)
     ↓
 copilot (adversarial review)
     ↓

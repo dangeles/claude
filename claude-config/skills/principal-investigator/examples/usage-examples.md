@@ -10,7 +10,7 @@
 
 ```
 Step 1: Recognize this is an IMPLEMENTATION task
-→ Use feedback order: biologist-commentator → bioinformatician → calculator → software-developer
+→ Use feedback order: biologist-commentator → bioinformatician → calculator → senior-developer
 
 Step 2: Gather feedback
 
@@ -20,7 +20,7 @@ Skill(skill="bioinformatician", args="Recommend clustering method and pipeline s
 
 Skill(skill="calculator", args="Validate that dataset size (5000 cells, 20000 genes) is sufficient for robust clustering")
 
-Skill(skill="software-developer", args="Review implementation strategy for single-cell clustering pipeline in Jupyter notebook")
+Skill(skill="senior-developer", args="Review implementation strategy for single-cell clustering pipeline in Jupyter notebook")
 
 Step 3: Synthesize feedback
 - Biologist: "Ensure resolution captures biological diversity"
@@ -48,11 +48,11 @@ Step 5: Interpret results after implementation
 
 ```
 Step 1: Recognize this is an INTERPRETATION task
-→ Use feedback order: software-developer → calculator → bioinformatician → biologist-commentator
+→ Use feedback order: senior-developer → calculator → bioinformatician → biologist-commentator
 
 Step 2: Gather feedback
 
-Skill(skill="software-developer", args="Verify that expression quantification code is correct and data preprocessing appropriate")
+Skill(skill="senior-developer", args="Verify that expression quantification code is correct and data preprocessing appropriate")
 
 Skill(skill="calculator", args="Validate statistical significance of observed expression pattern, check for batch effects")
 
@@ -117,7 +117,7 @@ Skill(skill="bioinformatician", args="...")
 Skill(skill="calculator", args="...")
 → "Implement bootstrap confidence intervals"
 
-Skill(skill="software-developer", args="...")
+Skill(skill="senior-developer", args="...")
 → "Refactor into object-oriented architecture, add caching, parallelization"
 
 Step 2: Synthesize and OVERRIDE
@@ -188,11 +188,11 @@ START: Received a task
     │   NO → Continue
     │
     ├─ Is it implementation (code/pipeline)?
-    │   YES → Gather feedback: biologist → bioinformatician → calculator → software-developer
+    │   YES → Gather feedback: biologist → bioinformatician → calculator → senior-developer
     │   NO → Continue
     │
     ├─ Is it interpretation (writing/biology)?
-    │   YES → Gather feedback: software-developer → calculator → bioinformatician → biologist
+    │   YES → Gather feedback: senior-developer → calculator → bioinformatician → biologist
     │   NO → Continue
     │
     └─ Mixed task?
