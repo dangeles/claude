@@ -319,6 +319,42 @@ class ConfigSync:
                 all_valid = False
         return all_valid
 
+    @staticmethod
+    def _hint_unquoted_colon_in_value(yaml_block: str) -> Optional[str]:
+        """If a top-level value contains an unquoted ': ' (colon+space) that
+        confuses PyYAML, return a hint pointing at the line and key.
+
+        Misses safely (returns None) for quoted values and block scalars
+        (|, >). Pattern documented in
+        planning/mac/2026-05-12-add-frontmatter-colon-space-hint-to-validator.md
+        """
+        block_scalar_markers = ('|', '>', '|-', '>-', '|+', '>+')
+        for line_num, raw in enumerate(yaml_block.split('\n'), 1):
+            line = raw.rstrip()
+            if not line:
+                continue
+            stripped = line.lstrip()
+            if stripped.startswith('#') or stripped.startswith('- '):
+                continue
+            sep = line.find(': ')
+            if sep == -1:
+                continue
+            key = line[:sep].strip()
+            value = line[sep + 2:]
+            value_stripped = value.strip()
+            if not value_stripped:
+                continue
+            if value_stripped[0] in ('"', "'"):
+                continue
+            if value_stripped in block_scalar_markers:
+                continue
+            if ': ' in value:
+                return (
+                    f"line {line_num}: '{key}' value contains unquoted ': ' "
+                    f"(YAML reads it as a nested mapping). Wrap value in double quotes."
+                )
+        return None
+
     def _parse_frontmatter(self, file_path: Path) -> Tuple[Optional[dict], Optional[str]]:
         """Extract and parse YAML frontmatter from a markdown file.
 
@@ -347,7 +383,9 @@ class ConfigSync:
         try:
             data = yaml.safe_load(yaml_block)
         except yaml.YAMLError as e:
-            return None, f"invalid YAML in frontmatter: {e}"
+            hint = self._hint_unquoted_colon_in_value(yaml_block)
+            suffix = f" (hint: {hint})" if hint else ""
+            return None, f"invalid YAML in frontmatter: {e}{suffix}"
 
         if not isinstance(data, dict):
             return None, "frontmatter is not a YAML mapping"
