@@ -2,7 +2,7 @@
 
 **Date**: 2026-05-12
 **Machine**: mac
-**Status**: Planned
+**Status**: Success
 
 ## Objective
 
@@ -31,15 +31,15 @@ Tier 2 originally had B1+B2+B3 candidates. After closer reading:
 
 ## Actual Outcome
 
-[pending execution]
+All changes applied. Push synced 12 files; tombstone live; references updated. The deprecated skill description now reads 'Deprecated as of 2026-05-12' in the auto-loaded skill list.
 
 ## Assessment
 
-**Result**: [pending]
+**Result**: Success
 
 ## Related Commits
 
-- [pending]: tier-2 deprecate software-developer
+- 574736544224a7068be9031cc13c8baeb9d88713: chore(tier-2): deprecate software-developer skill (duplicate of senior-developer)
 
 ## Next Steps
 
