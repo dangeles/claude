@@ -50,7 +50,7 @@ Regression check: `./sync-config.py validate` passes against current 56 skills +
 
 ## Related Commits
 
-- [pending]: add frontmatter colon-space hint
+- 40efb1576516c3a90c59fb5454dfe6cdf6e262d3: feat(sync-config): add colon-space hint to frontmatter validator
 
 ## Next Steps
 
