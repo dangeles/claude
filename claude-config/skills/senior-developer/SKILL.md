@@ -1,6 +1,6 @@
 ---
 name: senior-developer
-description: Use when implementing production-quality Python code within an assigned scope, including architecture decisions at component level, comprehensive testing, and code review of junior-developer outputs.
+description: Use when implementing production-quality Python code within an assigned scope, including component-level architecture decisions, comprehensive testing, and formal code review of junior-developer outputs within a programming-pm pipeline. NOT for general/standalone code review (use copilot for inline, /pr-review-toolkit:review-pr for pre-PR, /code-review for post-PR).
 ---
 
 # Senior Developer

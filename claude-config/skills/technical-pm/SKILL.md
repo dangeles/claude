@@ -2,7 +2,7 @@
 name: technical-pm
 version: 1.2
 last_updated: 2026-01-29
-description: Use when coordinating multi-agent work with dependencies, parallel workstreams, or complex handoffs requiring milestone tracking
+description: Use when coordinating GENERIC multi-agent work with custom skill sequences, dependencies, or parallel workstreams. Default orchestrator when no domain-specific PM applies. NOT for software development (use programming-pm), literature reviews (use lit-pm), or quick research chains (use research-pipeline).
 prerequisites:
   - Strategic priorities or user request defining scope
   - Understanding of agent capabilities (what each agent does)

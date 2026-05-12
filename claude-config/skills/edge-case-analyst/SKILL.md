@@ -1,6 +1,6 @@
 ---
 name: edge-case-analyst
-description: Use when planning new features or changes to identify failure scenarios before implementation
+description: Use BEFORE implementation, when planning new features or changes, to identify failure scenarios. PRE-implementation only — NOT for debugging existing bugs (use systematic-troubleshooter), not for reviewing already-written code (use copilot).
 ---
 
 # Edge Case Analyst

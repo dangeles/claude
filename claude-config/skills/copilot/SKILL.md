@@ -1,6 +1,6 @@
 ---
 name: copilot
-description: Use when reviewing code for correctness, efficiency, edge cases, or potential bugs in an adversarial but collaborative manner, or when bioinformatician/developer needs a second opinion.
+description: Use when reviewing code INLINE during development (real-time second opinion on correctness, bugs, edge cases) in an adversarial but collaborative manner. NOT for pre-PR comprehensive review (use /pr-review-toolkit:review-pr), post-PR automation (use /code-review), or formal review of junior-developer outputs (use senior-developer).
 success_criteria:
   - All critical bugs identified and documented
   - Edge cases systematically checked

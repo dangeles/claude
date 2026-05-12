@@ -1,6 +1,6 @@
 ---
 name: programming-pm
-description: Use when coordinating software development projects requiring multiple specialists (architect, developers, mathematician, statistician, notebook-writer) with quality gates for archival setup, requirements, architecture, pre-mortem, code review, testing, and version control integration.
+description: Use when coordinating Python software development with multi-specialist pipelines (systems-architect, senior-developer, junior-developer, mathematician, statistician) and quality gates (architecture review, pre-mortem, code review, testing, version control). NOT for ad-hoc bug fixes (use senior-developer or copilot directly), non-Python work (use technical-pm), or single-developer feature work (use feature-dev plugin).
 
 # v3.0 universal handoff metadata (see workflow-coordinator/references/frontmatter-metadata-standard.md)
 handoff:

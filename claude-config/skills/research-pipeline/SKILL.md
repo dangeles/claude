@@ -2,7 +2,7 @@
 name: research-pipeline
 version: 1.0
 last_updated: 2026-02-03
-description: Use when you need a complete research workflow from initial literature search to polished, fact-checked document. Chains researcher -> synthesizer -> devils-advocate -> fact-checker -> editor automatically.
+description: "Use when you need a QUICK automated research-to-polish chain (2-8h, fixed 5 stages — researcher -> synthesizer -> devils-advocate -> fact-checker -> editor) with no checkpoints. NOT for adaptive multi-stage reviews with parallel agents and complexity-based checkpoints (use lit-pm for 4-24h comprehensive) or custom sequences (use technical-pm)."
 prerequisites:
   - Research topic or question clearly defined
   - Access to literature databases (PubMed, bioRxiv, OpenAlex)

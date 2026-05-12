@@ -2,7 +2,7 @@
 name: calculator
 version: 1.2
 last_updated: 2026-01-29
-description: Use when quantitative feasibility checks are needed, order-of-magnitude estimates must be established, or detailed models are required to validate design assumptions and identify rate-limiting steps
+description: "Use when PHYSICS/ENGINEERING feasibility checks are needed — order-of-magnitude estimates, mass-balance / diffusion / fluid-flow models, identifying rate-limiting steps. NOT for statistical method selection (use statistician), algorithm complexity (use mathematician), or cost estimates (use economist)."
 prerequisites:
   - Clear quantitative question defined (what are we calculating?)
   - Key parameter values sourced or estimated (get from Researcher if needed)
