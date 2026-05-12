@@ -60,7 +60,7 @@ All 10 description frontmatter rewrites applied. YAML validation caught 2 instan
 
 ## Related Commits
 
-- [pending]: tier-3 sharpen skill trigger descriptions
+- 56a667ef22225648f7fbf5a4a9982c4874615fbb: chore(tier-3): sharpen description triggers on 10 overlapping skills
 
 ## Next Steps
 
