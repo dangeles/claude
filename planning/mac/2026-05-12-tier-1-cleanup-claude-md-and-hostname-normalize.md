@@ -55,7 +55,7 @@ Tier 1 of a 3-tier improvement pass on the Claude config repo. Three independent
 
 ## Related Commits
 
-- [pending]: tier-1 cleanup commit (settings.local.json local-only; commit covers CLAUDE.md + planning move)
+- abb08e39dcfb3a81004263f21cf4a1f92fede5f6: chore(tier-1): add CLAUDE.md, normalize hostname, plan local cleanup
 
 ## Next Steps
 
