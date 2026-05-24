@@ -2,7 +2,7 @@
 
 **Date**: 2026-05-24
 **Machine**: mac
-**Status**: In Progress
+**Status**: Success
 
 ## Objective
 
@@ -21,15 +21,15 @@ Three are polish (add "NOT for X (use Y)" exclusions, matching the May 12 sharpe
 
 ## Changes Planned
 
-- [ ] Follow CONFIG_MANAGEMENT.md workflow
-- [ ] Rewrite `systems-architect` description to drop bioinformatics-narrowing
-- [ ] Rewrite `completion-verifier` description as a verb-phrase with trigger words
-- [ ] Add "NOT for ..." clause to `bioinformatician`
-- [ ] Add "NOT for ..." clause to `junior-developer`
-- [ ] Add "NOT for ..." clause to `systematic-troubleshooter`
-- [ ] Validate frontmatter for all 5 files
-- [ ] `./sync-config.py push --dry-run` and `./sync-config.py push`
-- [ ] Verify all 5 skills are still discoverable at `~/.claude/skills/`
+- [x] Follow CONFIG_MANAGEMENT.md workflow
+- [x] Rewrite `systems-architect` description to drop bioinformatics-narrowing
+- [x] Rewrite `completion-verifier` description as a verb-phrase with trigger words
+- [x] Add "NOT for ..." clause to `bioinformatician`
+- [x] Add "NOT for ..." clause to `junior-developer`
+- [x] Add "NOT for ..." clause to `systematic-troubleshooter`
+- [x] Validate frontmatter for all 5 files
+- [x] `./sync-config.py push --dry-run` and `./sync-config.py push`
+- [x] Verify all 5 skills are still discoverable at `~/.claude/skills/`
 
 ## Expected Outcome
 
@@ -37,15 +37,27 @@ The 5 skills behave the same in their bodies; only their description fields chan
 
 ## Actual Outcome
 
-[Filled in after implementation.]
+All 5 description rewrites landed verbatim. YAML frontmatter validates for each file. `./sync-config.py push` succeeded; all 5 updated descriptions appear live in the available-skills index. Sync status: clean.
 
 ## Assessment
 
-[Filled in after implementation.]
+**Result**: Success
+
+**Improvements**:
+- `systems-architect` is no longer description-locked to bioinformatics; should now fire on general Python architecture work matching its body's scope.
+- `completion-verifier` description is now a verb-phrase with explicit trigger words ("are we done", "is this complete", "verify completion", "ready to ship", "ready to merge", "mark done") so the skill fires when its intended use case is mentioned.
+- The three "NOT for" additions follow the May 12 tier-3 pattern (`56a667e`), keeping consistent discriminator language across the skill catalog.
+
+**Issues**:
+- `sync-config.py plan` still creates entries under `planning/192/` (hostname returns the IP-derived `192.168.1.9`). Manually moved to `planning/mac/`, same workaround as the plotting-advisor entry. Worth a real fix in `sync-config.py` (use `hostname -s` with a sane fallback).
+
+**Lessons Learned**:
+- Description-only edits remain a fast, low-risk discipline — 5 skills, 6 files (including planning entry), one commit, sync is idempotent and clean.
+- The May 12 sharpening pass set a strong pattern; the model now reaches for "NOT for X (use Y)" wording automatically when asked to discriminate between sibling skills.
 
 ## Related Commits
 
-- [pending]
+- `8d6d4bb`: chore(skills): sharpen description triggers on 5 software skills
 
 ## Next Steps
 
