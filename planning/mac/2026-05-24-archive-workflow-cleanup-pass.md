@@ -51,7 +51,7 @@ Schema rename was metadata-clean: the JSON body already had `"version": "3.0"` a
 
 ## Related Commits
 
-- [commit SHA pending — will be appended after commit]
+- `a87e095`: chore(archive): cleanup pass (renames, project-configs reconciliation, metadata refresh)
 
 ## Next Steps
 
