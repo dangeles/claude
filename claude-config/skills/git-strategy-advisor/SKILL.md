@@ -5,401 +5,95 @@ description: >-
   Use BEFORE starting a non-trivial feature OR after implementation when integration
   strategy is non-obvious — should this be a branch or direct commit? When to push?
   PR or direct merge? Triggers on "how should I structure this?", "branch or commit?",
-  "ready to ship". Operates with session-scope discipline: recommends staging ONLY
-  files modified during the current session and flags any other dirty state for
-  separate review (prevents inter-agent collisions). NOT for routine single-commit
-  fixes (just commit directly), executing the commit/push (use `/commit-commands:commit`
-  or `/commit-commands:commit-push-pr`), the final integration decision after work is
+  "ready to ship". Recommends staging ONLY files modified during the current session;
+  the session-scope-guard PreToolUse hook enforces this structurally at commit time
+  (independent of this skill). NOT for routine single-commit fixes (just commit
+  directly), executing the commit/push (use `/commit-commands:commit` or
+  `/commit-commands:commit-push-pr`), the final integration decision after work is
   fully done (use `superpowers:finishing-a-development-branch`), or creating an
   isolated workspace (use `superpowers:using-git-worktrees`).
 ---
 
 # Git Strategy Advisor
 
-Analyzes work context (planned or completed) and recommends an appropriate git workflow strategy. Produces four decisions -- branch strategy, branch naming, push timing, and PR creation -- as structured YAML output with confidence calibration and rationale.
+Lightweight nudge for non-routine git decisions: branch or commit-on-main, push now or wait, PR or direct merge. Advisory only — never executes. For routine commits, the model should skip this skill and just commit.
 
-This skill is **advisory only**. It reads git state but never modifies it. The caller or user executes the recommended actions.
+Session-scope discipline is **enforced structurally** by the `session-scope-guard` PreToolUse hook (`~/.claude/hooks/session-scope-guard.py`), which refuses bulk-stage patterns (`-A`, `.`, `-u`) and refuses commits whose staged paths weren't modified this session. This skill assumes the hook is in place; if you're operating without it, follow the session-scope rule below manually.
 
-## When to Use This Skill
+## When to Use
 
-- Before starting work (pre-work mode): to determine branch strategy before making changes
-- After completing work (post-work mode): to determine push/PR strategy based on actual changes
-- Standalone: when you want git advice for the current repository state
-- When a calling orchestrator needs git strategy recommendations via Task tool
-- When unsure whether to branch, push, or create a PR
+- A non-trivial feature is about to begin and you're unsure of the branch model
+- Implementation is far enough along that "how do I integrate this?" isn't obvious
+- The work spans multiple files and you want a quick sanity check on push/PR scope
 
-## When NOT to Use This Skill
+## When NOT to Use
 
-- Executing git commands (this skill advises; it does not modify the repository)
-- Commit message generation (deferred to v2)
-- PR description generation (deferred to v2)
-- Complex branching strategies (mono-repos, release branches, gitflow)
-- Conflict resolution
-- Repository initialization or setup
-- Re-invoking orchestrator or pipeline skills from within this skill (this skill is a leaf node; it reads git state and returns recommendations but never delegates work to other skills or orchestrators)
+- Routine single-commit fixes — just commit
+- Executing the commit/push — use `/commit-commands:commit` or `/commit-commands:commit-push-pr`
+- Final integration decision after work is fully done — use `superpowers:finishing-a-development-branch`
+- Creating an isolated workspace — use `superpowers:using-git-worktrees`
+- Anything where the hook needs to be bypassed (escalate to the user, don't silently set `SESSION_SCOPE_BYPASS`)
 
-## Session-Scope Discipline
+## Session-scope rule (one line)
 
-This skill recommends git actions for the **current session's work only**. Files modified by other agents, prior sessions, or background processes must be flagged but never automatically committed — this prevents inter-agent collisions where one agent's incomplete work gets bundled into another agent's commit.
+**Stage only paths this session modified. Never `git add -A` / `.` / `-u`. Flag dirty paths Claude didn't touch — don't include them.** The `session-scope-guard` hook will reject violations regardless.
 
-### Identifying the session set
+## Heuristic table
 
-Before generating recommendations, derive the set of "session-modified files" — files this Claude session has touched. Sources, in priority order:
+Walk top-down; the first matching row wins.
 
-1. **Explicit caller declaration**: If the caller passes `session_files: [path1, path2, ...]` in the invocation, use that list verbatim.
-2. **Conversational scan**: Re-read recent tool calls in this conversation. Collect every file path written to via `Write`, `Edit`, `NotebookEdit`, or `Bash` commands that mutate the working tree (`mv`, `cp`, `rm`, `>` redirect, `tee`, `sed -i`, `python -c "...open(...).write(...)"`, etc.).
-3. **Fall back**: If neither (1) nor (2) yields a non-empty list, ask the user to confirm which files belong to this session before recommending any commit action. Do not infer from `git status` alone — many dirty files may pre-date the session.
+| Situation | Recommendation |
+|---|---|
+| ≤3 files, <100 lines, on `main`, solo | Commit + push directly to main |
+| Many files, one topic, on `main`, solo | Commit + push to main; consider a branch only if `main` is shared with collaborators or CI is sensitive |
+| Multi-topic dirty tree | Split into logical commits, then push each |
+| WIP across multiple sessions, not ready to ship | Create a `feature/` branch, push to back up work, **no PR yet** |
+| Feature complete, want review or to track in a PR | Branch + push + open PR |
+| Out-of-session files dirty | Flag them in the response; do NOT include them. The hook will block if you try. |
 
-### Partitioning the working tree
+## Branch naming (when a branch is the answer)
 
-Run `git status --porcelain` to enumerate all dirty entries. Partition each entry into one of two buckets:
+`{type}/{2-4-word-description}`, lowercased, hyphen-separated, ≤40 chars. Type prefix:
 
-- **In session set**: paths Claude modified this session. Candidates for commit.
-- **Out of session**: paths dirty in the working tree but NOT in the session set. Candidates for the `warnings` array.
+- `fix/` if the work fixes a bug
+- `refactor/` if the work restructures without changing behavior
+- `docs/` if documentation-only
+- `feature/` otherwise
 
-### Recommendation discipline
+## Output shape
 
-When generating the strategy YAML:
-
-1. The recommended stage command MUST list session-set paths explicitly (e.g., `git add path/a path/b`). NEVER recommend `git add -A`, `git add .`, `git add -u`, or any wildcard form that would pick up out-of-session files.
-2. Out-of-session dirty paths are emitted as a single `OUT_OF_SESSION_CHANGES` warning listing each path and its `git status` code (M / A / ?? / D / R). See Output Schema below for the exact shape.
-3. The human-readable summary explicitly states: "N file(s) modified this session staged for commit. M out-of-session change(s) flagged below — do NOT include in this commit."
-4. If the session set is empty AND the working tree is dirty, every dirty path is out-of-session. The recommendation MUST be "review-only" — no commit, no push, no PR — until the user reconciles the out-of-session state.
-5. Out-of-session **staged** changes are an explicit red flag (another agent staged something Claude didn't intend to ship). Surface them as a `STAGED_OUT_OF_SESSION` warning recommending `git reset HEAD <path>` to unstage before proceeding.
-
-### Edge cases
-
-- **Untracked files (`??`)**: Out-of-session by default unless explicitly in the session set. A scratch file Claude created via Bash should already be in the session set via the conversational scan; if it isn't, treat as out-of-session and flag.
-- **Deleted files (`D`)**: Same rule. Session-set deletes are commit candidates; out-of-session deletes are flagged.
-- **Renames (`R`)**: Treat both old and new paths as the unit; if either is out-of-session, flag the whole rename and recommend reviewing manually.
-- **Files Read but not modified**: Reads do not put a file in the session set. Only mutations do.
-- **Caller-passed empty list (`session_files: []`)**: Treat as authoritative — every dirty path is out-of-session, recommendation is review-only.
-
-## Workflow Overview
-
-Three sequential phases, each building on the previous:
+When this skill is invoked, respond with this terse block (no YAML schema, no confidence calibration, no warnings array):
 
 ```
-Phase 1: Context Analysis    -->  Determine mode, check git state, validate context
-Phase 2: Work Classification -->  Extract metrics, classify scope and work type
-Phase 3: Strategy Recommendation --> Apply decision matrix, check consistency, format output
+Recommendation: <commit + push to main | branch + push | branch + push + PR | review-only>
+Stage:          <path/a, path/b, ...>  (or "none — out-of-session changes only")
+Skip:           <out-of-session paths, if any>
+Branch name:    <only if branching>
+Commands:
+  git add path/a path/b
+  git commit -m "<one-line summary>"
+  git push   (or `git push -u origin <branch>` if new branch)
+  (optional: gh pr create --fill if PR)
 ```
 
-**Tools used**: Bash (for git commands in post-work mode), Read (for decision-matrix.md), Write (for output file)
+If the session set is empty AND the working tree is dirty, recommendation is `review-only` and the commands section is omitted.
 
-**Output**: Structured YAML recommendation (written to file AND returned in response)
+## Worked example
 
----
-
-## Phase 1: Context Analysis
-
-Determine invocation mode, run pre-flight checks, and validate context sufficiency.
-
-### 1.1 Mode Detection
-
-Use this priority-based detection cascade:
-
-1. **Explicit mode signal** (highest priority): If context contains `mode: pre-work` or `mode: post-work`, use that mode directly.
-2. **Structured data signal**: If context contains `git status` porcelain output (patterns: `M  path`, `?? path`, `A  path`) or `git diff` headers (`+++ b/`, `--- a/`), use post-work mode.
-3. **Keyword heuristic** (lowest priority): Count pre-work signals ("plan", "about to", "will", "estimated", "going to", "planning to", "intend to") vs post-work signals ("completed", "finished", "done", "implemented", "changed", "modified", "just made"). Use mode with more signals. Tie = post-work.
-4. **Default**: post-work (analyze current git state).
-
-**Confidence adjustment**:
-- Explicit signal or unambiguous structured data: no penalty.
-- Keyword heuristic with unclear winner: degrade confidence one level.
-- Default fallback (no signals): confidence starts at "low" with note in summary.
-
-**Caller guidance**: Callers SHOULD include explicit `mode: pre-work` or `mode: post-work` for reliable behavior.
-
-### 1.2 Pre-flight Check: Git Repository
-
-Run `git rev-parse --is-inside-work-tree 2>/dev/null`:
-
-- If exit code != 0 (not a git repo):
-  - **Pre-work mode**: Produce recommendation with defaults (create-feature-branch, stay-local, no-pr-needed), confidence = "low", summary includes "Consider initializing git with `git init`."
-  - **Post-work mode**: Return structured output with confidence = "none", summary = "Post-work analysis requires a git repository."
-
-### 1.3 Pre-flight Check: Git State
-
-Before extracting metrics, detect special states:
-
-- **Detached HEAD**: `git branch --show-current` returns empty. Set current_branch = "DETACHED", is_on_main = false. Force branch.action = "create-feature-branch" with rationale about preserving work.
-- **Merge in progress**: `test -f .git/MERGE_HEAD`. Return advisory: "Complete or abort the merge before requesting strategy advice." All strategy fields = null, confidence = "none".
-- **Rebase in progress**: `test -d .git/rebase-merge || test -d .git/rebase-apply`. Return advisory: "Complete or abort the rebase before requesting strategy advice." All strategy fields = null, confidence = "none".
-
-### 1.4 Insufficient Context Handling
-
-If pre-work mode detected but context lacks actionable detail (no file paths, no scope keywords, no numeric estimates):
-
-- **Standalone invocation**: Ask user for more context (what files, how many, what type of change).
-- **Orchestrator invocation** (via Task tool): Return conservative defaults: scope = "minor", work_type = "mixed", confidence = "low", summary includes "Insufficient context for accurate recommendation. Consider re-invoking in post-work mode."
-
----
-
-## Phase 2: Work Classification
-
-Extract metrics, detect primary branch, classify scope and work type.
-
-### 2.1 Primary Branch Detection
-
-Use this detection chain (first success wins):
-
-1. `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'`
-2. `git branch --list main master develop trunk | head -1 | tr -d '* '`
-3. `git config init.defaultBranch`
-4. Default to "main"
-
-Store as `context.primary_branch`. Set `context.is_on_main` by comparing current branch to primary branch.
-
-### 2.2 Remote Detection
-
-Check `git remote -v` for output. Set `context.has_remote` to true if any remote is configured.
-
-### 2.3 Metrics Extraction
-
-**Post-work mode**:
-
-First check for changes:
-- Run `git status --porcelain` to detect uncommitted changes.
-- If empty (clean working tree):
-  - Check staged changes: `git diff --staged --stat`
-  - Check unpushed commits: `git log @{upstream}..HEAD --oneline 2>/dev/null` or `git log origin/{primary_branch}..HEAD --oneline 2>/dev/null`
-  - If unpushed commits exist: Use `git diff --stat origin/{primary_branch}..HEAD` for metrics. Note: "Analysis based on N unpushed commits."
-  - If nothing: scope = "trivial", summary = "No uncommitted or unpushed changes detected."
-
-For uncommitted changes, use `git diff --numstat HEAD` to capture BOTH staged and unstaged changes. **Filter the numstat output to the session set** (see Session-Scope Discipline above) before computing metrics — out-of-session files are tracked separately as warnings, not as scope inputs:
-
-- Files changed: count of session-set lines in the filtered output
-- Lines changed: sum of additions + deletions across session-set files
-- Directories spanned: count distinct first path components from session-set file paths
-- Binary files: count separately (shown as `-` in numstat), note in warnings if present
-- Out-of-session paths: emit as `OUT_OF_SESSION_CHANGES` warning (see Output Schema), NOT counted toward scope
-
-If HEAD does not exist (empty repo), treat all files from `git status --porcelain` as new additions with confidence = "medium".
-
-**Pre-work mode**:
-- Estimate from task description keywords and file/directory mentions.
-- If caller provides explicit estimates, use those directly.
-
-### 2.4 Scope Classification
-
-Apply the threshold table and aggregation algorithm from `references/decision-matrix.md`:
-
-1. Evaluate each metric independently against the threshold table.
-2. Take the MAXIMUM scope level across all three metrics.
-3. **Single-metric exception**: If only one metric is elevated and the other two are at trivial, downgrade by one level and set confidence to "medium".
-
-See `references/decision-matrix.md` for the complete threshold table and worked examples.
-
-### 2.5 Work Type Classification
-
-Apply the majority rule from `references/decision-matrix.md`:
-
-1. Classify each file by extension using the extension mapping.
-2. Count files per type.
-3. If ALL files belong to one type: use that type.
-4. If >= 80%: use that type (note minority in warnings).
-5. If no type reaches 80%: classify as "mixed".
-6. Skill type override: requires >50% skill-path files.
-7. Unrecognized extensions: classify as "code" (conservative default).
-
----
-
-## Phase 3: Strategy Recommendation
-
-Apply decision matrix, check consistency, calibrate confidence, and format output.
-
-### 3.1 Decision Matrix Application
-
-Read `references/decision-matrix.md` and apply the four decision tables based on Phase 2 classification:
-
-1. **Branch Strategy**: Based on scope, work type, and whether on primary branch.
-2. **Branch Naming**: Based on work type with keyword overrides for fix/refactor.
-3. **Push Strategy**: Based on scope and remote availability.
-4. **PR Strategy**: Based on scope and work type.
-
-**Defaults for uncovered combinations**:
-
-| Decision | Default Action | Rationale |
-|----------|---------------|-----------|
-| Branch | create-feature-branch | Conservative: isolates changes |
-| Push | push-after-review | Moderate: backs up work |
-| PR | consider-pr | Advisory: lets caller decide |
-| Naming | feature/{description} | Generic: works for all types |
-
-### 3.2 Branch Name Generation
-
-Format: `{type}/{brief-description}`
-
-Prefix selection:
-- Check for keyword overrides first: "fix/bug/patch/repair" -> `fix/`, "refactor/restructure/reorganize/cleanup" -> `refactor/`
-- Fall back to work-type mapping: code -> `feature/`, documentation -> `docs/`, configuration -> `config/`, skill -> `skill/`, mixed -> `feature/`
-
-Name generation:
-1. Extract 2-4 keywords from task description.
-2. Join with hyphens, lowercase.
-3. Truncate at last complete word within 40 characters (never cut mid-word).
-
-### 3.3 Post-Decision Consistency Check
-
-After computing all four decisions independently, apply the five consistency override rules from `references/decision-matrix.md` in order. Log any overrides in the `warnings` array with code "CONSISTENCY_OVERRIDE".
-
-### 3.4 Rationale Quality
-
-Rationale strings follow the situation-implication-action pattern:
-- **Situation** (what metrics show): "3 files, 120 lines across 2 directories"
-- **Implication** (what this means): "moderate scope change on main branch"
-- **Action** (what to do): "create a feature branch to isolate changes"
-
-Example: `"3 files, 120 lines across 2 directories (moderate scope) on main -- feature branch isolates risk and enables PR review."`
-
-For major scope, include: "Consider breaking this into smaller PRs for better review quality (research shows review effectiveness drops significantly above 200 lines)."
-
-### 3.5 Confidence Calibration
-
-Start at "high" and degrade based on conditions:
-
-| Condition | Degradation |
-|-----------|-------------|
-| Pre-work mode (description only, no git data) | -1 level (start at "medium") |
-| Missing `git diff` output (git status only) | -1 level |
-| Scope at threshold boundary (aggregation exception triggered) | -1 level |
-| Mode detection via keyword heuristic (unclear winner) | -1 level |
-| Work type "mixed" (no dominant type) | no degradation |
-| Default fallback mode (no signals) | set to "low" |
-| Git not initialized | set to "low" (pre-work) or "none" (post-work) |
-| Special git state (detached HEAD) | set to "medium" |
-| Special git state (merge/rebase in progress) | set to "none" |
-
-Maximum: "high". Minimum: "low" (or "none" for error states). Any 2 degradation conditions = "low".
-
-### 3.6 Output Formatting
-
-**For standalone invocation**, present human-readable summary followed by full YAML:
+Session has modified `src/foo.py` and `tests/test_foo.py`. `git status` also shows an untracked `notes.md` that no tool call touched.
 
 ```
-Git Strategy Recommendation
----
-Based on your changes (3 files, 120 lines across 2 directories):
-
-  Branch: Create feature branch `feature/add-validation-logic`
-  Push:   Push after self-review
-  PR:     Create a pull request
-
-  Confidence: High
-  Rationale: Moderate code changes on main branch warrant isolation
-             and peer review.
-
-Full recommendation written to: /tmp/git-strategy-recommendation.yaml
+Recommendation: commit + push to main
+Stage:          src/foo.py, tests/test_foo.py
+Skip:           notes.md (out-of-session, untracked)
+Commands:
+  git add src/foo.py tests/test_foo.py
+  git commit -m "<one-line summary>"
+  git push
 ```
 
-**For orchestrator invocation** (via Task tool), return YAML in the response text AND write to file.
+## Notes
 
-### 3.7 Output File Handling
-
-1. If caller specifies output path: attempt to write there. If parent directory missing or write fails, fall back to `/tmp/git-strategy-recommendation.yaml`.
-2. Always return full recommendation in Task tool response text (dual delivery).
-3. Log warning with code "OUTPUT_FALLBACK" if fallback path was used.
-
----
-
-## Output Schema
-
-```yaml
-git_strategy_recommendation:
-  version: "1.0"
-  timestamp: "2026-02-07T10:30:00Z"
-  mode: "pre-work" | "post-work"
-  confidence: "high" | "medium" | "low" | "none"
-
-  analysis:
-    files_changed: 3
-    lines_changed: 120
-    directories_spanned: 2
-    work_type: "code"
-    scope: "moderate"
-
-  context:
-    current_branch: "main"
-    primary_branch: "main"
-    is_on_main: true
-    has_remote: true
-
-  strategy:
-    branch:
-      action: "create-feature-branch"
-      suggested_name: "feature/add-validation-logic"
-      rationale: "3 files, 120 lines across 2 dirs (moderate) on main -- feature branch isolates risk."
-    push:
-      action: "push-now"
-      rationale: "Moderate scope with remote configured -- push to back up work and enable collaboration."
-    pr:
-      action: "create-pr"
-      rationale: "Moderate scope warrants peer review via pull request."
-
-  warnings: []
-    # Example entries:
-    # - code: "SCOPE_BOUNDARY"
-    #   message: "Metrics conflict on scope. Used highest (moderate)."
-    # - code: "CONSISTENCY_OVERRIDE"
-    #   message: "PR strategy overridden: direct-commit does not use PRs."
-    # - code: "GIT_NOT_INITIALIZED"
-    #   message: "Git repository not found. Defaults used."
-    # - code: "OUT_OF_SESSION_CHANGES"
-    #   message: "Working tree contains changes not made by this session -- review separately before any commit."
-    #   paths:
-    #     - { path: "config/settings.json", status: "M" }
-    #     - { path: "scratch/notes.md", status: "??" }
-    # - code: "STAGED_OUT_OF_SESSION"
-    #   message: "Out-of-session paths are already staged. Unstage with `git reset HEAD <path>` before proceeding."
-    #   paths:
-    #     - { path: "other-agent/output.json", status: "A" }
-
-  summary: "Create feature branch `feature/add-validation-logic`, push to remote, and open a PR for review."
-```
-
----
-
-## Error Handling
-
-Errors do NOT abort the pipeline. Phase 3 receives partial data with warnings. The `confidence` field reflects cumulative error severity.
-
-| Phase | Failure | Behavior | Output |
-|-------|---------|----------|--------|
-| Phase 1 | `git rev-parse` fails (not a repo) | Mode-specific defaults | confidence: "low"/"none" |
-| Phase 2 | `git diff` fails but `git status` works | Use file count only | confidence: "medium", warning added |
-| Phase 2 | Both git commands fail | Return defaults | confidence: "low", warning added |
-| Phase 2 | Empty context (no description, no git data) | Ask user (standalone) or conservative defaults (orchestrator) | confidence: "low" |
-| Phase 3 | No matching decision matrix row | Use default actions | confidence: "low", warning added |
-| Phase 3 | Scope classification ambiguous | Classify as higher scope | confidence: "medium" |
-
----
-
-## Integration Notes
-
-### State Management
-
-This skill uses in-context state only. No intermediate files, no session directory, no resume capability. If interrupted, re-invoke. The skill is idempotent.
-
-### Ecosystem Alignment
-
-- **with programming-pm Phase 6**: programming-pm may optionally invoke git-strategy-advisor in post-work mode before its existing branching logic. The advisor may recommend direct-commit for trivial changes or confirm the existing branch-on-main behavior for larger changes. programming-pm's existing Phase 6 logic takes precedence unconditionally; the advisor's recommendation is presented as an informational note.
-- **with programming-pm branch naming**: programming-pm uses `{type}/{task-id}-{description}`. git-strategy-advisor uses `{type}/{description}` (no task ID available). If caller provides task ID, include it in the description.
-- **with skill-editor Phase 4**: skill-editor may optionally invoke git-strategy-advisor in post-work mode before committing. The advisor may recommend branching for skill changes depending on scope. skill-editor's existing commit logic takes precedence unconditionally; the advisor's recommendation is presented as an informational note.
-- **with other orchestrators**: technical-pm, lit-pm, scientific-analysis-architect, and research-pipeline may invoke git-strategy-advisor in post-work mode after completing their workflows to get git recommendations for the produced files.
-
-**Maintenance note**: git-strategy-advisor integration sections exist in 6 orchestrator SKILL.md files (programming-pm, skill-editor, technical-pm, lit-pm, scientific-analysis-architect, research-pipeline). When modifying the integration pattern in any single orchestrator, check all 6 for consistency.
-
-### Invocation Patterns
-
-- **Pattern A** (Orchestrator pre-work): Task tool with `mode: pre-work` and task description. See `examples/pre-work-invocation.md`.
-- **Pattern B** (Orchestrator post-work): Task tool with `mode: post-work` and git state. See `examples/post-work-invocation.md`.
-- **Pattern C** (Standalone): User asks for git advice directly. Skill reads current git state via Bash.
-- **Pattern D** (Bookend): Pre-work invocation at start, post-work re-evaluation at end. Post-work is authoritative.
-
-### Archival Compliance
-
-When writing output files, this skill:
-- Uses descriptive filenames (`git-strategy-recommendation.yaml`)
-- Includes version and timestamp in the output schema
-- Follows the dual-delivery pattern (file + response text) for traceability
+- The hook is the structural guarantee; this skill is the brief advisory layer on top.
+- If you need to bypass the hook intentionally (rare — e.g., committing files generated by a sub-agent you explicitly trust), escalate to the user before setting `SESSION_SCOPE_BYPASS=1`. Do not bypass silently.
+- This skill does not delegate to other skills. It is a leaf node.

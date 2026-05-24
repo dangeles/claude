@@ -36,6 +36,9 @@ sync_rules:
     - path: "agents/"
       description: "Custom agents for specialized workflows"
 
+    - path: "hooks/"
+      description: "PreToolUse/PostToolUse hook scripts (executable)"
+
 # Exclusions (machine-specific/temporary)
 exclusions:
   - "settings.local.json"        # Machine-specific permissions
