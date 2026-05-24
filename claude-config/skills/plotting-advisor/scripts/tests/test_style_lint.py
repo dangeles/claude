@@ -327,11 +327,8 @@ class TestStrictFlag(unittest.TestCase):
 
 class TestImageMode(unittest.TestCase):
     def setUp(self):
-        try:
-            from PIL import Image  # noqa: F401
-            self.have_pillow = True
-        except ImportError:
-            self.have_pillow = False
+        import importlib.util
+        self.have_pillow = importlib.util.find_spec("PIL") is not None
 
     def test_missing_image_returns_error_violation(self):
         violations = style_lint.lint_image("/nonexistent/path.png")

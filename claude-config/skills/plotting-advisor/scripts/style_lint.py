@@ -500,8 +500,12 @@ def lint_image(path: str) -> list[dict]:
     # Convert top non-background colors to hex
     # Heuristic: background is the most-frequent color; skip it.
     dominant_hexes: list[str] = []
-    for i, (cnt, idx) in enumerate(counts):
-        r, g, b = pal[idx * 3 : idx * 3 + 3]
+    for i, (_, idx) in enumerate(counts):
+        # After Image.quantize() the image is palette-mode, so getcolors()
+        # returns (count, palette_index:int). Pyright sees the more general
+        # PIL.Image.getcolors signature (int | tuple); narrow here.
+        idx_int = int(idx) if isinstance(idx, int) else 0
+        r, g, b = pal[idx_int * 3 : idx_int * 3 + 3]
         hex_code = "#{:02X}{:02X}{:02X}".format(r, g, b)
         # Skip near-white and near-black backgrounds for palette judgment
         is_near_white = r > 240 and g > 240 and b > 240
