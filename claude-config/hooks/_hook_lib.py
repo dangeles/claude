@@ -13,8 +13,43 @@ Import pattern from a hook script:
 from __future__ import annotations
 
 import json
+import sys as _sys
 from pathlib import Path
 from typing import Iterator
+
+
+# ----- Diagnose mode (used by blocking hooks for debugging false positives) -----
+
+
+def is_diagnose_mode() -> bool:
+    """True if --diagnose appears in this script's argv.
+
+    Blocking hooks check this to convert a "would block" decision into
+    an "informational print + exit 0" without actually interfering with
+    the tool call. Use by piping a synthetic JSON payload into the
+    hook with --diagnose appended.
+    """
+    return "--diagnose" in _sys.argv[1:]
+
+
+def report(message: str, *, block: bool = True) -> int:
+    """Emit a hook decision and return the appropriate exit code.
+
+    In normal mode:
+      - block=True:  prints to stderr, returns 2 (Claude Code blocks)
+      - block=False: prints to stderr, returns 0 (informational only)
+
+    In diagnose mode (--diagnose in argv):
+      - prints to stdout with a clear DIAGNOSE prefix, returns 0
+        regardless of block flag. This lets the user inspect what the
+        hook would do without it actually intervening.
+    """
+    if is_diagnose_mode():
+        prefix = "[DIAGNOSE] would block:\n" if block else "[DIAGNOSE] would warn:\n"
+        print(prefix + message)
+        return 0
+    print(message, file=_sys.stderr)
+    return 2 if block else 0
 
 
 def iter_transcript_events(transcript_path: str) -> Iterator[dict]:

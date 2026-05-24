@@ -32,7 +32,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _hook_lib import iter_tool_uses  # noqa: E402  # pyright: ignore[reportMissingImports]
+from _hook_lib import iter_tool_uses, report  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 GATED_PATH_PATTERN = re.compile(
     r"claude-config/(?:skills/|agents/|hooks/|settings\.json|plugins/)"
@@ -109,8 +109,7 @@ def main() -> int:
     msg.append("")
     msg.append("  Bypass: include SKIP_PLANNING_REQUIRED in your message, or export")
     msg.append("  SKIP_PLANNING_REQUIRED=1.")
-    print("\n".join(msg), file=sys.stderr)
-    return 2  # Stop hook: refuse to stop; Claude continues
+    return report("\n".join(msg), block=True)
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _hook_lib import iter_tool_uses  # noqa: E402  # pyright: ignore[reportMissingImports]
+from _hook_lib import iter_tool_uses, report  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 BULK_STAGE = re.compile(r"\bgit\s+add\s+(?:-A\b|--all\b|\.(?:\s|$|;|&|\|)|-u\b|--update\b)")
 IS_GIT_ADD = re.compile(r"\bgit\s+add\b")
@@ -71,8 +71,8 @@ BASH_MUTATIONS_SINGLE = [
 
 
 def block(message: str) -> int:
-    print(f"\n[session-scope-guard] {message}\n", file=sys.stderr)
-    return 2
+    """Block the tool call (or emit the would-block message in --diagnose mode)."""
+    return report(f"[session-scope-guard] {message}", block=True)
 
 
 def canonicalize(path: str, repo_root: str | None) -> str:

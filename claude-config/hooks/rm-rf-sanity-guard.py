@@ -27,6 +27,9 @@ import shlex
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _hook_lib import report  # noqa: E402  # pyright: ignore[reportMissingImports]
+
 # Match destructive operations. Conservative: only `rm -r*`, `rm -f*r*`,
 # and `find ... -delete` qualify. Plain `rm file` is fine.
 RM_RECURSIVE = re.compile(r"\brm\s+(?:-[a-zA-Z]*[rRf][a-zA-Z]*\s+)+")
@@ -153,8 +156,7 @@ def main() -> int:
     lines.append("")
     lines.append("  If this is intentional: include SKIP_RM_GUARD in the description,")
     lines.append("  or export SKIP_RM_GUARD=1.")
-    print("\n".join(lines), file=sys.stderr)
-    return 2
+    return report("\n".join(lines), block=True)
 
 
 if __name__ == "__main__":

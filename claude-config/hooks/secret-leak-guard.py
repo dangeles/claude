@@ -18,6 +18,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _hook_lib import report  # noqa: E402  # pyright: ignore[reportMissingImports]
+
 # Patterns ordered roughly by specificity. Each entry: (name, regex).
 SECRET_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("Anthropic API key", re.compile(r"\bsk-ant-(?:api03|admin01)-[A-Za-z0-9_\-]{60,}\b")),
@@ -110,8 +113,7 @@ def main() -> int:
     lines.append("  tool call's description (or export SKIP_SECRET_LEAK_GUARD=1).")
     lines.append("  Otherwise: move the secret to an env var or a gitignored file,")
     lines.append("  rotate it immediately if it was ever committed elsewhere.")
-    print("\n".join(lines), file=sys.stderr)
-    return 2
+    return report("\n".join(lines), block=True)
 
 
 if __name__ == "__main__":

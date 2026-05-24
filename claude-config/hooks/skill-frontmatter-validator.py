@@ -20,6 +20,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _hook_lib import report  # noqa: E402  # pyright: ignore[reportMissingImports]
+
 SKILL_PATH = re.compile(r"claude-config/skills/[^/]+/SKILL\.md$")
 REQUIRED_FIELDS = ("name", "description")
 
@@ -108,14 +111,13 @@ def main() -> int:
     ok, msg = _validate_frontmatter(content)
     if ok:
         return 0
-    print(
-        f"\n[skill-frontmatter-validator] Refusing write to {file_path}\n"
+    return report(
+        f"[skill-frontmatter-validator] Refusing write to {file_path}\n"
         f"  Reason: {msg}\n"
         f"  Required fields: {', '.join(REQUIRED_FIELDS)}\n"
-        f"  Bypass: include SKIP_FRONTMATTER_VALIDATION in the description.\n",
-        file=sys.stderr,
+        f"  Bypass: include SKIP_FRONTMATTER_VALIDATION in the description.",
+        block=True,
     )
-    return 2
 
 
 if __name__ == "__main__":

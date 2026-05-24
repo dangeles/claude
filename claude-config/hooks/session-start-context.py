@@ -35,12 +35,39 @@ def _git(args: list[str], cwd: str | None = None) -> str:
         return ""
 
 
+MARKER_TTL_DAYS = 30
+
+
 def _marker_path(session_id: str) -> Path:
     base = Path(os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd()))
     marker_dir = base / ".claude" / "session-state"
     marker_dir.mkdir(parents=True, exist_ok=True)
     safe_id = re.sub(r"[^A-Za-z0-9_\-]", "_", session_id)[:64] or "default"
     return marker_dir / f"{safe_id}-start.marker"
+
+
+def _cleanup_old_markers(marker_dir: Path) -> None:
+    """Reap session-state marker files older than MARKER_TTL_DAYS.
+
+    Best-effort: silently skip files that can't be stat'd or unlinked.
+    Runs on every session start so the dir stays bounded without any
+    external cron job.
+    """
+    import time
+    if not marker_dir.exists():
+        return
+    cutoff = time.time() - MARKER_TTL_DAYS * 86400
+    try:
+        for entry in marker_dir.iterdir():
+            if not entry.name.endswith("-start.marker"):
+                continue
+            try:
+                if entry.stat().st_mtime < cutoff:
+                    entry.unlink()
+            except OSError:
+                continue
+    except OSError:
+        return
 
 
 def _build_context(cwd: str) -> str | None:
@@ -95,6 +122,9 @@ def main() -> int:
 
     session_id = payload.get("session_id", "")
     marker = _marker_path(session_id)
+    # Reap stale markers before deciding whether to fire. Cheap (one
+    # iterdir + stat per file), bounded by MARKER_TTL_DAYS.
+    _cleanup_old_markers(marker.parent)
     if marker.exists():
         return 0  # already fired this session
 
