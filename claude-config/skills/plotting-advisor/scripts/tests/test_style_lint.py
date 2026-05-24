@@ -246,5 +246,84 @@ class TestRedGreenPaletteIsCaught(unittest.TestCase):
         self.assertIn("accessibility#colorblind-unsafe", _rules(v))
 
 
+class TestMinorRules(unittest.TestCase):
+    def test_legend_with_few_series_flagged_describe(self):
+        v = _run_describe(
+            "line plot with 3 series using a legend; "
+            "x-axis 'time (s)', y-axis 'voltage (V)'"
+        )
+        # Minor: legend when ≤5 series — suggest direct labels
+        self.assertIn("annotation#legend-when-direct-labels-fit", _rules(v))
+        for vv in v:
+            if vv["rule"] == "annotation#legend-when-direct-labels-fit":
+                self.assertEqual(vv["severity"], "minor")
+
+    def test_legend_with_3_series_flagged_spec(self):
+        spec = {
+            "n_axes": 1,
+            "axes": [
+                {
+                    "xlabel": "x", "ylabel": "y", "title": "",
+                    "xscale": "linear", "yscale": "linear",
+                    "xlim": [0, 10], "ylim": [0, 100],
+                    "xlim_includes_zero": True, "ylim_includes_zero": True,
+                    "is_3d": False,
+                    "line_colors": ["#E69F00", "#56B4E9", "#009E73"],
+                    "has_legend": True,
+                    "n_patches": 0, "n_images": 0,
+                }
+            ],
+        }
+        v = style_lint.lint_figure_spec(spec)
+        self.assertIn("annotation#legend-when-direct-labels-fit", _rules(v))
+
+    def test_log_scale_with_narrow_range_flagged(self):
+        spec = {
+            "n_axes": 1,
+            "axes": [
+                {
+                    "xlabel": "x", "ylabel": "y", "title": "",
+                    "xscale": "linear", "yscale": "log",
+                    "xlim": [0, 10], "ylim": [10, 30],  # less than 1 decade
+                    "xlim_includes_zero": True, "ylim_includes_zero": False,
+                    "is_3d": False,
+                    "line_colors": ["#1f77b4"],
+                    "has_legend": False,
+                    "n_patches": 0, "n_images": 0,
+                }
+            ],
+        }
+        v = style_lint.lint_figure_spec(spec)
+        self.assertIn("axes#log-narrow-range", _rules(v))
+
+
+class TestStrictFlag(unittest.TestCase):
+    def test_strict_exits_2_on_critical(self):
+        # Use a separate process via cli_main
+        rc = style_lint.cli_main([
+            "--describe",
+            "3D bar chart of revenue",
+            "--strict",
+        ])
+        self.assertEqual(rc, 2)
+
+    def test_no_strict_exits_0_on_critical(self):
+        rc = style_lint.cli_main([
+            "--describe",
+            "3D bar chart of revenue",
+        ])
+        self.assertEqual(rc, 0)
+
+    def test_strict_exits_0_on_no_critical(self):
+        rc = style_lint.cli_main([
+            "--describe",
+            "dot plot of 4 conditions with Okabe-Ito palette, "
+            "y axis 'Response (counts/min)' from 0 to 100, "
+            "x axis 'Condition'",
+            "--strict",
+        ])
+        self.assertEqual(rc, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

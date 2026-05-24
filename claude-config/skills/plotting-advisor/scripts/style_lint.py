@@ -106,6 +106,10 @@ _ALPHABET_ORDER_PATTERN = re.compile(
     r"sorted\s+alphabetic\w*|alphabetic\w*\s+order(ed)?",
     re.IGNORECASE,
 )
+_LEGEND_FEW_SERIES_PATTERN = re.compile(
+    r"(\d+)\s+series.*?legend|legend.*?(\d+)\s+series",
+    re.IGNORECASE,
+)
 
 
 def lint_describe(text: str) -> list[dict]:
@@ -235,6 +239,25 @@ def lint_describe(text: str) -> list[dict]:
             )
         )
 
+    # --- Minor rules ---
+
+    m = _LEGEND_FEW_SERIES_PATTERN.search(text)
+    if m:
+        n_str = next((g for g in m.groups() if g), None)
+        if n_str and 2 <= int(n_str) <= 5:
+            report.add(
+                Violation(
+                    severity="minor",
+                    rule="annotation#legend-when-direct-labels-fit",
+                    where="annotation",
+                    observed=int(n_str),
+                    fix=(
+                        "Direct-label each series at its terminal point "
+                        "(Tufte). Legend is unnecessary at this count."
+                    ),
+                )
+            )
+
     return [v.to_dict() for v in report.violations]
 
 
@@ -350,6 +373,64 @@ def lint_figure_spec(spec: dict) -> list[dict]:
                         ),
                     )
                 )
+
+    # --- Minor rules (per axis) ---
+    for i, ax in enumerate(axes):
+        where = f"axes[{i}]"
+        colors = [c for c in ax.get("line_colors", []) if c and c != "?"]
+        n_series = len(colors)
+
+        # Legend when ≤5 series
+        if ax.get("has_legend") and 2 <= n_series <= 5:
+            report.add(
+                Violation(
+                    severity="minor",
+                    rule="annotation#legend-when-direct-labels-fit",
+                    where=f"{where}.legend",
+                    observed=n_series,
+                    fix="Direct-label each series at its terminal point (Tufte).",
+                )
+            )
+
+        # Log scale with narrow range (<2 decades)
+        if ax.get("yscale") == "log":
+            ylo, yhi = ax.get("ylim", [None, None])
+            if ylo and yhi and ylo > 0 and yhi > 0:
+                import math
+                decades = math.log10(yhi) - math.log10(ylo)
+                if decades < 2.0:
+                    report.add(
+                        Violation(
+                            severity="major",
+                            rule="axes#log-narrow-range",
+                            where=f"{where}.yaxis",
+                            observed=round(decades, 2),
+                            fix=(
+                                "Log scale is appropriate only when range "
+                                "spans ≥2 decades, or for multiplicative "
+                                "processes. Use linear if not."
+                            ),
+                        )
+                    )
+        if ax.get("xscale") == "log":
+            xlo, xhi = ax.get("xlim", [None, None])
+            if xlo and xhi and xlo > 0 and xhi > 0:
+                import math
+                decades = math.log10(xhi) - math.log10(xlo)
+                if decades < 2.0:
+                    report.add(
+                        Violation(
+                            severity="major",
+                            rule="axes#log-narrow-range",
+                            where=f"{where}.xaxis",
+                            observed=round(decades, 2),
+                            fix=(
+                                "Log scale is appropriate only when range "
+                                "spans ≥2 decades, or for multiplicative "
+                                "processes. Use linear if not."
+                            ),
+                        )
+                    )
 
     return [v.to_dict() for v in report.violations]
 
