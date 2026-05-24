@@ -22,6 +22,88 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/session-scope-guard.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/rm-rf-sanity-guard.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/ipynb-output-warn.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/secret-leak-guard.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/skill-frontmatter-validator.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/secret-leak-guard.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/skill-frontmatter-validator.py"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/secret-leak-guard.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/scratch-redirect-suggest.py"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/session-start-context.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/claude-config-planning-required.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/stale-todo-tracker.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/claude-md-improver-suggest.py"
           }
         ]
       }

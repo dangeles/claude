@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""session-start-context.py — UserPromptSubmit hook, fires once per session.
+
+On the first user prompt of a session, emits a compact context block to
+stdout: current working directory, git branch + ahead/behind, last 2
+commits, dirty-file count, and seconds since the last commit. Claude
+Code prepends UserPromptSubmit stdout to the conversation context so
+the model sees this without explicit explanation.
+
+Subsequent prompts in the same session are no-ops (a marker file in
+the per-session state dir ensures one-shot behavior).
+
+Exit code 0 always — informational only, never blocks.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _git(args: list[str], cwd: str | None = None) -> str:
+    try:
+        return subprocess.check_output(
+            ["git"] + args,
+            text=True,
+            stderr=subprocess.DEVNULL,
+            cwd=cwd,
+            timeout=2,
+        ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        return ""
+
+
+def _marker_path(session_id: str) -> Path:
+    base = Path(os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd()))
+    marker_dir = base / ".claude" / "session-state"
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    safe_id = re.sub(r"[^A-Za-z0-9_\-]", "_", session_id)[:64] or "default"
+    return marker_dir / f"{safe_id}-start.marker"
+
+
+def _build_context(cwd: str) -> str | None:
+    if not _git(["rev-parse", "--is-inside-work-tree"], cwd=cwd):
+        return None
+    branch = _git(["branch", "--show-current"], cwd=cwd) or "DETACHED"
+    upstream = _git(["rev-parse", "--abbrev-ref", "@{upstream}"], cwd=cwd) or "(no upstream)"
+    counts = _git(["rev-list", "--left-right", "--count", "@{upstream}...HEAD"], cwd=cwd)
+    ahead_behind = ""
+    if counts:
+        parts = counts.split()
+        if len(parts) == 2:
+            behind, ahead = parts
+            if int(ahead) or int(behind):
+                ahead_behind = f"  ahead {ahead}, behind {behind}"
+    dirty = _git(["status", "--porcelain"], cwd=cwd).splitlines()
+    last_commits = _git(["log", "--oneline", "-2"], cwd=cwd)
+    last_commit_ts = _git(["log", "-1", "--format=%ct"], cwd=cwd)
+    seconds_since = ""
+    if last_commit_ts.isdigit():
+        import time
+        delta = int(time.time()) - int(last_commit_ts)
+        if delta < 60:
+            seconds_since = f"{delta}s ago"
+        elif delta < 3600:
+            seconds_since = f"{delta // 60}m ago"
+        elif delta < 86400:
+            seconds_since = f"{delta // 3600}h ago"
+        else:
+            seconds_since = f"{delta // 86400}d ago"
+
+    lines = [
+        "<session-context>",
+        f"cwd: {cwd}",
+        f"branch: {branch} (upstream: {upstream}){ahead_behind}",
+        f"dirty files: {len(dirty)}" + (f" ({dirty[0].strip()[:60]}...)" if dirty else ""),
+        f"last commit: {seconds_since}" if seconds_since else "no commits yet",
+    ]
+    if last_commits:
+        lines.append("recent commits:")
+        for c in last_commits.splitlines():
+            lines.append(f"  {c}")
+    lines.append("</session-context>")
+    return "\n".join(lines)
+
+
+def main() -> int:
+    try:
+        payload = json.loads(sys.stdin.read() or "{}")
+    except json.JSONDecodeError:
+        return 0
+
+    session_id = payload.get("session_id", "")
+    marker = _marker_path(session_id)
+    if marker.exists():
+        return 0  # already fired this session
+
+    cwd = payload.get("cwd") or os.getcwd()
+    block = _build_context(cwd)
+    if block:
+        print(block)  # goes into the model's view
+
+    try:
+        marker.touch()
+    except OSError:
+        pass
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
