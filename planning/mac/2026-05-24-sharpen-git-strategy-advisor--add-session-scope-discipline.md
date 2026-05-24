@@ -65,7 +65,7 @@ All shipped cleanly. The new description is live in `~/.claude/skills/git-strate
 
 ## Related Commits
 
-- `<pending>`: chore(git-strategy-advisor): sharpen description + add session-scope discipline
+- `d70e57e`: chore(git-strategy-advisor): sharpen description + add session-scope discipline
 
 ## Next Steps
 
