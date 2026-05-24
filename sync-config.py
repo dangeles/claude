@@ -19,6 +19,7 @@ import fnmatch
 import hashlib
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -1047,8 +1048,40 @@ class ConfigSync:
             print("  No projects found")
 
     def detect_hostname(self) -> str:
-        """Detect machine hostname"""
-        return platform.node().split('.')[0]  # Remove domain if present
+        """Resolve a canonical machine name for planning entries.
+
+        Resolution order:
+          1. SYNC_CONFIG_MACHINE env var (per-invocation override)
+          2. ``machine_name`` field in sync.config.yaml (per-machine setting)
+          3. ``platform.node()`` short form (legacy fallback)
+
+        Hostnames that look like an IP address or are purely numeric are
+        rejected with a clear error — that's the failure mode this guards
+        against, where the OS reports an IP-derived hostname instead of a
+        proper short name.
+        """
+        candidate = (
+            os.environ.get('SYNC_CONFIG_MACHINE')
+            or self.config.get('machine_name')
+            or platform.node().split('.')[0]
+        )
+        candidate = (candidate or '').strip()
+        if not candidate:
+            raise ValueError(
+                "Could not determine a machine name. Set 'machine_name' in "
+                "sync.config.yaml or the SYNC_CONFIG_MACHINE environment "
+                "variable to a short identifier like 'mac' or 'workstation'."
+            )
+        # Reject IP-like or all-numeric results — symptom of a misconfigured OS
+        # hostname (e.g. macOS falling back to the LAN IP).
+        if re.fullmatch(r'\d+(\.\d+){0,3}', candidate):
+            raise ValueError(
+                f"Detected machine name '{candidate}' looks like an IP address "
+                "or numeric token. The OS hostname is likely misconfigured. "
+                "Set 'machine_name' in sync.config.yaml (e.g. 'machine_name: "
+                "mac') or export SYNC_CONFIG_MACHINE=<short-name>."
+            )
+        return candidate
 
     def create_plan_entry(self, title: str, status: str = "Planned", open_editor: bool = False):
         """Create new planning journal entry"""

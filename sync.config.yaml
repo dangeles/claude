@@ -1,5 +1,10 @@
 version: "1.0"
 
+# Canonical short machine name for planning/<machine>/ directories.
+# Use this when the OS hostname is misconfigured or non-portable. Can also
+# be overridden per-invocation via the SYNC_CONFIG_MACHINE env var.
+machine_name: "mac"
+
 # Source directory (Claude Code's user-wide config)
 source_dir: "~/.claude"
 
