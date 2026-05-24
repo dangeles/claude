@@ -21,11 +21,10 @@ import re
 import sys
 from dataclasses import dataclass, field, asdict
 
-# Lazy imports: palettes is sibling
+# Sibling module path setup (palettes added when needed in T13+).
 THIS_DIR = __file__.rsplit("/", 1)[0] if "/" in __file__ else "."
 if THIS_DIR not in sys.path:
     sys.path.insert(0, THIS_DIR)
-import palettes  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 
 SEVERITIES = ("critical", "major", "minor")
