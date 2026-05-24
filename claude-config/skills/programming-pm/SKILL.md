@@ -1,5 +1,6 @@
 ---
 name: programming-pm
+last_updated: 2026-05-24
 description: Use when coordinating Python software development with multi-specialist pipelines (systems-architect, senior-developer, junior-developer, mathematician, statistician) and quality gates (architecture review, pre-mortem, code review, testing, version control). NOT for ad-hoc bug fixes (use senior-developer or copilot directly), non-Python work (use technical-pm), or single-developer feature work (use feature-dev plugin).
 
 # v3.0 universal handoff metadata (see workflow-coordinator/references/frontmatter-metadata-standard.md)
@@ -1782,10 +1783,6 @@ After 3 consecutive failures of the same type:
 
 ## Team Composition
 
-See `references/team-composition.md` for detailed guidance.
-
-### Default Team (Always Required)
-
 | Skill | Role | Phase |
 |-------|------|-------|
 | programming-pm | Orchestrator | All |
@@ -1794,38 +1791,7 @@ See `references/team-composition.md` for detailed guidance.
 | senior-developer | Implementation | 4-5 |
 | copilot | Code review support | 5 |
 
-### Specialist Inclusion Criteria
-
-**Include mathematician when**:
-- Keywords in requirements: "algorithm", "complexity", "optimization", "numerical", "O(n)"
-- Project types: Algorithm implementation, numerical methods, optimization
-
-**Include statistician when**:
-- Keywords in requirements: "statistics", "Monte Carlo", "MCMC", "uncertainty", "confidence interval", "power analysis", "bootstrap"
-- Project types: Data analysis, simulation validation, ML evaluation
-
-**Include notebook-writer when**:
-- Keywords in requirements: "notebook", "jupyter", "ipynb", "Jupytext", "interactive analysis", "parameter sweep", "analysis report", "reproducible analysis", "data exploration", "visualization notebook"
-- Project types: Data analysis with interactive output, scientific computation with parameter sweeps, analysis reporting, exploratory data analysis
-
-**CAUTION**: Do NOT include based on standalone "interactive" or "visualization" -- these are too broad. Require a notebook-specific compound keyword.
-
-**Include junior-developer when**:
-- Tasks can be decomposed into well-scoped units
-- Project has >3 independent implementation tasks
-
-### User Override
-
-```bash
-# Explicitly include specialist
-programming-pm --include mathematician "Implement sorting algorithm"
-
-# Exclude auto-detected specialist
-programming-pm --exclude statistician "Data pipeline without validation"
-
-# Minimal team (PM + senior only)
-programming-pm --minimal "Simple CRUD API"
-```
+The table above is the **default team** — always included. For optional specialists (mathematician, statistician, notebook-writer, junior-developer) with their inclusion criteria, the team-selection decision tree, the RACI matrix, team-size guidelines, and `--include`/`--exclude`/`--minimal` override flags, see `references/team-composition.md`.
 
 ## Handoff Format
 

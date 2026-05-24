@@ -1,5 +1,6 @@
 ---
 name: mathematician
+last_updated: 2026-05-24
 description: Use when designing DETERMINISTIC algorithms, analyzing time/space complexity, selecting numerical methods (ODEs, optimization, linear algebra), or verifying mathematical correctness. NOT for statistical/probabilistic method selection (use statistician) or physics-based engineering feasibility (use calculator).
 ---
 

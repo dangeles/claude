@@ -1,5 +1,6 @@
 ---
 name: economist
+last_updated: 2026-05-24
 description: Use when order-of-magnitude cost estimates are needed to assess financial feasibility, compare cost-effectiveness of alternatives, or identify major cost drivers (not for detailed quotes—that's Procurement)
 success_criteria:
   - Order-of-magnitude cost ranges established

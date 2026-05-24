@@ -1,5 +1,6 @@
 ---
 name: statistician
+last_updated: 2026-05-24
 description: Use when selecting STATISTICAL methods (hypothesis tests, regression), performing power analysis, guiding uncertainty quantification (Bayesian/frequentist), or validating MCMC/Monte Carlo implementations. NOT for deterministic algorithm design or complexity analysis (use mathematician), nor physics/engineering feasibility (use calculator).
 ---
 

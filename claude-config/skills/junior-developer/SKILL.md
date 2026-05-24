@@ -1,5 +1,6 @@
 ---
 name: junior-developer
+last_updated: 2026-05-24
 description: Use when implementing well-scoped Python tasks with clear requirements, writing unit tests, and producing documented code for senior-developer review within a programming-pm pipeline. NOT for unscoped feature work (use feature-dev) or production-quality code requiring autonomous component-level decisions (use senior-developer).
 ---
 

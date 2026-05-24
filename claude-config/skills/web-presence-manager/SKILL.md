@@ -1,5 +1,6 @@
 ---
 name: web-presence-manager
+last_updated: 2026-05-24
 description: >
   Use when reviewing or improving professional web presence across multiple
   GitHub-hosted sites, or when preparing for job search, conference, or

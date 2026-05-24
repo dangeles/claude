@@ -1,5 +1,6 @@
 ---
 name: skill-editor
+last_updated: 2026-05-24
 description: >
   This skill should be used when creating, modifying, or refactoring any Claude Code skill in
   this repository. It is the default entry point for all skill work — new skills from scratch,

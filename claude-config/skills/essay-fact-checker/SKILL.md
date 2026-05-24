@@ -1,6 +1,7 @@
 ---
 name: essay-fact-checker
 version: 1.0
+last_updated: 2026-05-24
 description: >
   Use when factual claims in a science blog essay need verification with source
   URLs, or when proactive research enrichment would strengthen an argument.

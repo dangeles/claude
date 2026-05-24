@@ -1,5 +1,6 @@
 ---
 name: experimental-planner
+last_updated: 2026-05-24
 description: Use when theoretical calculations need experimental validation, protocols must be designed with clear hypotheses and success criteria, or resource requirements (equipment, materials, expertise) must be estimated for proposed experiments
 success_criteria:
   - Clear hypothesis and predictions defined

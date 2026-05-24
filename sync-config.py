@@ -25,9 +25,16 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import yaml
+
+
+# Indirect platform check so pyright doesn't narrow `sys.platform` to a
+# literal on the host running the type checker and flag the other branch
+# as unreachable. Both branches are needed at runtime: macOS uses
+# case-insensitive APFS, Linux is case-sensitive.
+_IS_DARWIN: bool = sys.platform == 'darwin'
 
 
 # Files whose YAML frontmatter is parsed by the Claude Code loader.
@@ -140,7 +147,7 @@ class ConfigSync:
         On Linux (case-sensitive), returns as-is.
         """
         s = str(rel_path)
-        if sys.platform == 'darwin':
+        if _IS_DARWIN:
             return s.lower()
         return s
 
@@ -456,7 +463,7 @@ class ConfigSync:
             return True
         return self.compute_checksum(file1) != self.compute_checksum(file2)
 
-    def show_diff(self, file1: Path, file2: Path, label1: str = "source", label2: str = "target"):
+    def show_diff(self, file1: Path, file2: Path):
         """Show diff between two files using git diff or diff"""
         try:
             result = subprocess.run(
@@ -752,7 +759,6 @@ class ConfigSync:
             # Handle wildcards
             if '*' in str(search_path):
                 parent = Path(str(search_path).split('*')[0])
-                pattern = str(search_path).split('*')[1] if '*' in str(search_path).split('*')[1] else ''
 
                 if not parent.exists():
                     continue
@@ -1024,7 +1030,7 @@ class ConfigSync:
                 continue
 
             orphans = self.find_orphans(path)
-            for abs_path, rel_path in orphans:
+            for _, rel_path in orphans:
                 all_orphans.append((path, rel_path))
 
         if all_orphans:

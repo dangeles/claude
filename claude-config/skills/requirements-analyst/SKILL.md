@@ -1,5 +1,6 @@
 ---
 name: requirements-analyst
+last_updated: 2026-05-24
 description: Use when requirements are vague, scope undefined, or success criteria unclear — refines what should be built before implementation begins. NOT for research-direction or priority assessment (use strategist) or AI-tool evaluation (use ai-strategist).
 ---
 

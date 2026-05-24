@@ -1,5 +1,6 @@
 ---
 name: edge-case-analyst
+last_updated: 2026-05-24
 description: Use BEFORE implementation, when planning new features or changes, to identify failure scenarios. PRE-implementation only — NOT for debugging existing bugs (use systematic-troubleshooter), not for reviewing already-written code (use copilot).
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: essay-pipeline
 version: 1.0
+last_updated: 2026-05-24
 description: >
   Use when collaboratively writing a science blog essay through interactive
   thesis development, essay structuring, argument development, and paragraph

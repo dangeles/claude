@@ -1,5 +1,6 @@
 ---
 name: cfd-bioreactor
+last_updated: 2026-05-24
 description: >
   Use when user needs to simulate fluid flow through bioprocess cartridges,
   bioreactor geometries, or membrane devices using FEniCSx. Covers Navier-Stokes

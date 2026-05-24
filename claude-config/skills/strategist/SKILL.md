@@ -1,5 +1,6 @@
 ---
 name: strategist
+last_updated: 2026-05-24
 description: Use when research direction needs assessment, critical knowledge gaps must be identified, or priorities must be recommended based on impact, dependencies, and effort (especially at project milestones or when scope questions arise). NOT for evaluating AI tools or agentic workflows (use ai-strategist) or scoping/requirements gathering for a specific feature (use requirements-analyst).
 success_criteria:
   - Critical knowledge gaps identified and prioritized

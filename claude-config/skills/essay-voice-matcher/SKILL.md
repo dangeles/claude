@@ -1,6 +1,7 @@
 ---
 name: essay-voice-matcher
 version: 1.0
+last_updated: 2026-05-24
 description: >
   Use when written text needs evaluation against a user's writing style profile
   and sample essays for voice consistency during essay pipeline execution.

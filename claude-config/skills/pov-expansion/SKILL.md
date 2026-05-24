@@ -1,5 +1,6 @@
 ---
 name: pov-expansion
+last_updated: 2026-05-24
 description: Use when seeking analogous solutions from other domains, when stuck on a problem and need fresh perspectives, or when evaluating whether approaches from field X might apply to field Y. Requires structured problem statement.
 
 handoff:

@@ -1,5 +1,6 @@
 ---
 name: patent-review
+last_updated: 2026-05-24
 description: >
   This skill should be used when the user asks to "review this patent", "check the claims",
   "patent draft review", "is this claim accurate", "what's missing from this patent", or

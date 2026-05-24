@@ -1,5 +1,6 @@
 ---
 name: ai-strategist
+last_updated: 2026-05-24
 description: >-
   Use when evaluating AI tools and agentic workflows against workflow gaps,
   when conducting quarterly landscape scans, or when assessing integration

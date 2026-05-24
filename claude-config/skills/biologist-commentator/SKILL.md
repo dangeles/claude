@@ -1,5 +1,6 @@
 ---
 name: biologist-commentator
+last_updated: 2026-05-24
 description: Use when evaluating biological relevance, methodological appropriateness, or scientific validity of bioinformatics approaches, or when choosing between analysis methods/software tools.
 success_criteria:
   - Biological soundness of approach validated

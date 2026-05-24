@@ -1,5 +1,6 @@
 ---
 name: latex-document-manager
+last_updated: 2026-05-24
 description: >
   Use when user asks to examine, edit, proofread, or compile LaTeX documents.
   Triggers on mentions of .tex files, pdflatex, xelatex, lualatex, latexmk,

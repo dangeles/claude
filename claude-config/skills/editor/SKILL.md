@@ -1,5 +1,6 @@
 ---
 name: editor
+last_updated: 2026-05-24
 description: Use when documents need prose improvement, CLAUDE.md style enforcement (prose over bullets, bridging transitions, complete sentences), or final polish before archival
 success_criteria:
   - CLAUDE.md style guidelines fully enforced

@@ -1,5 +1,6 @@
 ---
 name: notebook-writer
+last_updated: 2026-05-24
 description: Create and document Jupyter notebooks for reproducible analyses
 success_criteria:
   - Notebook structured with clear sections and narrative

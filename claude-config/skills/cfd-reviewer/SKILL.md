@@ -1,5 +1,6 @@
 ---
 name: cfd-reviewer
+last_updated: 2026-05-24
 description: >
   Use when invoked by cfd-bioreactor orchestrator to provide adversarial engineering
   review of CFD simulation plans and generated code. Challenges mesh quality, boundary

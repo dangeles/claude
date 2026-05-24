@@ -1,5 +1,6 @@
 ---
 name: lit-pm
+last_updated: 2026-05-24
 description: Use when coordinating COMPREHENSIVE adaptive literature reviews (4-24h, 9 stages with parallel review discovery, outline synthesis, section writing, fact-checking, editorial polish) with checkpoints calibrated to complexity. Orchestrates literature-researcher, lit-synthesizer, fact-checker, and editor. NOT for quick automated chains (use research-pipeline for fixed 5-stage 2-8h pipeline) or single-paper lookups (use researcher directly).
 
 handoff:

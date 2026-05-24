@@ -1,5 +1,6 @@
 ---
 name: program-officer
+last_updated: 2026-05-24
 description: Use when coordinating complex research tasks requiring literature synthesis, quantitative validation, or multi-source integration across researcher, calculator, synthesizer, and fact-checker skills
 success_criteria:
   - Research task completed with all specialists coordinated

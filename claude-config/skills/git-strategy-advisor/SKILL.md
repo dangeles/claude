@@ -1,5 +1,6 @@
 ---
 name: git-strategy-advisor
+last_updated: 2026-05-24
 description: >-
   Use when deciding git workflow strategy for planned or completed work.
   Recommends branch creation vs direct commit, branch naming, push timing,

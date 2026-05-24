@@ -1,6 +1,7 @@
 ---
 name: lit-synthesizer
 version: 1.0
+last_updated: 2026-05-24
 description: Senior scientific author for literature review synthesis with authority to restructure, rewrite, and add analysis across outline creation, introduction framing, and final synthesis
 tier: specialist
 ---

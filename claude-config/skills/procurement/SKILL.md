@@ -1,5 +1,6 @@
 ---
 name: procurement
+last_updated: 2026-05-24
 description: Use when equipment specifications need matching to potential vendors, sourcing landscape must be mapped (catalog items vs. custom orders), or lead time considerations affect project planning
 success_criteria:
   - Vendor landscape identified for required equipment

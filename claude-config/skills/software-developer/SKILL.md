@@ -1,5 +1,6 @@
 ---
 name: software-developer
+last_updated: 2026-05-24
 description: Deprecated as of 2026-05-12. Use senior-developer for production-quality Python implementation; chain through bioinformatician for bioinformatics-specific analysis and biologist-commentator for biological validation.
 deprecated: true
 deprecated_date: 2026-05-12

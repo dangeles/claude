@@ -2,6 +2,7 @@
 name: perspective-swarm
 description: Protocol specification for multi-perspective brainstorming via 5 parallel agents with confidence-weighted synthesis. Executed by brainstorming-pm orchestrator.
 version: 1.0.0
+last_updated: 2026-05-24
 tags: [brainstorming, multi-agent, synthesis, parallel, decision-support]
 orchestrator: brainstorming-pm
 ---

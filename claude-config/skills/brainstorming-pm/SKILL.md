@@ -6,6 +6,7 @@ description: >
   workflow handoff. Coordinates 5 parallel perspective agents through a
   4-stage pipeline (framing, diverging, converging, output).
 version: 1.0.0
+last_updated: 2026-05-24
 tags: [orchestrator, brainstorming, multi-agent, synthesis, parallel]
 
 handoff:
