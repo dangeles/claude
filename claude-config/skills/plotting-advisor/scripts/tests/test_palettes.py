@@ -7,7 +7,7 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS_DIR = os.path.dirname(THIS_DIR)
 sys.path.insert(0, SCRIPTS_DIR)
 
-import palettes  # noqa: E402
+import palettes  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 
 class TestPaletteConstants(unittest.TestCase):
