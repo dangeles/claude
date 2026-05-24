@@ -435,6 +435,141 @@ def lint_figure_spec(spec: dict) -> list[dict]:
     return [v.to_dict() for v in report.violations]
 
 
+def lint_image(path: str) -> list[dict]:
+    """Inspect a saved PNG/PDF/JPG for rule violations.
+
+    This is the coarsest mode. Without OCR, we cannot reliably read
+    axis labels; we focus on what raw pixels reveal: dominant colors,
+    rainbow-palette signature (continuous hue sweep), 3D perspective
+    is not detectable from a raster, so we only catch palette issues.
+
+    Returns 'error' severity violations on failure (file missing,
+    Pillow unavailable, corrupt image) — never raises.
+    """
+    report = LintReport()
+
+    try:
+        from PIL import Image  # type: ignore
+    except ImportError:
+        report.add(
+            Violation(
+                severity="error",
+                rule="lint#dependency-missing",
+                where="image-mode",
+                fix=(
+                    "Install Pillow for image-mode lint: pip install Pillow. "
+                    "Or use --figure-spec mode (no dependencies)."
+                ),
+            )
+        )
+        return [v.to_dict() for v in report.violations]
+
+    import os
+    if not os.path.exists(path):
+        report.add(
+            Violation(
+                severity="error",
+                rule="lint#file-not-found",
+                where=path,
+                fix="Check the path. Lint is advisory and never blocks.",
+            )
+        )
+        return [v.to_dict() for v in report.violations]
+
+    try:
+        img = Image.open(path).convert("RGB")
+    except Exception as e:
+        report.add(
+            Violation(
+                severity="error",
+                rule="lint#image-unreadable",
+                where=path,
+                observed=str(e),
+                fix="Pillow could not open the file. Verify it's a valid PNG/JPG/etc.",
+            )
+        )
+        return [v.to_dict() for v in report.violations]
+
+    # Quantize to a small palette to catch dominant colors despite anti-aliasing.
+    quantized = img.quantize(colors=16, method=Image.Quantize.FASTOCTREE)
+    pal = quantized.getpalette() or []
+    # Get color counts
+    counts = quantized.getcolors(maxcolors=16) or []
+    counts.sort(reverse=True)
+
+    # Convert top non-background colors to hex
+    # Heuristic: background is the most-frequent color; skip it.
+    dominant_hexes: list[str] = []
+    for i, (cnt, idx) in enumerate(counts):
+        r, g, b = pal[idx * 3 : idx * 3 + 3]
+        hex_code = "#{:02X}{:02X}{:02X}".format(r, g, b)
+        # Skip near-white and near-black backgrounds for palette judgment
+        is_near_white = r > 240 and g > 240 and b > 240
+        is_near_black = r < 20 and g < 20 and b < 20
+        if i == 0 and (is_near_white or is_near_black):
+            continue
+        dominant_hexes.append(hex_code)
+
+    # Rule: rainbow signature — too many hues spread across the spectrum
+    # is a soft indicator of a rainbow palette on continuous data.
+    # We only flag when there are many distinct hues AND no clear primary.
+    if len(dominant_hexes) >= 8:
+        # Quick hue spread check
+        hues = []
+        for hex_code in dominant_hexes[:10]:
+            r = int(hex_code[1:3], 16)
+            g = int(hex_code[3:5], 16)
+            b = int(hex_code[5:7], 16)
+            mx = max(r, g, b)
+            mn = min(r, g, b)
+            if mx == mn:
+                continue
+            if mx == r:
+                h = 60 * ((g - b) / (mx - mn)) % 360
+            elif mx == g:
+                h = 60 * ((b - r) / (mx - mn)) + 120
+            else:
+                h = 60 * ((r - g) / (mx - mn)) + 240
+            hues.append(h % 360)
+        if hues:
+            hue_range = max(hues) - min(hues)
+            if hue_range > 270:
+                report.add(
+                    Violation(
+                        severity="critical",
+                        rule="anti-patterns#rainbow-on-continuous",
+                        where="image-palette",
+                        observed={
+                            "n_dominant_colors": len(dominant_hexes),
+                            "hue_range_deg": round(hue_range, 1),
+                        },
+                        fix=(
+                            "Dominant hues span >270° — consistent with a "
+                            "rainbow palette. Use viridis / cividis (sequential) "
+                            "or RdBu (diverging)."
+                        ),
+                    )
+                )
+
+    # Rule: colorblind-safety check on the top few dominant non-background colors
+    if 2 <= len(dominant_hexes) <= 8:
+        if not palettes.is_colorblind_safe_categorical(dominant_hexes[:8]):
+            report.add(
+                Violation(
+                    severity="major",
+                    rule="accessibility#colorblind-unsafe",
+                    where="image-palette",
+                    observed=dominant_hexes[:8],
+                    fix=(
+                        "Dominant palette is not colorblind-safe. Switch to "
+                        "Okabe-Ito or Tol bright."
+                    ),
+                )
+            )
+
+    return [v.to_dict() for v in report.violations]
+
+
 # ----- Render output (used by CLI) -----
 
 def render_markdown(violations: list[dict]) -> str:
@@ -496,9 +631,7 @@ def cli_main(argv: list[str] | None = None) -> int:
             return 1
         violations = lint_figure_spec(spec)
     elif args.image:
-        # Task 15 will implement this.
-        print("error: --image mode not yet implemented", file=sys.stderr)
-        return 1
+        violations = lint_image(args.image)
     else:
         parser.print_help()
         return 1

@@ -325,5 +325,28 @@ class TestStrictFlag(unittest.TestCase):
         self.assertEqual(rc, 0)
 
 
+class TestImageMode(unittest.TestCase):
+    def setUp(self):
+        try:
+            from PIL import Image  # noqa: F401
+            self.have_pillow = True
+        except ImportError:
+            self.have_pillow = False
+
+    def test_missing_image_returns_error_violation(self):
+        violations = style_lint.lint_image("/nonexistent/path.png")
+        self.assertTrue(any(v["severity"] == "error" for v in violations))
+
+    def test_image_mode_skips_gracefully_without_pillow(self):
+        if self.have_pillow:
+            self.skipTest("Pillow is installed; cannot test no-Pillow path here")
+        violations = style_lint.lint_image("/any/path.png")
+        # Should return a single 'error' violation explaining Pillow is missing
+        self.assertTrue(any(
+            v["severity"] == "error" and "pillow" in v.get("fix", "").lower()
+            for v in violations
+        ))
+
+
 if __name__ == "__main__":
     unittest.main()
