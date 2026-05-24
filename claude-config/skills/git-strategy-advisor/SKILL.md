@@ -2,9 +2,16 @@
 name: git-strategy-advisor
 last_updated: 2026-05-24
 description: >-
-  Use when deciding git workflow strategy for planned or completed work.
-  Recommends branch creation vs direct commit, branch naming, push timing,
-  and PR creation based on change scope and type.
+  Use BEFORE starting a non-trivial feature OR after implementation when integration
+  strategy is non-obvious — should this be a branch or direct commit? When to push?
+  PR or direct merge? Triggers on "how should I structure this?", "branch or commit?",
+  "ready to ship". Operates with session-scope discipline: recommends staging ONLY
+  files modified during the current session and flags any other dirty state for
+  separate review (prevents inter-agent collisions). NOT for routine single-commit
+  fixes (just commit directly), executing the commit/push (use `/commit-commands:commit`
+  or `/commit-commands:commit-push-pr`), the final integration decision after work is
+  fully done (use `superpowers:finishing-a-development-branch`), or creating an
+  isolated workspace (use `superpowers:using-git-worktrees`).
 ---
 
 # Git Strategy Advisor
@@ -30,6 +37,43 @@ This skill is **advisory only**. It reads git state but never modifies it. The c
 - Conflict resolution
 - Repository initialization or setup
 - Re-invoking orchestrator or pipeline skills from within this skill (this skill is a leaf node; it reads git state and returns recommendations but never delegates work to other skills or orchestrators)
+
+## Session-Scope Discipline
+
+This skill recommends git actions for the **current session's work only**. Files modified by other agents, prior sessions, or background processes must be flagged but never automatically committed — this prevents inter-agent collisions where one agent's incomplete work gets bundled into another agent's commit.
+
+### Identifying the session set
+
+Before generating recommendations, derive the set of "session-modified files" — files this Claude session has touched. Sources, in priority order:
+
+1. **Explicit caller declaration**: If the caller passes `session_files: [path1, path2, ...]` in the invocation, use that list verbatim.
+2. **Conversational scan**: Re-read recent tool calls in this conversation. Collect every file path written to via `Write`, `Edit`, `NotebookEdit`, or `Bash` commands that mutate the working tree (`mv`, `cp`, `rm`, `>` redirect, `tee`, `sed -i`, `python -c "...open(...).write(...)"`, etc.).
+3. **Fall back**: If neither (1) nor (2) yields a non-empty list, ask the user to confirm which files belong to this session before recommending any commit action. Do not infer from `git status` alone — many dirty files may pre-date the session.
+
+### Partitioning the working tree
+
+Run `git status --porcelain` to enumerate all dirty entries. Partition each entry into one of two buckets:
+
+- **In session set**: paths Claude modified this session. Candidates for commit.
+- **Out of session**: paths dirty in the working tree but NOT in the session set. Candidates for the `warnings` array.
+
+### Recommendation discipline
+
+When generating the strategy YAML:
+
+1. The recommended stage command MUST list session-set paths explicitly (e.g., `git add path/a path/b`). NEVER recommend `git add -A`, `git add .`, `git add -u`, or any wildcard form that would pick up out-of-session files.
+2. Out-of-session dirty paths are emitted as a single `OUT_OF_SESSION_CHANGES` warning listing each path and its `git status` code (M / A / ?? / D / R). See Output Schema below for the exact shape.
+3. The human-readable summary explicitly states: "N file(s) modified this session staged for commit. M out-of-session change(s) flagged below — do NOT include in this commit."
+4. If the session set is empty AND the working tree is dirty, every dirty path is out-of-session. The recommendation MUST be "review-only" — no commit, no push, no PR — until the user reconciles the out-of-session state.
+5. Out-of-session **staged** changes are an explicit red flag (another agent staged something Claude didn't intend to ship). Surface them as a `STAGED_OUT_OF_SESSION` warning recommending `git reset HEAD <path>` to unstage before proceeding.
+
+### Edge cases
+
+- **Untracked files (`??`)**: Out-of-session by default unless explicitly in the session set. A scratch file Claude created via Bash should already be in the session set via the conversational scan; if it isn't, treat as out-of-session and flag.
+- **Deleted files (`D`)**: Same rule. Session-set deletes are commit candidates; out-of-session deletes are flagged.
+- **Renames (`R`)**: Treat both old and new paths as the unit; if either is out-of-session, flag the whole rename and recommend reviewing manually.
+- **Files Read but not modified**: Reads do not put a file in the session set. Only mutations do.
+- **Caller-passed empty list (`session_files: []`)**: Treat as authoritative — every dirty path is out-of-session, recommendation is review-only.
 
 ## Workflow Overview
 
@@ -123,11 +167,13 @@ First check for changes:
   - If unpushed commits exist: Use `git diff --stat origin/{primary_branch}..HEAD` for metrics. Note: "Analysis based on N unpushed commits."
   - If nothing: scope = "trivial", summary = "No uncommitted or unpushed changes detected."
 
-For uncommitted changes, use `git diff --numstat HEAD` to capture BOTH staged and unstaged changes:
-- Files changed: count lines of output
-- Lines changed: sum of additions + deletions
-- Directories spanned: count distinct first path components from changed file paths
+For uncommitted changes, use `git diff --numstat HEAD` to capture BOTH staged and unstaged changes. **Filter the numstat output to the session set** (see Session-Scope Discipline above) before computing metrics — out-of-session files are tracked separately as warnings, not as scope inputs:
+
+- Files changed: count of session-set lines in the filtered output
+- Lines changed: sum of additions + deletions across session-set files
+- Directories spanned: count distinct first path components from session-set file paths
 - Binary files: count separately (shown as `-` in numstat), note in warnings if present
+- Out-of-session paths: emit as `OUT_OF_SESSION_CHANGES` warning (see Output Schema), NOT counted toward scope
 
 If HEAD does not exist (empty repo), treat all files from `git status --porcelain` as new additions with confidence = "medium".
 
@@ -299,6 +345,15 @@ git_strategy_recommendation:
     #   message: "PR strategy overridden: direct-commit does not use PRs."
     # - code: "GIT_NOT_INITIALIZED"
     #   message: "Git repository not found. Defaults used."
+    # - code: "OUT_OF_SESSION_CHANGES"
+    #   message: "Working tree contains changes not made by this session -- review separately before any commit."
+    #   paths:
+    #     - { path: "config/settings.json", status: "M" }
+    #     - { path: "scratch/notes.md", status: "??" }
+    # - code: "STAGED_OUT_OF_SESSION"
+    #   message: "Out-of-session paths are already staged. Unstage with `git reset HEAD <path>` before proceeding."
+    #   paths:
+    #     - { path: "other-agent/output.json", status: "A" }
 
   summary: "Create feature branch `feature/add-validation-logic`, push to remote, and open a PR for review."
 ```
