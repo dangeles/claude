@@ -1,6 +1,6 @@
 ---
 name: scientific-analysis-architect
-description: Use when planning multi-chapter scientific research analyses with expert consultation. Produces markdown analysis documents with pseudocode for RNA-seq, proteomics, or other data analysis workflows. Triggers on research planning, analysis architecture, or multi-chapter analysis design requests.
+description: Use when planning multi-chapter scientific research analyses with expert consultation — produces markdown analysis documents with pseudocode for RNA-seq, proteomics, or other data analysis workflows. NOT for software architecture (use systems-architect) or single-component design within an existing analysis (use senior-developer).
 version: 2.0.0
 tags: [scientific-analysis, multi-agent, markdown, research-planning, pseudocode]
 ---

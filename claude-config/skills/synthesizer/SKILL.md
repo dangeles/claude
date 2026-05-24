@@ -2,7 +2,7 @@
 name: synthesizer
 version: 1.1
 last_updated: 2026-01-29
-description: Use when multiple reviews or paper notes need integration, cross-cutting themes must be identified, or project-specific implications must be drawn from disparate sources
+description: Use when multiple reviews or paper notes need integration, cross-cutting themes must be identified, or project-specific implications must be drawn from disparate sources. NOT for literature-review-specific synthesis at publication quality (use lit-synthesizer) or for prose polish (use editor).
 success_criteria:
   - Cross-cutting themes identified across source documents
   - Contradictions highlighted and explained

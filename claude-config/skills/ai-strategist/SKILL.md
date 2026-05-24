@@ -3,7 +3,9 @@ name: ai-strategist
 description: >-
   Use when evaluating AI tools and agentic workflows against workflow gaps,
   when conducting quarterly landscape scans, or when assessing integration
-  feasibility of new tools for startup workflows.
+  feasibility of new tools for startup workflows. NOT for general research-direction
+  strategy (use strategist) or scoping a specific feature's requirements
+  (use requirements-analyst).
 
 handoff:
   accepts_handoff: true

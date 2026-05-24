@@ -2,7 +2,7 @@
 name: researcher
 version: 1.3
 last_updated: 2026-01-29
-description: Use when comprehensive literature research is needed, especially when quantitative parameters must be sourced from primary literature with proper citations and context (species, measurement methods, culture conditions)
+description: Use when comprehensive literature research is needed, especially when quantitative parameters must be sourced from primary literature with proper citations and context (species, measurement methods, culture conditions). NOT for orchestrated multi-stage literature reviews (use lit-pm, which dispatches literature-researcher) or for writing final review synthesis prose (use lit-synthesizer).
 prerequisites:
   - Research question or topic clearly defined
   - Access to PubMed/literature databases (via scientific skills)

@@ -1,6 +1,6 @@
 ---
 name: consistency-auditor
-description: Use when parameter values appear in multiple documents and consistency must be verified, especially for quantitative values that may differ due to measurement context or require reconciliation
+description: Use when parameter values appear in multiple documents and consistency must be verified, especially for quantitative values that may differ due to measurement context or require reconciliation. NOT for citation verification (use fact-checker) or essay-style factual claims (use essay-fact-checker).
 success_criteria:
   - All parameter values inventoried across documents
   - Discrepancies identified and explained (context-based or errors)

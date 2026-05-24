@@ -1,6 +1,6 @@
 ---
 name: fact-checker
-description: Use when documents with quantitative claims need citation verification, especially when every number must trace to a specific inline superscript citation before publication
+description: Use when documents with quantitative claims need citation verification, especially when every number must trace to a specific inline superscript citation before publication. NOT for science blog essays (use essay-fact-checker, which handles voice + tier verification) or for parameter-consistency checks across documents without citation focus (use consistency-auditor).
 success_criteria:
   - All quantitative claims have inline superscript citations
   - Citations verified to exist and be accessible

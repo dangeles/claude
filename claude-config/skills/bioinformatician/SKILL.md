@@ -728,11 +728,9 @@ for param, value in QC_PARAMS.items():
 
 ## References
 
-For detailed guidance:
-- `references/analysis_workflows.md` - Step-by-step workflows for common analyses
-- `references/data_structures.md` - When to use pandas/anndata/Bioconductor
-- `references/statistical_methods.md` - Which test for which data
-- `references/visualization_best_practices.md` - Plot selection and styling
+For visualization guidance, invoke the `plotting-advisor` skill — it covers chart-type selection, palette choice (Okabe-Ito, viridis), accessibility, anti-patterns, and domain-specific conventions (volcano plots, UMAP, Manhattan, hierarchical-clustered heatmaps, Kaplan-Meier, ROC, Bland-Altman) per Tufte / Cleveland / Wong / Wilke principles.
+
+For data structures, analysis workflows, and statistical method selection, consult the library skills directly (`scientific-skills:scanpy`, `scientific-skills:pydeseq2`, `scientific-skills:biopython`) or invoke the `statistician` skill for method choice.
 
 ## Helper Scripts
 
