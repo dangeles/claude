@@ -97,7 +97,7 @@ Live state: `~/.claude/hooks/session-scope-guard.py` matches source (`diff -q` c
 
 ## Related Commits
 
-- `<pending>`: fix(session-scope-guard): expand dir args, capture multi-arg rm/mv/cp, strip line continuations
+- `740204a`: fix(session-scope-guard): expand dir args, capture multi-arg rm/mv/cp, strip line continuations
 
 ## Next Steps
 
