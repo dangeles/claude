@@ -344,4 +344,4 @@ TRACE_ID=$(cat ${SESSION_DIR}/trace-id.txt)
 - **OpenTelemetry**: https://opentelemetry.io/docs/concepts/observability-primer/
 - **Google Dapper**: https://research.google/pubs/pub36356/
 - **W3C Trace Context**: https://www.w3.org/TR/trace-context/
-- **Universal Handoff Schema v3.0**: `./universal-handoff-schema-v3.0.json`
+- **Universal Handoff Schema v3.0**: `./universal-handoff-schema.json`

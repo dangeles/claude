@@ -229,8 +229,8 @@ Successfully implemented all 5 Priority 1 recommendations to bring programming-p
    - `test/fixtures/valid-requirements-handoff.yaml`
    - `test/test-mode-detection.sh`
    - `test/run-all-tests.sh`
-   - `test/TEST-RESULTS.md`
-   - `test/END-TO-END-TEST-PLAN.md`
+   - `test/test-results.md`
+   - `test/end-to-end-test-plan.md`
 
 4. **Documentation**:
    - `IMPLEMENTATION-SUMMARY.md` (this file)
@@ -408,8 +408,8 @@ bash test/run-all-tests.sh
    - `scripts/validate-gate.sh`: 6 quality gate checks
 
 3. **Review test cases**:
-   - `test/TEST-RESULTS.md`: Automated test results
-   - `test/END-TO-END-TEST-PLAN.md`: Manual testing scenarios
+   - `test/test-results.md`: Automated test results
+   - `test/end-to-end-test-plan.md`: Manual testing scenarios
 
 4. **Extend if needed**:
    - Add new handoff type: Create validator in validate-handoff.py

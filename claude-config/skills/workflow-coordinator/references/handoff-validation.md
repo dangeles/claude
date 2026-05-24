@@ -70,7 +70,7 @@ Validate handoff examples against the v3.0 schema:
 ```bash
 python3 -c "
 import json, jsonschema
-schema = json.load(open('references/universal-handoff-schema-v3.0.json'))
+schema = json.load(open('references/universal-handoff-schema.json'))
 example = json.load(open('examples/skill-editor-to-programming-pm.json'))
 jsonschema.validate(example, schema)
 print('PASS')
@@ -311,6 +311,6 @@ Only `sha256` algorithm is supported. Format: `sha256:{64 hex characters}`.
 
 ## References
 
-- **Universal Handoff Schema v3.0**: `./universal-handoff-schema-v3.0.json`
+- **Universal Handoff Schema v3.0**: `./universal-handoff-schema.json`
 - **JSON Schema**: https://json-schema.org/
 - **Research findings**: Context bloat anti-pattern (2000 token limit)

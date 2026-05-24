@@ -4,13 +4,14 @@
 
 version: '1.0'
 generated:
-  timestamp: '2026-02-21T23:23:07Z'
-  workflow_session: archive-workflow-session-20260221-225601-51523
+  timestamp: '2026-05-24T22:28:36Z'
+  workflow_session: archive-workflow-session-20260524-160609-57202
   archive_workflow_version: '1.0'
 project:
   type: code
   type_confidence: high
   secondary_type: null
+  skill_count: 54
 naming_conventions:
   summary:
     files: kebab-case
@@ -22,8 +23,17 @@ naming_conventions:
     convention: UPPERCASE
     example: SKILL.md
   - pattern: '*.py'
-    convention: snake_case (PEP 8 exception)
+    convention: snake_case (PEP 8)
     example: data_loader_helpers.py
+  - pattern: 'claude-config/hooks/*.py'
+    convention: kebab-case for entrypoint hooks (executable), snake_case for shared libs
+    example: pre-tool-use.py
+  - pattern: '_hook_lib.py'
+    convention: underscore-prefixed snake_case (private shared library)
+    example: _hook_lib.py
+  - pattern: '*.schema.json'
+    convention: kebab-case allowed; version moved into JSON body via "version" field
+    example: universal-handoff-schema.json
   - pattern: NN-*.md
     convention: number-prefixed kebab-case (ordered tutorials)
     example: 01-2d-channel-flow.md
@@ -45,6 +55,18 @@ structure:
   - name: claude-config/
     purpose: Source of truth for Claude Code configuration (~/.claude/)
     enforced: true
+  - name: claude-config/hooks/
+    purpose: PreToolUse/Stop hook scripts (Python executables + shared lib)
+    enforced: true
+  - name: claude-config/skills/
+    purpose: All skills (synced bidirectionally with ~/.claude/skills/)
+    enforced: true
+  - name: claude-config/agents/
+    purpose: Custom agents (synced with ~/.claude/agents/)
+    enforced: true
+  - name: claude-config/project-configs/
+    purpose: Per-project overrides (currently empty, nested under claude-config/)
+    enforced: true
   - name: docs/
     purpose: Documentation and guides
     enforced: true
@@ -64,4 +86,11 @@ organization_report:
   location: docs/organization/final-organization-report.md
 gitignore:
   patterns_enforced: true
-  last_reviewed: '2026-02-21T23:23:07Z'
+  last_reviewed: '2026-05-24T22:28:36Z'
+history:
+- session: archive-workflow-session-20260221-225601-51523
+  timestamp: '2026-02-21T23:23:07Z'
+  summary: Initial baseline
+- session: archive-workflow-session-20260524-160609-57202
+  timestamp: '2026-05-24T22:28:36Z'
+  summary: Cleanup pass — kebab-case renames in programming-pm/testing and plotting-advisor; project-configs reconciled to nested location; universal-handoff-schema filename versionless (version moved to JSON body); deprecated software-developer skill removed

@@ -176,7 +176,7 @@ delegate_to: scientific-skills:seaborn
 ```
 ```
 
-Every recommendation includes a rule citation (short tag like `[Cleveland 1985]` or a `references/<file>.md#anchor` pointer). Full bibliography lives in `references/SOURCES.md`.
+Every recommendation includes a rule citation (short tag like `[Cleveland 1985]` or a `references/<file>.md#anchor` pointer). Full bibliography lives in `references/sources.md`.
 
 ### Lint output
 
@@ -212,7 +212,7 @@ Plus JSON to stdout for machine consumption (see `scripts/style_lint.py --help`)
 - `references/accessibility.md` — WCAG, colorblind sim, fonts, journal overrides
 - `references/interactive-adaptation.md` — how rules shift for plotly/bokeh/altair
 - `references/scientific-conventions.md` — volcano, UMAP, Manhattan, forest, ROC, etc.
-- `references/SOURCES.md` — full bibliography
+- `references/sources.md` — full bibliography
 
 ## Scripts
 

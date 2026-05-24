@@ -156,7 +156,7 @@ cd ~/repos/claude
 ./sync-config.py pull-projects bioreactor
 
 # 4. Commit
-git add project-configs/bioreactor/
+git add claude-config/project-configs/bioreactor/
 git commit -m "Add Claude Code config for bioreactor project"
 git push
 ```
@@ -672,7 +672,7 @@ on:
   pull_request:
     paths:
       - 'claude-config/**'
-      - 'project-configs/**'
+      - 'claude-config/project-configs/**'
 
 jobs:
   validate:

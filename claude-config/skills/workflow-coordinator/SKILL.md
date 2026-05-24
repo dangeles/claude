@@ -149,7 +149,7 @@ Load the relevant reference for your task:
 | Debugging a handoff chain | `references/distributed-tracing.md` |
 | Finding target workflows | `references/handoff-registry.md` |
 | Adding handoff support to a skill | `references/frontmatter-metadata-standard.md` |
-| Schema definition (JSON Schema) | `references/universal-handoff-schema-v3.0.json` |
+| Schema definition (JSON Schema) | `references/universal-handoff-schema.json` |
 
 Load only the reference you need -- progressive disclosure keeps context lean.
 
@@ -175,4 +175,4 @@ Two complete example handoff files demonstrate the schema:
 - `examples/skill-editor-to-programming-pm.json` -- Full v3.0 handoff with all sections (skill-editor hands off implementation work)
 - `examples/programming-pm-to-skill-editor.json` -- Reverse direction (programming-pm requests new skill creation)
 
-Both examples validate against `references/universal-handoff-schema-v3.0.json`.
+Both examples validate against `references/universal-handoff-schema.json`.

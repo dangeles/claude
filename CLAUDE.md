@@ -38,7 +38,7 @@ If push refuses, fix the source, don't bypass.
 | `claude-config/plugins/installed_plugins.json` | Plugin version pinning |
 | `claude-config/skills/CHANGELOG.md` | Skill-level change history |
 | `planning/$(hostname -s)/YYYY-MM-DD-title.md` | Per-change planning entry, linked to commit SHA |
-| `project-configs/` | Per-project overrides (currently empty) |
+| `claude-config/project-configs/` | Per-project overrides (currently empty) |
 | `.claude/settings.local.json` | Project-local permissions; **gitignored**, not synced |
 | `docs/` | Long-form guides (CLAUDE_CONFIG_GUIDE, SYNC_WORKFLOW) |
 

@@ -143,7 +143,7 @@ Key principle: **This repository is the source of truth** for global Claude Code
 │   └── plugins/
 │       └── installed_plugins.json  # Plugin versions
 │
-├── project-configs/                # Project-specific configs
+├── claude-config/project-configs/  # Project-specific configs
 │   └── [project-name]/
 │       └── .claude-project.json
 │
@@ -198,7 +198,7 @@ cd ~/repos/claude
 ./sync-config.py pull-projects bioreactor
 
 # Commit
-git add project-configs/
+git add claude-config/project-configs/
 git commit -m "Sync bioreactor project config"
 git push
 

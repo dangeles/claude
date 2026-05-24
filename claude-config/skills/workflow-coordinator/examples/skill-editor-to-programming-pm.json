@@ -55,7 +55,7 @@
         },
         "files_to_create": [
           "claude-config/skills/workflow-coordinator/SKILL.md",
-          "claude-config/skills/workflow-coordinator/references/universal-handoff-schema-v3.0.json"
+          "claude-config/skills/workflow-coordinator/references/universal-handoff-schema.json"
         ]
       },
 

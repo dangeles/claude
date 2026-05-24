@@ -250,5 +250,5 @@ Given a skill-editor session that needs to hand off implementation work:
 ## References
 
 - **Frontmatter Metadata Standard**: `./frontmatter-metadata-standard.md`
-- **Universal Handoff Schema v3.0**: `./universal-handoff-schema-v3.0.json`
+- **Universal Handoff Schema v3.0**: `./universal-handoff-schema.json`
 - **perspective-swarm discovery**: `../../perspective-swarm/references/workflow-discovery.md`

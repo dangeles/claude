@@ -62,7 +62,7 @@ Machine-specific and ephemeral data:
 │   │   └── installed_plugins.json
 │   └── .backups/               # Automatic backups (not in git)
 │
-├── project-configs/            # Project-specific configs
+├── claude-config/project-configs/  # Project-specific configs
 │   ├── bioreactor/
 │   │   └── .claude-project.json
 │   └── [other-projects]/
@@ -290,7 +290,7 @@ Project-specific Claude Code settings.
 }
 ```
 
-**What to track**: YES (in `project-configs/`)
+**What to track**: YES (in `claude-config/project-configs/`)
 
 **Why**: Project-specific settings should be versioned with the project
 
@@ -300,7 +300,7 @@ Project-specific skill overrides or custom skills.
 
 **Location**: `[project-root]/.claude/`
 
-**What to track**: YES (in `project-configs/`)
+**What to track**: YES (in `claude-config/project-configs/`)
 
 **Why**: Custom skills or project-specific modifications should be versioned
 
@@ -405,7 +405,7 @@ Discover and sync all project-specific configurations:
 
 This:
 1. Searches `~/repos/*` for projects with `.claude-project.json` or `.claude/`
-2. Copies configs to `project-configs/[project-name]/`
+2. Copies configs to `claude-config/project-configs/[project-name]/`
 
 Output:
 ```
@@ -435,7 +435,7 @@ Restore project configurations from repository:
 ```
 
 This:
-1. Finds project configurations in `project-configs/`
+1. Finds project configurations in `claude-config/project-configs/`
 2. Locates corresponding projects in search paths
 3. Copies configs back to projects
 
