@@ -87,7 +87,7 @@ Live state: `~/.claude/hooks/_hook_lib.py` synced and matches source.
 
 ## Related Commits
 
-- `<pending>`: refactor(hooks): extract _hook_lib.py shared transcript walker
+- `24ffafb`: refactor(hooks): extract _hook_lib.py shared transcript walker
 
 ## Next Steps
 
