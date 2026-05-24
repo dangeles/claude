@@ -84,6 +84,13 @@ class TestDescribeModeMajor(unittest.TestCase):
         )
         self.assertIn("anti-patterns#dynamite-plot", _rules(v))
 
+    def test_dynamite_plot_flagged_mean_values_phrasing(self):
+        # Common alternate phrasing: "bar chart of mean values with error bars"
+        v = _run_describe(
+            "bar chart of mean values with error bars across 5 conditions"
+        )
+        self.assertIn("anti-patterns#dynamite-plot", _rules(v))
+
     def test_red_green_only_palette_flagged(self):
         v = _run_describe(
             "scatter plot of two groups colored red and green"

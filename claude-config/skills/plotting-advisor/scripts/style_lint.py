@@ -93,7 +93,9 @@ _PIE_SLICES_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _DYNAMITE_PATTERN = re.compile(
-    r"bar\s+chart\s+of\s+means?\s+with\s+error\s+bars?",
+    # Catches "bar chart of means with error bars", "bar chart of mean values
+    # with error bars", "bar of mean expression with SD error bars", etc.
+    r"bar\s+(chart|plot)?\s*of\s+means?(\s+\w+){0,3}\s+with\s+(\w+\s+)?error\s+bars?",
     re.IGNORECASE,
 )
 _RED_GREEN_PALETTE_PATTERN = re.compile(
