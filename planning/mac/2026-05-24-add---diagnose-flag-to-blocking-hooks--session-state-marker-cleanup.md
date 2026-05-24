@@ -127,7 +127,7 @@ Old marker reaped, fresh marker kept, new session's marker created. Correct.
 
 ## Related Commits
 
-- `<pending>`: feat(hooks): add --diagnose flag (via _hook_lib.report) + session-state marker cleanup
+- `6712064`: feat(hooks): add --diagnose flag (via _hook_lib.report) + session-state marker cleanup
 
 ## Next Steps
 
