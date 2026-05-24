@@ -2,7 +2,7 @@
 name: systematic-troubleshooter
 version: 1.0
 last_updated: 2026-01-29
-description: Use when encountering errors, bugs, unexpected behavior, or any problem requiring systematic debugging with extended thinking for complex multi-layer issues
+description: Use when encountering errors, bugs, unexpected behavior, or any problem requiring systematic debugging with extended thinking for complex multi-layer issues. NOT for trivial syntax/build errors that have an obvious fix (just fix them) or Jupyter-specific kernel crashes, import errors, or memory issues in notebooks (use notebook-debugger).
 prerequisites:
   - Problem description or error message
   - Access to relevant code, logs, or system state

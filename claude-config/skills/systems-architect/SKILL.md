@@ -2,7 +2,7 @@
 name: systems-architect
 version: 1.1
 last_updated: 2026-01-29
-description: Use when designing software architecture for bioinformatics pipelines, defining data structures, planning scalability, or making technical design decisions for complex systems.
+description: Use when designing software architecture, defining data structures, planning scalability, or making technical design decisions for complex Python systems — including bioinformatics pipelines, services, libraries, or analysis frameworks. NOT for single-component design within an existing architecture or routine class layout (use senior-developer).
 success_criteria:
   - Architecture addresses all functional requirements
   - Scalability considerations documented and planned

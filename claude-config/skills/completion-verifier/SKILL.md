@@ -2,7 +2,7 @@
 name: completion-verifier
 version: 1.0
 last_updated: 2026-01-29
-description: Verification system that ensures tasks are truly complete before marking them done, preventing premature completion claims through systematic checklist validation
+description: "Use BEFORE marking any task complete, before user handoffs, or at quality checkpoints — verifies requirements satisfied, edge cases tested, tests pass, no regressions, deliverables ready. Triggers on 'are we done', 'is this complete', 'verify completion', 'ready to ship', 'ready to merge', 'is this ready', 'mark done'. NOT for general code review (use copilot) or pre-PR comprehensive review (use /pr-review-toolkit:review-pr)."
 success_criteria:
   - All stated requirements verified as satisfied
   - Edge cases systematically identified and tested
