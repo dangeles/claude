@@ -67,7 +67,7 @@ All three changes shipped cleanly.
 
 ## Related Commits
 
-- `<pending>`: chore: pyright cleanup + programming-pm cheat-sheet + last_updated metadata pass
+- `4a277aa`: chore: pyright cleanup + programming-pm cheat-sheet + last_updated metadata pass
 
 ## Next Steps
 
