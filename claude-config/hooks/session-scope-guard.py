@@ -41,16 +41,29 @@ BULK_STAGE = re.compile(r"\bgit\s+add\s+(?:-A\b|--all\b|\.(?:\s|$|;|&|\|)|-u\b|-
 IS_GIT_ADD = re.compile(r"\bgit\s+add\b")
 IS_GIT_COMMIT = re.compile(r"\bgit\s+commit\b")
 
-# Best-effort Bash mutation patterns (path-producing operations).
-# Each pattern's group(1) is treated as a modified path.
-BASH_MUTATIONS = [
-    re.compile(r"\bmv\s+(?:-[a-zA-Z]+\s+)*\S+\s+(\S+)"),
-    re.compile(r"\bcp\s+(?:-[a-zA-Z]+\s+)*\S+\s+(\S+)"),
-    re.compile(r"\brm\s+(?:-[a-zA-Z]+\s+)*(\S+)"),
-    re.compile(r"\btee\s+(?:-[a-zA-Z]+\s+)*(\S+)"),
-    re.compile(r"\bsed\s+-i(?:\s*'\S*')?\s+\S+\s+(\S+)"),
-    re.compile(r"(?:^|[\s;&|])>\s*(\S+)"),
-    re.compile(r"(?:^|[\s;&|])>>\s*(\S+)"),
+# Command separators for splitting a multi-statement bash command into
+# individual statements. Pipe (`|`) is intentionally excluded: a pipeline
+# is still one logical statement for our purposes.
+COMMAND_SEPARATORS = re.compile(r"\n|&&|\|\||;")
+
+# Best-effort patterns for path-producing Bash sub-invocations.
+# Each pattern's group(1) is the path or paths-segment; multi-arg
+# commands (rm, mv, cp targets) are post-processed via shlex split.
+# Order matters: rm/mv/cp first, then sed -i, then redirects/tee.
+BASH_MUTATIONS_SINGLE = [
+    # rm: capture everything after flags up to a command boundary;
+    # caller splits via shlex to handle `rm -rf a b c`.
+    (re.compile(r"\brm\s+(?:-[a-zA-Z]+\s+)*([^\s].*?)(?:&&|;|\|\||\||$)", re.DOTALL), "all"),
+    # mv/cp <flags> <src...> <dst>: the destination is the last token.
+    # We capture the args segment and pull the last non-flag token.
+    (re.compile(r"\bmv\s+(?:-[a-zA-Z]+\s+)*([^\s].*?)(?:&&|;|\|\||\||$)", re.DOTALL), "last"),
+    (re.compile(r"\bcp\s+(?:-[a-zA-Z]+\s+)*([^\s].*?)(?:&&|;|\|\||\||$)", re.DOTALL), "last"),
+    (re.compile(r"\btee\s+(?:-[a-zA-Z]+\s+)*([^\s].*?)(?:&&|;|\|\||\||$)", re.DOTALL), "non-flag"),
+    # sed -i ... <file>: the last token after the sed expression.
+    (re.compile(r"\bsed\s+-i(?:\s*'[^']*')?\s+\S+\s+(\S+)", re.DOTALL), "first"),
+    # Shell redirects target a single path.
+    (re.compile(r"(?:^|[\s;&|])>\s*(\S+)"), "first"),
+    (re.compile(r"(?:^|[\s;&|])>>\s*(\S+)"), "first"),
 ]
 
 
@@ -131,9 +144,42 @@ def _collect_from_event(event: dict, files: set[str], repo_root: str | None) -> 
                 files.add(canonicalize(p, repo_root))
         elif name == "Bash":
             cmd = inp.get("command", "") or ""
-            for pat in BASH_MUTATIONS:
-                for m in pat.finditer(cmd):
-                    files.add(canonicalize(m.group(1), repo_root))
+            for p in _extract_bash_mutation_paths(cmd):
+                files.add(canonicalize(p, repo_root))
+
+
+def _extract_bash_mutation_paths(command: str) -> list[str]:
+    """Return every path the command appears to mutate (best-effort)."""
+    command = _strip_line_continuations(command)
+    out: list[str] = []
+    for pat, mode in BASH_MUTATIONS_SINGLE:
+        for m in pat.finditer(command):
+            segment = m.group(1).strip()
+            tokens = _shlex_safe_split(segment)
+            args = [t for t in tokens if t and not t.startswith("-")]
+            if not args:
+                continue
+            if mode == "all":
+                out.extend(args)
+            elif mode == "last":
+                out.append(args[-1])
+            elif mode == "non-flag":
+                out.extend(args)
+            elif mode == "first":
+                out.append(args[0])
+    return out
+
+
+def _strip_line_continuations(command: str) -> str:
+    """Collapse backslash-newline continuations into single spaces."""
+    return re.sub(r"\\\s*\n", " ", command)
+
+
+def _shlex_safe_split(s: str) -> list[str]:
+    try:
+        return shlex.split(s)
+    except ValueError:
+        return s.split()
 
 
 def get_staged_paths(repo_root: str | None) -> list[str]:
@@ -148,19 +194,146 @@ def get_staged_paths(repo_root: str | None) -> list[str]:
     return [canonicalize(p, repo_root) for p in out.splitlines() if p]
 
 
-def extract_git_add_paths(command: str) -> list[str]:
-    """Parse `git add <paths>` segment; returns the listed paths."""
-    m = re.search(r"\bgit\s+add\s+(.+)", command)
-    if not m:
-        return []
-    # Stop at command-chaining boundaries
-    args_str = re.split(r"&&|;|\|\||\|", m.group(1), maxsplit=1)[0]
+def split_commands(command: str) -> list[str]:
+    """Split a multi-statement bash command into individual statements.
+
+    Line continuations are collapsed first; then split on \\n, &&, ||, ;.
+    Pipe (`|`) is preserved because a pipeline is one logical statement.
+    """
+    cleaned = _strip_line_continuations(command)
+    return [s.strip() for s in COMMAND_SEPARATORS.split(cleaned) if s.strip()]
+
+
+def extract_git_add_paths(command: str, repo_root: str | None = None) -> list[str]:
+    """Parse `git add <paths>` from each statement in the command;
+    returns every listed path across all statements.
+
+    Multi-statement input like `git status; git add foo; git status`
+    correctly picks only `foo` (not `status`) by splitting on command
+    separators before regex matching.
+
+    Filters out tokens that don't look like real paths — this guards
+    against multi-line commands where heredoc'd commit-message text
+    happens to start a "line" with `git add capture regex ...` and
+    yields English words as fake paths. Tokens are considered real
+    paths only if they contain a path indicator (`/` or `.`) OR exist
+    on disk OR are tracked by git.
+    """
+    out: list[str] = []
+    for stmt in split_commands(command):
+        m = re.match(r"\s*git\s+add\s+(.+)$", stmt)
+        if not m:
+            continue
+        args_str = m.group(1).split("|", 1)[0]
+        tokens = _shlex_safe_split(args_str)
+        for t in tokens:
+            if t and not t.startswith("-") and t != "\\" and looks_like_path(t, repo_root):
+                out.append(t)
+    return out
+
+
+def looks_like_path(token: str, repo_root: str | None) -> bool:
+    """True if token plausibly identifies something git could stage.
+
+    Accepts tokens that contain a path separator or extension dot, or
+    that resolve to an existing filesystem entry, or that git already
+    tracks (covers tracked-but-deleted files). Rejects bare English
+    words like 'capture' or 'regex' that crept in from heredoc parsing.
+    """
+    if not token:
+        return False
+    if "/" in token or "\\" in token:
+        return True
+    # An interior dot (foo.txt) is a strong path indicator. Trailing
+    # punctuation (e.g. 'capture,') is not.
+    if "." in token and not token.endswith((".", ",", ";", ":", "!")):
+        return True
+    # Filesystem existence (cheap-ish check)
+    if os.path.exists(token):
+        return True
+    if repo_root and os.path.exists(os.path.join(repo_root, token)):
+        return True
+    # Tracked-but-deleted: git knows about it even though it's gone.
     try:
-        tokens = shlex.split(args_str)
-    except ValueError:
-        tokens = args_str.split()
-    # Drop flags
-    return [t for t in tokens if t and not t.startswith("-")]
+        subprocess.check_call(
+            ["git", "ls-files", "--error-unmatch", "--", token],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
+def has_git_add(command: str) -> bool:
+    return any(re.match(r"\s*git\s+add\b", s) for s in split_commands(command))
+
+
+def has_git_commit(command: str) -> bool:
+    return any(re.match(r"\s*git\s+commit\b", s) for s in split_commands(command))
+
+
+def has_bulk_stage(command: str) -> bool:
+    """True if any statement IS a `git add` invocation that uses a
+    bulk-stage flag. Statements that merely mention `git add -A` in
+    their text (e.g. inside a `git commit -m "..."` body or a heredoc)
+    do not count — only statements where the bulk-stage applies to a
+    real `git add` call.
+    """
+    for s in split_commands(command):
+        if not re.match(r"\s*git\s+add\b", s):
+            continue
+        if BULK_STAGE.search(s):
+            return True
+    return False
+
+
+def expand_path_for_session_check(
+    path: str, repo_root: str | None
+) -> list[str]:
+    """If `path` is a directory or directory-like, expand to the actual
+    files git would stage under it. Otherwise return [path].
+
+    Uses `git status --porcelain -- <path>` to get the real list of
+    dirty files git would pick up. This is what `git add <dir>` stages.
+    """
+    if not path:
+        return []
+    # Quick check: treat trailing slash as directory; also probe the
+    # filesystem for explicit directories.
+    is_dir_arg = path.endswith("/") or _looks_like_dir(path, repo_root)
+    if not is_dir_arg:
+        return [path]
+    try:
+        # Use rstrip("\n") (not strip()) so we don't drop the leading
+        # space that porcelain emits for unstaged-modified files (" M path").
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain", "--", path.rstrip("/")],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).rstrip("\n")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return [path]
+    expanded: list[str] = []
+    for line in out.splitlines():
+        # Porcelain format: 2 status chars + 1 space + path; rename:
+        # "XY old -> new". Status chars may include a literal space
+        # (e.g. " M" for unstaged-modified), so the prefix length is
+        # fixed at 3 regardless of which char is the space.
+        if len(line) < 4:
+            continue
+        rest = line[3:]
+        if " -> " in rest:
+            rest = rest.split(" -> ", 1)[1]
+        expanded.append(rest.strip().strip('"'))
+    return expanded if expanded else [path]
+
+
+def _looks_like_dir(path: str, repo_root: str | None) -> bool:
+    candidates = [path]
+    if repo_root and not path.startswith("/"):
+        candidates.append(os.path.join(repo_root, path))
+    return any(os.path.isdir(c) for c in candidates)
 
 
 def render_paths_list(paths: list[str] | set[str], max_show: int = 12) -> str:
@@ -193,12 +366,13 @@ def main() -> int:
     if "SKIP_SESSION_SCOPE_GUARD" in description:
         return 0
 
-    # Only act on git add / git commit
-    if not (IS_GIT_ADD.search(command) or IS_GIT_COMMIT.search(command)):
+    # Only act on git add / git commit. Use statement-aware detection
+    # so a `git status; git add foo` command isn't mis-parsed.
+    if not (has_git_add(command) or has_git_commit(command)):
         return 0
 
     # 1. Refuse bulk-stage patterns regardless of session-set status
-    if BULK_STAGE.search(command):
+    if has_bulk_stage(command):
         return block(
             "Refusing bulk-stage pattern. Stage specific paths only.\n"
             f"  Offending command: {command[:240]}\n"
@@ -215,10 +389,16 @@ def main() -> int:
     if not session_files:
         return 0
 
-    # 2. For specific-path `git add`, check each path
-    if IS_GIT_ADD.search(command):
-        paths = [canonicalize(p, repo_root) for p in extract_git_add_paths(command)]
-        out_of_session = [p for p in paths if p and p not in session_files]
+    # 2. For specific-path `git add`, check each path. Directory args
+    #    are expanded to their constituent files via `git status -- <dir>`
+    #    so `git add some/dir/` checks each file git would actually stage.
+    if has_git_add(command):
+        raw_paths = extract_git_add_paths(command, repo_root)
+        expanded: list[str] = []
+        for p in raw_paths:
+            for f in expand_path_for_session_check(p, repo_root):
+                expanded.append(canonicalize(f, repo_root))
+        out_of_session = [p for p in expanded if p and p not in session_files]
         if out_of_session:
             return block(
                 "Refusing `git add` — paths not modified this session:\n"
@@ -230,7 +410,7 @@ def main() -> int:
             )
 
     # 3. For `git commit`, check currently-staged paths
-    if IS_GIT_COMMIT.search(command):
+    if has_git_commit(command):
         staged = get_staged_paths(repo_root)
         out_of_session = [p for p in staged if p not in session_files]
         if out_of_session:
