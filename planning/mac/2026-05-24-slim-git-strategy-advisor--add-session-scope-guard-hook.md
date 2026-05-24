@@ -106,7 +106,7 @@ Live state verified: `~/.claude/hooks/session-scope-guard.py` exists, is executa
 
 ## Related Commits
 
-- `<pending>`: chore(git-strategy-advisor): slim to advisory layer + add session-scope-guard hook
+- `dee3a86`: chore(git-strategy-advisor): slim to advisory layer + add session-scope-guard hook
 
 ## Next Steps
 
