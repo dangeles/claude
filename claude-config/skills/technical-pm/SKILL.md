@@ -327,71 +327,9 @@ echo "ROLLBACK: Researcher agent produced contradictory findings. Reverted to v3
 
 See `assets/crisis-response-template.md` for standardized incident notification format.
 
-## Task Breakdown Format
+## Output Formats
 
-```markdown
-# Work Plan: [Initiative Name]
-
-**Goal**: [What we're trying to accomplish]
-**Timeline**: [Target completion or sprint]
-**Status**: [Not Started / In Progress / Blocked / Complete]
-
-## Dependencies
-```
-[Task A] ──► [Task B] ──► [Task C]
-                    └──► [Task D]
-```
-
-## Tasks
-
-### 1. [Task Name]
-- **Assigned to**: [Agent]
-- **Status**: [Pending / In Progress / Complete / Blocked]
-- **Depends on**: [Other task IDs, if any]
-- **Deliverable**: [What this task produces]
-- **Notes**: [Any context]
-
-### 2. ...
-
-## Blockers
-| Blocker | Blocking | Resolution Path | Owner |
-|---------|----------|-----------------|-------|
-| ... | [Task ID] | ... | ... |
-
-## Handoffs Required
-- [ ] [Task X] → [Agent Y] when [condition]
-- [ ] ...
-
-## Decisions Needed from User
-1. [Decision with context]
-```
-
-## Tracking Dashboard Format
-
-```markdown
-# Progress Dashboard
-
-**As of**: [Date/Time]
-**Sprint/Phase**: [Name]
-
-## Status Summary
-| Track | Progress | Status | Next Milestone |
-|-------|----------|--------|----------------|
-| [Track 1] | ███░░ 60% | On Track | [Milestone] |
-| [Track 2] | ██░░░ 40% | Blocked | [Blocker] |
-
-## Recent Completions
-- [Date]: [What was completed]
-
-## Current Focus
-- [Agent]: Working on [Task]
-
-## Upcoming Handoffs
-- [Agent A] → [Agent B]: [Document/deliverable]
-
-## Risks
-- [Risk and mitigation]
-```
+Two structured outputs are produced during a session: a **Work Plan** (task breakdown) at the start of an initiative, and a **Progress Dashboard** at each checkpoint. Full templates are in `references/output-formats.md` — Read that file when producing either artifact.
 
 ## Agent Assignment Guide
 
