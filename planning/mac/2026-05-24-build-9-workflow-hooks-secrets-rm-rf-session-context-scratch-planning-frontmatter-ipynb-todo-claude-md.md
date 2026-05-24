@@ -153,7 +153,7 @@ Smoke-test results (verified independently from `head`-truncated pipelines, whic
 
 ## Related Commits
 
-- `<pending>`: feat(hooks): build 9 workflow hooks (secret-leak, rm-rf-sanity, session-start-context, scratch-redirect, planning-required, skill-frontmatter, ipynb-output-warn, stale-todo, claude-md-improver-suggest)
+- `03b92de`: feat(hooks): build 9 workflow hooks (secret-leak, rm-rf-sanity, session-start-context, scratch-redirect, planning-required, skill-frontmatter, ipynb-output-warn, stale-todo, claude-md-improver-suggest)
 
 ## Next Steps
 
