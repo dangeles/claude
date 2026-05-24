@@ -65,7 +65,7 @@ All three paths verified end-to-end:
 
 ## Related Commits
 
-- `<pending>`: fix(sync-config): config-driven hostname resolution with IP-pattern validation
+- `5f87155`: fix(sync-config): config-driven hostname resolution with IP-pattern validation
 
 ## Next Steps
 
