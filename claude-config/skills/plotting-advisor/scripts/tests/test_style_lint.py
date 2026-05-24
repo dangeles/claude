@@ -68,5 +68,176 @@ class TestDescribeModeCritical(unittest.TestCase):
         self.assertNotIn("critical", _severities(v))
 
 
+class TestDescribeModeMajor(unittest.TestCase):
+    def test_pie_too_many_slices(self):
+        v = _run_describe("pie chart with 8 slices showing market share")
+        self.assertIn("anti-patterns#pie-misuse", _rules(v))
+        # severity major
+        for vv in v:
+            if vv["rule"] == "anti-patterns#pie-misuse":
+                self.assertEqual(vv["severity"], "major")
+
+    def test_dynamite_plot_flagged(self):
+        v = _run_describe(
+            "bar chart of means with error bars showing standard error "
+            "across 5 conditions"
+        )
+        self.assertIn("anti-patterns#dynamite-plot", _rules(v))
+
+    def test_red_green_only_palette_flagged(self):
+        v = _run_describe(
+            "scatter plot of two groups colored red and green"
+        )
+        self.assertIn("accessibility#red-green-only", _rules(v))
+
+    def test_alphabet_order_flagged(self):
+        v = _run_describe(
+            "bar chart of revenue per state sorted alphabetically"
+        )
+        self.assertIn("anti-patterns#alphabet-order", _rules(v))
+
+
+class TestFigureSpecMode(unittest.TestCase):
+    def _lint_spec(self, spec: dict) -> list[dict]:
+        return style_lint.lint_figure_spec(spec)
+
+    def test_missing_axis_labels_critical(self):
+        spec = {
+            "n_axes": 1,
+            "axes": [
+                {
+                    "xlabel": "",
+                    "ylabel": "",
+                    "title": "Sales",
+                    "xscale": "linear",
+                    "yscale": "linear",
+                    "xlim": [0, 10],
+                    "ylim": [0, 100],
+                    "xlim_includes_zero": True,
+                    "ylim_includes_zero": True,
+                    "is_3d": False,
+                    "line_colors": ["#1f77b4"],
+                    "has_legend": False,
+                    "n_patches": 0,
+                    "n_images": 0,
+                }
+            ],
+        }
+        v = self._lint_spec(spec)
+        self.assertIn("axes#labels-required", _rules(v))
+
+    def test_3d_critical(self):
+        spec = {
+            "n_axes": 1,
+            "axes": [
+                {
+                    "xlabel": "x",
+                    "ylabel": "y",
+                    "title": "",
+                    "xscale": "linear",
+                    "yscale": "linear",
+                    "xlim": [0, 10],
+                    "ylim": [0, 100],
+                    "xlim_includes_zero": True,
+                    "ylim_includes_zero": True,
+                    "is_3d": True,
+                    "line_colors": [],
+                    "has_legend": False,
+                    "n_patches": 0,
+                    "n_images": 0,
+                }
+            ],
+        }
+        v = self._lint_spec(spec)
+        self.assertIn("anti-patterns#3d-charts", _rules(v))
+
+    def test_truncated_baseline_critical(self):
+        spec = {
+            "n_axes": 1,
+            "axes": [
+                {
+                    "xlabel": "x",
+                    "ylabel": "y",
+                    "title": "",
+                    "xscale": "linear",
+                    "yscale": "linear",
+                    "xlim": [0, 10],
+                    "ylim": [42, 51],
+                    "xlim_includes_zero": True,
+                    "ylim_includes_zero": False,
+                    "is_3d": False,
+                    "line_colors": [],
+                    "has_legend": False,
+                    "n_patches": 4,  # bars present
+                    "n_images": 0,
+                }
+            ],
+        }
+        v = self._lint_spec(spec)
+        self.assertIn("anti-patterns#truncated-baseline", _rules(v))
+
+    def test_dual_axes_critical(self):
+        spec = {"n_axes": 2, "axes": [
+            {"xlabel": "t", "ylabel": "rev", "title": "", "xscale": "linear",
+             "yscale": "linear", "xlim": [0, 10], "ylim": [0, 100],
+             "xlim_includes_zero": True, "ylim_includes_zero": True,
+             "is_3d": False, "line_colors": ["#1f77b4"], "has_legend": False,
+             "n_patches": 0, "n_images": 0},
+            # Twin axis: matplotlib's ax.twinx() puts another axis with the
+            # same xlim but different ylim and a different ylabel
+            {"xlabel": "t", "ylabel": "clicks", "title": "", "xscale": "linear",
+             "yscale": "linear", "xlim": [0, 10], "ylim": [0, 5000],
+             "xlim_includes_zero": True, "ylim_includes_zero": True,
+             "is_3d": False, "line_colors": ["#ff7f0e"], "has_legend": False,
+             "n_patches": 0, "n_images": 0},
+        ]}
+        v = self._lint_spec(spec)
+        self.assertIn("anti-patterns#dual-axes", _rules(v))
+
+    def test_too_many_categorical_colors_major(self):
+        spec = {
+            "n_axes": 1,
+            "axes": [
+                {
+                    "xlabel": "x", "ylabel": "y", "title": "",
+                    "xscale": "linear", "yscale": "linear",
+                    "xlim": [0, 10], "ylim": [0, 100],
+                    "xlim_includes_zero": True, "ylim_includes_zero": True,
+                    "is_3d": False,
+                    "line_colors": [
+                        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+                        "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
+                        "#bcbd22", "#17becf",  # 10 colors > 8 limit
+                    ],
+                    "has_legend": True,
+                    "n_patches": 0, "n_images": 0,
+                }
+            ],
+        }
+        v = self._lint_spec(spec)
+        self.assertIn("color#too-many-categorical", _rules(v))
+
+
+class TestRedGreenPaletteIsCaught(unittest.TestCase):
+    def test_red_green_pair_flagged(self):
+        spec = {
+            "n_axes": 1,
+            "axes": [
+                {
+                    "xlabel": "x", "ylabel": "y", "title": "",
+                    "xscale": "linear", "yscale": "linear",
+                    "xlim": [0, 10], "ylim": [0, 100],
+                    "xlim_includes_zero": True, "ylim_includes_zero": True,
+                    "is_3d": False,
+                    "line_colors": ["#FF0000", "#00FF00"],
+                    "has_legend": True,
+                    "n_patches": 0, "n_images": 0,
+                }
+            ],
+        }
+        v = style_lint.lint_figure_spec(spec)
+        self.assertIn("accessibility#colorblind-unsafe", _rules(v))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,8 @@ THIS_DIR = __file__.rsplit("/", 1)[0] if "/" in __file__ else "."
 if THIS_DIR not in sys.path:
     sys.path.insert(0, THIS_DIR)
 
+import palettes  # noqa: E402  # pyright: ignore[reportMissingImports]
+
 
 SEVERITIES = ("critical", "major", "minor")
 
@@ -84,6 +86,22 @@ _NO_LABELS_PATTERN = re.compile(
 )
 _CONTINUOUS_HINT_PATTERN = re.compile(
     r"continuous|gradient|colormap|color\s*scale|heatmap|density|magnitude",
+    re.IGNORECASE,
+)
+_PIE_SLICES_PATTERN = re.compile(
+    r"pie\s+chart\s+with\s+(\d+)\s+slices?|pie\s+chart.*?(\d+)\s+slices?",
+    re.IGNORECASE,
+)
+_DYNAMITE_PATTERN = re.compile(
+    r"bar\s+chart\s+of\s+means?\s+with\s+error\s+bars?",
+    re.IGNORECASE,
+)
+_RED_GREEN_PALETTE_PATTERN = re.compile(
+    r"colored?\s+red\s+and\s+green|red[\s/]green\s+(palette|colors?|encoding)",
+    re.IGNORECASE,
+)
+_ALPHABET_ORDER_PATTERN = re.compile(
+    r"sorted\s+alphabetic\w*|alphabetic\w*\s+order(ed)?",
     re.IGNORECASE,
 )
 
@@ -160,7 +178,177 @@ def lint_describe(text: str) -> list[dict]:
             )
         )
 
-    # Major and minor rules added in later tasks
+    # --- Major rules ---
+
+    m = _PIE_SLICES_PATTERN.search(text)
+    if m:
+        n_str = next((g for g in m.groups() if g), None)
+        if n_str and int(n_str) > 5:
+            report.add(
+                Violation(
+                    severity="major",
+                    rule="anti-patterns#pie-misuse",
+                    where="chart_type",
+                    observed=int(n_str),
+                    fix="Use an ordered bar or dot plot. Pie charts require ≤5 slices.",
+                )
+            )
+
+    if _DYNAMITE_PATTERN.search(text):
+        report.add(
+            Violation(
+                severity="major",
+                rule="anti-patterns#dynamite-plot",
+                where="chart_type",
+                fix=(
+                    "Show individual observations — dot plot, box plot, or violin. "
+                    "See Weissgerber 2015."
+                ),
+            )
+        )
+
+    if _RED_GREEN_PALETTE_PATTERN.search(text):
+        report.add(
+            Violation(
+                severity="major",
+                rule="accessibility#red-green-only",
+                where="palette",
+                fix=(
+                    "Use Okabe-Ito (e.g., #E69F00 orange and #56B4E9 sky blue). "
+                    "Or add a shape/line encoding so color isn't load-bearing."
+                ),
+            )
+        )
+
+    if _ALPHABET_ORDER_PATTERN.search(text):
+        report.add(
+            Violation(
+                severity="major",
+                rule="anti-patterns#alphabet-order",
+                where="x_axis_order",
+                fix=(
+                    "Sort by value (ascending or descending), unless time or "
+                    "experimental order is more meaningful."
+                ),
+            )
+        )
+
+    return [v.to_dict() for v in report.violations]
+
+
+def lint_figure_spec(spec: dict) -> list[dict]:
+    """Run all rules against a JSON spec produced by figure_spec.extract_spec."""
+    report = LintReport()
+    axes = spec.get("axes", [])
+    n_axes = spec.get("n_axes", len(axes))
+
+    # --- Critical rules (per axis) ---
+    for i, ax in enumerate(axes):
+        where = f"axes[{i}]"
+
+        # Labels required
+        if not ax.get("xlabel") or not ax.get("ylabel"):
+            report.add(
+                Violation(
+                    severity="critical",
+                    rule="axes#labels-required",
+                    where=where,
+                    observed={
+                        "xlabel": ax.get("xlabel", ""),
+                        "ylabel": ax.get("ylabel", ""),
+                    },
+                    fix="Add labels with units in parentheses, e.g. 'Time (h)'.",
+                )
+            )
+
+        # 3D
+        if ax.get("is_3d"):
+            report.add(
+                Violation(
+                    severity="critical",
+                    rule="anti-patterns#3d-charts",
+                    where=where,
+                    fix="Use the 2D version. Always.",
+                )
+            )
+
+        # Truncated baseline (only meaningful for bar/area charts — proxy: any patches)
+        if (
+            ax.get("yscale") == "linear"
+            and not ax.get("ylim_includes_zero")
+            and ax.get("n_patches", 0) > 0
+        ):
+            report.add(
+                Violation(
+                    severity="critical",
+                    rule="anti-patterns#truncated-baseline",
+                    where=f"{where}.ylim",
+                    observed=ax.get("ylim"),
+                    fix=(
+                        "Extend axis to zero, OR annotate the truncation "
+                        "with a broken-axis indicator."
+                    ),
+                )
+            )
+
+    # Dual y-axes: two axes that share xlim but differ on ylabel/ylim
+    if n_axes == 2 and len(axes) == 2:
+        a, b = axes[0], axes[1]
+        if (
+            a.get("xlim") == b.get("xlim")
+            and a.get("ylabel") != b.get("ylabel")
+            and (a.get("ylabel") and b.get("ylabel"))
+            and a.get("ylim") != b.get("ylim")
+        ):
+            report.add(
+                Violation(
+                    severity="critical",
+                    rule="anti-patterns#dual-axes",
+                    where="axes[0,1]",
+                    fix=(
+                        "Use two adjacent panels with shared x-axis, OR "
+                        "normalize both series to a common unit."
+                    ),
+                )
+            )
+
+    # --- Major rules (per axis) ---
+    for i, ax in enumerate(axes):
+        where = f"axes[{i}]"
+        colors = [c for c in ax.get("line_colors", []) if c and c != "?"]
+
+        # Too many categorical colors
+        unique_colors = list(dict.fromkeys(colors))  # preserve order, dedupe
+        if len(unique_colors) > 8:
+            report.add(
+                Violation(
+                    severity="major",
+                    rule="color#too-many-categorical",
+                    where=f"{where}.line_colors",
+                    observed=len(unique_colors),
+                    fix=(
+                        "≤8 categorical levels. Collapse categories or use "
+                        "small multiples."
+                    ),
+                )
+            )
+
+        # Palette colorblind safety
+        if len(unique_colors) >= 2:
+            if not palettes.is_colorblind_safe_categorical(unique_colors):
+                report.add(
+                    Violation(
+                        severity="major",
+                        rule="accessibility#colorblind-unsafe",
+                        where=f"{where}.line_colors",
+                        observed=unique_colors,
+                        fix=(
+                            "Use Okabe-Ito categorical palette, or add a "
+                            "redundant encoding (shape/line style)."
+                        ),
+                    )
+                )
+
     return [v.to_dict() for v in report.violations]
 
 
@@ -217,9 +405,13 @@ def cli_main(argv: list[str] | None = None) -> int:
     if args.describe:
         violations = lint_describe(args.describe)
     elif args.figure_spec:
-        # Task 13/14 will implement this.
-        print("error: --figure-spec mode not yet implemented", file=sys.stderr)
-        return 1
+        try:
+            with open(args.figure_spec) as f:
+                spec = json.load(f)
+        except Exception as e:
+            print(f"error: could not read figure-spec JSON: {e}", file=sys.stderr)
+            return 1
+        violations = lint_figure_spec(spec)
     elif args.image:
         # Task 15 will implement this.
         print("error: --image mode not yet implemented", file=sys.stderr)
