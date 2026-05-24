@@ -17,54 +17,34 @@ import json
 import os
 import re
 import sys
-from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _hook_lib import iter_tool_uses  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 MARKER = re.compile(r"\b(TODO|FIXME|XXX|HACK)\b[^\n]{0,120}")
 
 
-def _walk_transcript(transcript_path: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+def _walk_transcript(
+    transcript_path: str,
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     """Return (added, removed) — each a list of (file_path, marker_line)."""
     added: list[tuple[str, str]] = []
     removed: list[tuple[str, str]] = []
-    if not transcript_path or not Path(transcript_path).exists():
-        return added, removed
-    try:
-        with open(transcript_path) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    event = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                msg = event.get("message", event)
-                if not isinstance(msg, dict):
-                    continue
-                content = msg.get("content")
-                if not isinstance(content, list):
-                    continue
-                for item in content:
-                    if not isinstance(item, dict) or item.get("type") != "tool_use":
-                        continue
-                    name = item.get("name", "")
-                    inp = item.get("input", {}) or {}
-                    path = inp.get("file_path") or inp.get("notebook_path") or ""
-                    if not path:
-                        continue
-                    if name == "Write":
-                        for m in MARKER.finditer(inp.get("content", "") or ""):
-                            added.append((path, m.group(0).strip()))
-                    elif name == "Edit":
-                        for m in MARKER.finditer(inp.get("new_string", "") or ""):
-                            added.append((path, m.group(0).strip()))
-                        for m in MARKER.finditer(inp.get("old_string", "") or ""):
-                            removed.append((path, m.group(0).strip()))
-                    elif name == "NotebookEdit":
-                        for m in MARKER.finditer(inp.get("new_source", "") or ""):
-                            added.append((path, m.group(0).strip()))
-    except OSError:
-        pass
+    for name, inp in iter_tool_uses(transcript_path):
+        path = inp.get("file_path") or inp.get("notebook_path") or ""
+        if not path:
+            continue
+        if name == "Write":
+            for m in MARKER.finditer(inp.get("content", "") or ""):
+                added.append((path, m.group(0).strip()))
+        elif name == "Edit":
+            for m in MARKER.finditer(inp.get("new_string", "") or ""):
+                added.append((path, m.group(0).strip()))
+            for m in MARKER.finditer(inp.get("old_string", "") or ""):
+                removed.append((path, m.group(0).strip()))
+        elif name == "NotebookEdit":
+            for m in MARKER.finditer(inp.get("new_source", "") or ""):
+                added.append((path, m.group(0).strip()))
     return added, removed
 
 

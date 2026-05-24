@@ -30,7 +30,9 @@ import os
 import re
 import subprocess
 import sys
-from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _hook_lib import iter_tool_uses  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 GATED_PATH_PATTERN = re.compile(
     r"claude-config/(?:skills/|agents/|hooks/|settings\.json|plugins/)"
@@ -58,42 +60,18 @@ def _walk_transcript(transcript_path: str) -> tuple[bool, bool, list[str]]:
     touched_gated = False
     created_planning = False
     samples: list[str] = []
-    if not transcript_path or not Path(transcript_path).exists():
-        return touched_gated, created_planning, samples
-    try:
-        with open(transcript_path) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    event = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                msg = event.get("message", event)
-                if not isinstance(msg, dict):
-                    continue
-                content = msg.get("content")
-                if not isinstance(content, list):
-                    continue
-                for item in content:
-                    if not isinstance(item, dict) or item.get("type") != "tool_use":
-                        continue
-                    name = item.get("name", "")
-                    if name not in ("Write", "Edit", "NotebookEdit"):
-                        continue
-                    inp = item.get("input", {}) or {}
-                    path = inp.get("file_path") or inp.get("notebook_path") or ""
-                    if not path:
-                        continue
-                    if GATED_PATH_PATTERN.search(path):
-                        touched_gated = True
-                        if len(samples) < 5:
-                            samples.append(path)
-                    if PLANNING_ENTRY_PATTERN.search(path) and name == "Write":
-                        created_planning = True
-    except OSError:
-        pass
+    for name, inp in iter_tool_uses(transcript_path):
+        if name not in ("Write", "Edit", "NotebookEdit"):
+            continue
+        path = inp.get("file_path") or inp.get("notebook_path") or ""
+        if not path:
+            continue
+        if GATED_PATH_PATTERN.search(path):
+            touched_gated = True
+            if len(samples) < 5:
+                samples.append(path)
+        if PLANNING_ENTRY_PATTERN.search(path) and name == "Write":
+            created_planning = True
     return touched_gated, created_planning, samples
 
 

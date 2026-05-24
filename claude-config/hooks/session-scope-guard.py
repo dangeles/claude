@@ -37,6 +37,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _hook_lib import iter_tool_uses  # noqa: E402  # pyright: ignore[reportMissingImports]
+
 BULK_STAGE = re.compile(r"\bgit\s+add\s+(?:-A\b|--all\b|\.(?:\s|$|;|&|\|)|-u\b|--update\b)")
 IS_GIT_ADD = re.compile(r"\bgit\s+add\b")
 IS_GIT_COMMIT = re.compile(r"\bgit\s+commit\b")
@@ -100,40 +103,7 @@ def get_repo_root() -> str | None:
 def derive_session_files(transcript_path: str, repo_root: str | None) -> set[str]:
     """Walk transcript JSONL and collect paths Claude has touched."""
     files: set[str] = set()
-    if not transcript_path:
-        return files
-    p = Path(transcript_path)
-    if not p.exists():
-        return files
-    try:
-        with p.open() as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    event = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                _collect_from_event(event, files, repo_root)
-    except OSError:
-        pass
-    return files
-
-
-def _collect_from_event(event: dict, files: set[str], repo_root: str | None) -> None:
-    """Extract tool_use entries; handles both legacy and v2 transcript shapes."""
-    msg = event.get("message", event)
-    if not isinstance(msg, dict):
-        return
-    content = msg.get("content")
-    if not isinstance(content, list):
-        return
-    for item in content:
-        if not isinstance(item, dict) or item.get("type") != "tool_use":
-            continue
-        name = item.get("name", "")
-        inp = item.get("input", {}) or {}
+    for name, inp in iter_tool_uses(transcript_path):
         if name in ("Write", "Edit"):
             p = inp.get("file_path") or ""
             if p:
@@ -146,6 +116,7 @@ def _collect_from_event(event: dict, files: set[str], repo_root: str | None) -> 
             cmd = inp.get("command", "") or ""
             for p in _extract_bash_mutation_paths(cmd):
                 files.add(canonicalize(p, repo_root))
+    return files
 
 
 def _extract_bash_mutation_paths(command: str) -> list[str]:

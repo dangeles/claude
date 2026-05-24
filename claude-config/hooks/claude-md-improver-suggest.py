@@ -12,9 +12,12 @@ Non-blocking — exit 0 always.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
-from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _hook_lib import iter_user_messages  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 TRIGGER_PATTERNS = [
     re.compile(r"\bfrom now on\b", re.IGNORECASE),
@@ -29,51 +32,20 @@ TRIGGER_PATTERNS = [
 ]
 
 
-def _walk_user_messages(transcript_path: str) -> list[tuple[str, str]]:
+def _scan_user_messages(transcript_path: str) -> list[tuple[str, str]]:
     """Return list of (matched_phrase, surrounding_context) for user
     messages containing a trigger phrase."""
     hits: list[tuple[str, str]] = []
-    if not transcript_path or not Path(transcript_path).exists():
-        return hits
-    try:
-        with open(transcript_path) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    event = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                # Only user-role messages
-                msg = event.get("message", event)
-                if not isinstance(msg, dict):
-                    continue
-                role = msg.get("role") or event.get("role")
-                if role != "user":
-                    continue
-                content = msg.get("content", "")
-                # content may be string or list of dicts
-                if isinstance(content, list):
-                    text = " ".join(
-                        c.get("text", "") for c in content
-                        if isinstance(c, dict) and c.get("type") == "text"
-                    )
-                else:
-                    text = str(content)
-                if not text:
-                    continue
-                for pat in TRIGGER_PATTERNS:
-                    m = pat.search(text)
-                    if not m:
-                        continue
-                    start = max(0, m.start() - 30)
-                    end = min(len(text), m.end() + 60)
-                    excerpt = text[start:end].replace("\n", " ").strip()
-                    hits.append((m.group(0), excerpt))
-                    break  # one hit per message is enough
-    except OSError:
-        pass
+    for text in iter_user_messages(transcript_path):
+        for pat in TRIGGER_PATTERNS:
+            m = pat.search(text)
+            if not m:
+                continue
+            start = max(0, m.start() - 30)
+            end = min(len(text), m.end() + 60)
+            excerpt = text[start:end].replace("\n", " ").strip()
+            hits.append((m.group(0), excerpt))
+            break  # one hit per message is enough
     return hits
 
 
@@ -83,7 +55,7 @@ def main() -> int:
     except json.JSONDecodeError:
         return 0
     transcript_path = payload.get("transcript_path", "")
-    hits = _walk_user_messages(transcript_path)
+    hits = _scan_user_messages(transcript_path)
     if not hits:
         return 0
 
