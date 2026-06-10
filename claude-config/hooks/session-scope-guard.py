@@ -151,24 +151,32 @@ def _session_transcripts(transcript_path: str) -> list[str]:
 
 
 def _extract_bash_mutation_paths(command: str) -> list[str]:
-    """Return every path the command appears to mutate (best-effort)."""
-    command = _strip_line_continuations(command)
+    """Return every path the command appears to mutate (best-effort).
+
+    Runs the mutation patterns per-statement. `split_commands` separates
+    statements on newlines, `;`, `&&`, and `||` (pipelines stay whole),
+    so a `cp`/`mv`/`rm`/redirect in one statement of a multi-line command
+    can't be swallowed by a regex greedily spanning into a later
+    statement — the boundary alternation in BASH_MUTATIONS_SINGLE does
+    not itself include the newline.
+    """
     out: list[str] = []
-    for pat, mode in BASH_MUTATIONS_SINGLE:
-        for m in pat.finditer(command):
-            segment = m.group(1).strip()
-            tokens = _shlex_safe_split(segment)
-            args = [t for t in tokens if t and not t.startswith("-")]
-            if not args:
-                continue
-            if mode == "all":
-                out.extend(args)
-            elif mode == "last":
-                out.append(args[-1])
-            elif mode == "non-flag":
-                out.extend(args)
-            elif mode == "first":
-                out.append(args[0])
+    for stmt in split_commands(command):
+        for pat, mode in BASH_MUTATIONS_SINGLE:
+            for m in pat.finditer(stmt):
+                segment = m.group(1).strip()
+                tokens = _shlex_safe_split(segment)
+                args = [t for t in tokens if t and not t.startswith("-")]
+                if not args:
+                    continue
+                if mode == "all":
+                    out.extend(args)
+                elif mode == "last":
+                    out.append(args[-1])
+                elif mode == "non-flag":
+                    out.extend(args)
+                elif mode == "first":
+                    out.append(args[0])
     return out
 
 

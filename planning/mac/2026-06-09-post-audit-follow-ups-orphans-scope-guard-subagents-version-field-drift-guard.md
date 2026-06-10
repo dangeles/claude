@@ -51,9 +51,22 @@ unit-tested against real data. The scope-guard fix removes the friction that for
 - Subagent-driven edits are invisible to transcript-scoped guards unless the guard walks
   subagent transcripts — a general gotcha for any hook that reasons over "what changed."
 
+## Addendum — second scope-guard gap (newline-separated statements)
+
+Surfaced while committing the scientific-skills uninstall: the guard false-positived on
+`cp`-created files because `_extract_bash_mutation_paths` ran its mutation regexes over the
+whole command, and the boundary alternation (`&&|;|\|\||\|`) does not include `\n` — so a
+`cp dst` in a newline-joined multi-statement command was swallowed by a regex spanning into
+a later statement. Fixed by running the patterns per-statement via the existing
+`split_commands()` (splits on `\n`/`;`/`&&`/`||`, keeps pipelines whole). Tested: the exact
+failing multi-line `cp` now captures both dests; single-statement cp/mv/rm/redirect/tee/sed
+and `;`/`&&`-separated cases still pass; var-laden commands don't crash. This + the subagent
+fix together cover the two false-positive classes seen this session.
+
 ## Related Commits
 
 - 968cb59: chore(hooks): scope-guard walks subagent transcripts + session-start drift guard
+- [pending]: fix(hooks): scope-guard splits bash statements on newlines
 
 ## Next Steps
 
