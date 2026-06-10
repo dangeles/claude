@@ -83,7 +83,7 @@ Line reductions: programming-pm 1871→850, cfd-bioreactor 1510→1376, bioinfor
 
 ## Related Commits
 
-- [pending]: chore(skills): skills audit implementation pass (P1-P5)
+- a66aa95: chore(skills): skills audit implementation pass (P1-P5)
 
 ## Next Steps
 
