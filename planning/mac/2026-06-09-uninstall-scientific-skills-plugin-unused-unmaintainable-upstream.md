@@ -41,4 +41,4 @@ The old plugin path is gone upstream. To get the current skills, use the new mod
 
 ## Related Commits
 
-- [pending]: chore(plugins): uninstall scientific-skills plugin
+- 1b546ac: chore(plugins): uninstall scientific-skills plugin
