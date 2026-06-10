@@ -7,6 +7,11 @@ commits, dirty-file count, and seconds since the last commit. Claude
 Code prepends UserPromptSubmit stdout to the conversation context so
 the model sees this without explicit explanation.
 
+When run inside the Claude config repo (detected by a `sync-config.py`
+at cwd), it also appends a one-line drift warning if `~/.claude`
+diverges from `claude-config/` — surfacing untracked live edits before
+they get clobbered by the next push. Best-effort and fail-silent.
+
 Subsequent prompts in the same session are no-ops (a marker file in
 the per-session state dir ensures one-shot behavior).
 
@@ -110,8 +115,50 @@ def _build_context(cwd: str) -> str | None:
         lines.append("recent commits:")
         for c in last_commits.splitlines():
             lines.append(f"  {c}")
+    drift = _drift_warning(cwd)
+    if drift:
+        lines.append(drift)
     lines.append("</session-context>")
     return "\n".join(lines)
+
+
+def _drift_warning(cwd: str) -> str | None:
+    """If cwd is the Claude config repo and ~/.claude diverges from
+    claude-config/, return a one-line warning; else None.
+
+    Self-scoping: only runs when a `sync-config.py` sits at cwd (true
+    only for this repo). Best-effort — any error/timeout returns None so
+    the session-context block is never blocked or delayed past 15s.
+    """
+    sync = Path(cwd) / "sync-config.py"
+    if not sync.is_file():
+        return None
+    try:
+        out = subprocess.run(
+            ["python3", str(sync), "status"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            cwd=cwd,
+        ).stdout
+    except (subprocess.SubprocessError, OSError):
+        return None
+    # Only inspect the user-wide section (before project configs); strip ANSI.
+    section = re.sub(r"\x1b\[[0-9;]*m", "", out.split("Project configurations")[0])
+    changes = [ln.strip() for ln in section.splitlines() if re.match(r"\s*\*\s", ln)]
+    m = re.search(r"Orphaned files \((\d+)\)", section)
+    orphans = int(m.group(1)) if m else 0
+    if not changes and not orphans:
+        return None
+    bits = list(changes)
+    if orphans:
+        bits.append(f"{orphans} orphan(s)")
+    return (
+        "⚠ ~/.claude diverges from this repo ["
+        + "; ".join(bits)
+        + "] — run ./sync-config.py status; pull live edits or push repo "
+        "changes before editing config (repo is source of truth)."
+    )
 
 
 def main() -> int:

@@ -11,7 +11,10 @@ Hooks into Bash tool calls. For `git add` / `git commit` commands:
 
 Session set is derived from transcript JSONL events: Write/Edit/
 NotebookEdit tool inputs, plus best-effort parse of Bash mutations
-(mv/cp/rm dst, > redirects, tee, sed -i).
+(mv/cp/rm dst, > redirects, tee, sed -i). The main transcript AND
+any subagent transcripts (<session-dir>/**/subagents/*.jsonl) are
+walked, so files edited by dispatched agents (Task tool) count as
+session-modified rather than tripping the guard.
 
 Exit codes (Claude Code PreToolUse contract):
   0  — allow the tool call to proceed
@@ -101,22 +104,50 @@ def get_repo_root() -> str | None:
 
 
 def derive_session_files(transcript_path: str, repo_root: str | None) -> set[str]:
-    """Walk transcript JSONL and collect paths Claude has touched."""
+    """Walk transcript JSONL and collect paths Claude has touched.
+
+    Walks the main transcript plus any subagent transcripts, so files
+    edited by dispatched agents (Task tool) are recognized as
+    session-modified. See _session_transcripts().
+    """
     files: set[str] = set()
-    for name, inp in iter_tool_uses(transcript_path):
-        if name in ("Write", "Edit"):
-            p = inp.get("file_path") or ""
-            if p:
-                files.add(canonicalize(p, repo_root))
-        elif name == "NotebookEdit":
-            p = inp.get("notebook_path") or ""
-            if p:
-                files.add(canonicalize(p, repo_root))
-        elif name == "Bash":
-            cmd = inp.get("command", "") or ""
-            for p in _extract_bash_mutation_paths(cmd):
-                files.add(canonicalize(p, repo_root))
+    for tp in _session_transcripts(transcript_path):
+        for name, inp in iter_tool_uses(tp):
+            if name in ("Write", "Edit"):
+                p = inp.get("file_path") or ""
+                if p:
+                    files.add(canonicalize(p, repo_root))
+            elif name == "NotebookEdit":
+                p = inp.get("notebook_path") or ""
+                if p:
+                    files.add(canonicalize(p, repo_root))
+            elif name == "Bash":
+                cmd = inp.get("command", "") or ""
+                for p in _extract_bash_mutation_paths(cmd):
+                    files.add(canonicalize(p, repo_root))
     return files
+
+
+def _session_transcripts(transcript_path: str) -> list[str]:
+    """The main transcript plus any subagent transcripts.
+
+    Subagent (Task tool) transcripts are written to a sibling directory
+    named after the session id: `<dir>/<session-id>/**/subagents/*.jsonl`.
+    Their Write/Edit events never appear in the main transcript, so
+    without walking them, subagent-driven edits look out-of-session and
+    the guard blocks an otherwise-legitimate commit. Recursive glob also
+    covers nested subagents.
+    """
+    out: list[str] = []
+    if transcript_path:
+        out.append(transcript_path)
+    try:
+        session_dir = Path(transcript_path).with_suffix("")
+        if session_dir.is_dir():
+            out.extend(str(f) for f in sorted(session_dir.rglob("*.jsonl")))
+    except (OSError, ValueError):
+        pass
+    return out
 
 
 def _extract_bash_mutation_paths(command: str) -> list[str]:

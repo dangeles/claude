@@ -173,7 +173,7 @@ loose; only two fields are enforced.
 | Field | Notes |
 |-------|-------|
 | `last_updated` | ISO date (`YYYY-MM-DD`). Update **only when the skill's content actually changes** — it records provenance, so do not bump it on untouched skills. |
-| `version` | Semver-ish, optional. Present on some skills; not required. |
+| `version` | Optional semver. Bump only on a notable rewrite; the CHANGELOG is the authority for version history. Not required — and intentionally absent on skills that don't track one, rather than backfilled. |
 | `success_criteria` | List of measurable completion benchmarks. |
 | `deprecated` / `deprecated_date` / `replaced_by` | Tombstone markers (see deprecated table above). |
 
