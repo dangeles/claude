@@ -53,7 +53,7 @@ unit-tested against real data. The scope-guard fix removes the friction that for
 
 ## Related Commits
 
-- [pending]: chore(hooks): scope-guard walks subagent transcripts + session-start drift guard
+- 968cb59: chore(hooks): scope-guard walks subagent transcripts + session-start drift guard
 
 ## Next Steps
 
