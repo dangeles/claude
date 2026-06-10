@@ -1,0 +1,22 @@
+# Pre-commit hooks for the claude config repo.
+# Install once:  pip install pre-commit && pre-commit install
+# Run manually:  pre-commit run --all-files
+#
+# These run the same gates as `sync-config.py push` and CI, but at commit time —
+# catching broken frontmatter or malformed JSON before they ever land in history.
+repos:
+  - repo: local
+    hooks:
+      - id: validate-config
+        name: validate config (frontmatter + JSON)
+        entry: ./sync-config.py validate
+        language: system
+        pass_filenames: false
+        files: ^claude-config/.*\.(md|json)$
+
+      - id: pytest
+        name: sync-config test suite
+        entry: python3 -m pytest tests/ -q
+        language: system
+        pass_filenames: false
+        files: ^(sync-config\.py|tests/|claude-config/hooks/skill-frontmatter-validator\.py)

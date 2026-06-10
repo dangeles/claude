@@ -17,6 +17,7 @@ Usage:
 import argparse
 import fnmatch
 import hashlib
+import json
 import os
 import platform
 import re
@@ -408,6 +409,11 @@ class ConfigSync:
         that class of error at the repo boundary, before push contaminates
         the live system.
 
+        Counterpart: claude-config/hooks/skill-frontmatter-validator.py runs the
+        same rule (zero-dep) as a PreToolUse hook. tests/test_frontmatter_contract.py
+        pins the two implementations to the same shared fixtures — keep them in
+        sync.
+
         Returns True if every checked file passes; False otherwise.
         Errors are printed per file via print_error.
         """
@@ -447,6 +453,53 @@ class ConfigSync:
 
         if self.verbose:
             self.print_success(f"Frontmatter validation passed ({len(files)} file(s))")
+        return True
+
+    def validate_json(self) -> bool:
+        """Pre-flight check: every synced *.json file is syntactically valid.
+
+        CLAUDE.md documents that push must block on "JSON syntax errors in
+        settings.json". A malformed settings.json silently breaks the live
+        config (plugins fail to load, hooks stop firing), so this gate catches
+        it at the repo boundary before push propagates it.
+
+        JSON targets are derived from the sync rules (any rule path ending in
+        .json) so new JSON sync rules are covered automatically.
+
+        Returns True if every checked file parses; False otherwise.
+        """
+        json_files: List[Path] = []
+        for rule in self.config['sync_rules']['always']:
+            path = rule['path']
+            if path.endswith('.json'):
+                candidate = self.target_dir / path
+                if candidate.is_file():
+                    json_files.append(candidate)
+
+        if not json_files:
+            if self.verbose:
+                self.print_warning("validate_json: no JSON sync targets found")
+            return True
+
+        errors: List[Tuple[Path, str]] = []
+        for f in json_files:
+            try:
+                json.loads(f.read_text(encoding='utf-8'))
+            except (json.JSONDecodeError, OSError) as e:
+                errors.append((f, str(e)))
+
+        if errors:
+            self.print_error(f"JSON validation failed for {len(errors)} of {len(json_files)} file(s):")
+            for path, msg in errors:
+                try:
+                    rel = path.relative_to(Path.cwd())
+                except ValueError:
+                    rel = path
+                print(f"  {Colors.FAIL}*{Colors.ENDC} {rel}: {msg}")
+            return False
+
+        if self.verbose:
+            self.print_success(f"JSON validation passed ({len(json_files)} file(s))")
         return True
 
     def compute_checksum(self, file_path: Path) -> str:
@@ -679,6 +732,11 @@ class ConfigSync:
         # asked to confirm a push that would propagate loader-rejected files.
         if not self.validate_frontmatter():
             self.print_error("Aborting push: fix the frontmatter errors above and re-run.")
+            sys.exit(1)
+
+        # Pre-flight: reject the push if any synced JSON file is malformed.
+        if not self.validate_json():
+            self.print_error("Aborting push: fix the JSON errors above and re-run.")
             sys.exit(1)
 
         self.print_warning(f"About to modify system Claude Code configuration at: {self.source_dir}")
@@ -1198,7 +1256,7 @@ Examples:
   ./sync-config.py pull-projects           # Pull all project configs
   ./sync-config.py push-projects bioreactor  # Push specific project config
   ./sync-config.py status                  # Show differences
-  ./sync-config.py validate                # Lint agent/skill frontmatter
+  ./sync-config.py validate                # Lint agent/skill frontmatter + JSON syntax
   ./sync-config.py plan --title "Enable new plugin"
   ./sync-config.py plan --title "Enable new plugin" --edit
   ./sync-config.py plan --list             # List all plans
@@ -1251,9 +1309,11 @@ Examples:
         elif args.command == 'status':
             sync.show_status()
         elif args.command == 'validate':
-            if not sync.validate_frontmatter():
+            ok_fm = sync.validate_frontmatter()
+            ok_json = sync.validate_json()
+            if not (ok_fm and ok_json):
                 sys.exit(1)
-            sync.print_success("Frontmatter validation passed")
+            sync.print_success("Validation passed (frontmatter + JSON)")
         elif args.command == 'plan':
             if args.list_plans:
                 sync.list_plans(args.machine)

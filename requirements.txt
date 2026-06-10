@@ -1,0 +1,8 @@
+# Dependencies for sync-config.py and its test suite.
+# Install with: pip install -r requirements.txt
+#
+# Runtime (sync-config.py):
+PyYAML>=6.0,<7.0
+
+# Development / CI (tests/):
+pytest>=8.0,<9.0

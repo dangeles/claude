@@ -7,6 +7,13 @@ the YAML frontmatter parses and contains the two required fields:
 `sync-config.py push` gates at push-time, but upstream — before the
 bad file is written.
 
+NOTE: this rule is implemented twice on purpose. `_validate_frontmatter`
+below stays zero-dep (no required PyYAML) so the hook is fast/portable;
+`sync-config.py` _parse_frontmatter/validate_frontmatter uses PyYAML for the
+push gate. tests/test_frontmatter_contract.py feeds both the shared fixtures
+in tests/fixtures/frontmatter/ and fails if the two verdicts diverge. If you
+change the rule here, change it there too (and update the fixtures).
+
 Exit codes:
   0  — allow
   2  — block (frontmatter missing or malformed)
