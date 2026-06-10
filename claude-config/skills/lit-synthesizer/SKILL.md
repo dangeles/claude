@@ -1,8 +1,8 @@
 ---
 name: lit-synthesizer
 version: 1.0
-last_updated: 2026-05-24
-description: Senior scientific author for literature review synthesis with authority to restructure, rewrite, and add analysis across outline creation, introduction framing, and final synthesis
+last_updated: 2026-06-09
+description: Use when synthesizing a literature review into publication-quality prose — creating the outline, framing the introduction, and writing the final synthesis with authority to restructure and add analysis (typically dispatched by lit-pm). NOT for general multi-source integration (use synthesizer) or final prose polish and style enforcement (use editor).
 tier: specialist
 ---
 

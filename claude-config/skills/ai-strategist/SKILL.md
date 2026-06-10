@@ -1,6 +1,6 @@
 ---
 name: ai-strategist
-last_updated: 2026-05-24
+last_updated: 2026-06-09
 description: >-
   Use when evaluating AI tools and agentic workflows against workflow gaps,
   when conducting quarterly landscape scans, or when assessing integration
@@ -9,18 +9,16 @@ description: >-
   (use requirements-analyst).
 
 handoff:
-  accepts_handoff: true
-  handoff_categories: [research, analysis, strategy]
-  handoff_description: "AI tool landscape assessment with weighted scoring and integration roadmap (3-6 hours)"
-  handoff_trigger: "--handoff {payload_path}"
-  protocol_version: "2.0"
-  requires:
-    - context.original_prompt
-    - context.problem_type
-  optional_consumes:
-    - context.gap_analysis
-    - insights.workflow_gaps
-    - research_seeds.known_tools
+  accepts_from:
+    - "*"
+  provides_to:
+    - "*"
+  schema_version: "3.0"
+  schema_type: universal
+categories:
+  - research
+  - analysis
+  - strategy
 ---
 
 # ai-strategist: AI Tool Landscape Orchestrator

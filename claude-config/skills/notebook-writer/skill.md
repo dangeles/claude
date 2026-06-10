@@ -1,7 +1,7 @@
 ---
 name: notebook-writer
-last_updated: 2026-05-24
-description: Create and document Jupyter notebooks for reproducible analyses
+last_updated: 2026-06-09
+description: Use when creating reproducible Jupyter notebooks — structuring analysis narrative, documenting cells, capturing environment/session info, and producing git-friendly (Jupytext) notebooks. NOT for debugging broken notebooks or kernel crashes (use notebook-debugger) or implementing the underlying analysis logic (use bioinformatician).
 success_criteria:
   - Notebook structured with clear sections and narrative
   - Code cells properly documented with explanatory markdown

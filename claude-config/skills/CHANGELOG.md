@@ -1,6 +1,32 @@
 # Skills Changelog
 All notable changes to the Claude skills ecosystem.
 
+## [Unreleased] - 2026-06-09
+
+### Skills audit implementation pass (P1–P5)
+
+Implements `SKILLS-AUDIT-TODO.md`. Source: `planning/mac/2026-06-09-skills-audit-implementation-pass-p1-p5.md`.
+
+**P1 — actively-misleading state**
+- Rewrote `skills/README.md` (was v2.0.0 / "26 skills" / Claude 4.x): now 55 skills (53 active + 2 deprecated), Fable 5 / Opus 4.8, complete domain tables covering every skill, plus a Frontmatter Conventions section.
+- Resolved `software-developer` sync drift: restored the tombstone `SKILL.md` in the repo (it was live-only). Repo and live now agree.
+
+**P2 — orchestrator overlap**
+- `program-officer`: sharpened description with a NOT-for boundary vs. `research-pipeline` and `technical-pm`; extracted inline output templates to `references/output-templates.md` (SKILL.md 623→448 lines).
+- `parallel-coordinator`: **deprecated** to a tombstone redirecting to `superpowers:dispatching-parallel-agents` (full functional duplicate). Updated the stale reference in `perspective-swarm`.
+
+**P3 — oversized bodies (progressive disclosure)**
+- `programming-pm`: extracted heavy per-phase walkthroughs to `references/phases/` (SKILL.md 1871→850 lines).
+- `cfd-bioreactor`: extracted inline agent-prompt/perspective templates to `references/agent-prompt-templates.md` (1510→1376 lines).
+- `bioinformatician`: extracted inline output/reproducibility templates to `assets/` (830→555 lines).
+
+**P4 — description quality (Use when… / NOT for…)**
+- Rewrote descriptions for `data-pipeline-manager`, `notebook-writer`, `lit-synthesizer`, `literature-researcher`.
+
+**P5 — consistency/hygiene**
+- Migrated `ai-strategist`, `brainstorming-pm`, `lit-pm`, `pov-expansion` from the legacy v2.0 handoff block to Universal Handoff Schema v3.0 (`accepts_from`/`provides_to`/`schema_version: "3.0"`/`schema_type` + top-level `categories`).
+- Documented the minimal frontmatter schema in `README.md`. `last_updated` bumped only on skills actually modified in this pass (no date falsification on untouched skills).
+
 ## [Unreleased] - 2026-05-12
 
 ### Deprecated - software-developer

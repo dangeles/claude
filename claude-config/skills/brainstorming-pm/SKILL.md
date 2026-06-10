@@ -6,22 +6,19 @@ description: >
   workflow handoff. Coordinates 5 parallel perspective agents through a
   4-stage pipeline (framing, diverging, converging, output).
 version: 1.0.0
-last_updated: 2026-05-24
+last_updated: 2026-06-09
 tags: [orchestrator, brainstorming, multi-agent, synthesis, parallel]
 
 handoff:
-  accepts_handoff: true
-  handoff_categories: [analysis, creative]
-  handoff_description: "Multi-perspective brainstorming with 5 parallel agents (15-30 minutes)"
-  handoff_trigger: "--handoff {payload_path}"
-  protocol_version: "2.0"
-  requires:
-    - context.original_prompt
-    - context.problem_type
-  optional_consumes:
-    - context.synthesis_summary
-    - research_seeds.suggested_terms
-    - insights.uncertainties
+  accepts_from:
+    - "*"
+  provides_to:
+    - "*"
+  schema_version: "3.0"
+  schema_type: universal
+categories:
+  - analysis
+  - creative
 
 prerequisites:
   - A clear question, decision, problem, or creative challenge from the user

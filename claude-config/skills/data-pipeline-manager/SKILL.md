@@ -1,8 +1,8 @@
 ---
 name: data-pipeline-manager
 version: 1.0
-last_updated: 2026-01-29
-description: Design and troubleshoot robust data pipelines with comprehensive quality validation, error handling, and monitoring capabilities for bioinformatics and data processing workflows
+last_updated: 2026-06-09
+description: Use when designing or troubleshooting robust data pipelines — building stage-by-stage quality validation, error handling, retry/checkpointing, and monitoring for ETL or bioinformatics data flows (e.g., FASTQ→BAM→counts). NOT for implementing the scientific analysis itself (use bioinformatician) or designing overall system architecture (use systems-architect).
 success_criteria:
   - Pipeline runs end-to-end without errors
   - Quality validation implemented at each stage

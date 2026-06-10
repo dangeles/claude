@@ -364,7 +364,7 @@ resource_limits:
 - Any skill with `handoff:` metadata is a valid handoff target
 - Discovery algorithm documented in: `references/workflow-discovery.md`
 - Handoff schema documented in: `references/handoff-schema.md`
-- Adapts patterns from: `parallel-coordinator`, `synthesizer`
+- Adapts patterns from: `superpowers:dispatching-parallel-agents`, `synthesizer`
 
 **Known handoff-eligible skills** (as of implementation):
 - `lit-pm` - Comprehensive literature review [research]

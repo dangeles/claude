@@ -1,6 +1,6 @@
 ---
 name: cfd-bioreactor
-last_updated: 2026-05-24
+last_updated: 2026-06-09
 description: >
   Use when user needs to simulate fluid flow through bioprocess cartridges,
   bioreactor geometries, or membrane devices using FEniCSx. Covers Navier-Stokes
@@ -225,69 +225,22 @@ Override: You can select a different mode.
 
 ## 6b. Agent Invocation Templates
 
-When invoking any agent via the Task tool, use the appropriate template below.
-These templates ensure consistent instructions across all invocations.
+When invoking any agent via the Task tool, fill in and use the appropriate
+verbatim template. All Task-tool prompt scaffolds live in
+`references/agent-prompt-templates.md` to keep this orchestration layer focused
+on workflow and decision logic.
 
-### Base Template (cfd-mathematician, cfd-reviewer)
-
-```
-ROLE: You are {agent_name}. Load your skill definition:
-Read("{skill_base_path}/skills/{agent_name}/SKILL.md")
-
-SESSION CONTEXT:
-- Session directory: {session_dir}
-- Skill base path: {skill_base_path}
-- Current phase: Phase {N}
-- Mode: {mode}
-
-REFERENCE FILES (load via Read tool with absolute paths):
-{loading_instructions_from_agent_loading_guide}
-
-After loading reference files, confirm by stating the first section heading
-you loaded. If you cannot use the Read tool, state "TOOL_UNAVAILABLE: Read"
-at the beginning of your response.
-
-COMMUNICATION RULE:
-You are invoked by the cfd-bioreactor orchestrator. You communicate ONLY with
-the orchestrator. Do not read files from {session_dir}/handoffs/ or other
-agents' outputs. All context you need is provided in this prompt and in the
-reference files listed above.
-
-TASK:
-{task_description}
-
-{If retry after reviewer rejection:}
-HARD CONSTRAINTS (from reviewer -- you MUST satisfy these):
-{blocking_issues_from_reviewer}
-
-{If error diagnosis mode:}
-ERROR CONTEXT:
-{error_output}
-Error history (do NOT recommend fixes already attempted):
-{error_history_yaml}
-
-OUTPUT:
-Write handoff YAML to: {session_dir}/handoffs/{handoff_filename}
-Follow the exact template in your SKILL.md Section 6.
-```
-
-### Fallback: Inline Reference Injection
-
-If an agent responds with "TOOL_UNAVAILABLE: Read", re-invoke with the
-reference content embedded directly in the Task prompt:
-
-1. Read the reference sections yourself (using the orchestrator's Read tool)
-2. Include the content in the Task prompt under a "REFERENCE CONTENT" heading
-3. Remove the "REFERENCE FILES" section
-4. Add note: "Reference content is provided inline below. Do not attempt to
-   use the Read tool for reference files."
-
-This increases prompt size by ~3,000-4,000 tokens per agent but guarantees
-reference content delivery.
-
-### Perspective Agent Template (FULL Mode Swarm -- Option D)
-
-See Section 8b for the decomposed pipeline perspective and synthesis templates.
+- **Base Template** (cfd-mathematician, cfd-reviewer): `references/agent-prompt-templates.md` Section 1.
+  Read it, fill the `{...}` placeholders (agent name, session context, reference
+  loading instructions, task description, optional HARD CONSTRAINTS / ERROR
+  CONTEXT blocks), and pass to the Task tool. Use this for every mathematician
+  and reviewer invocation throughout Phases 1-3.
+- **Fallback: Inline Reference Injection**: `references/agent-prompt-templates.md` Section 2.
+  Apply only when an agent responds "TOOL_UNAVAILABLE: Read" -- re-invoke with
+  reference content embedded directly in the prompt.
+- **Perspective + Synthesis Agent Templates** (FULL mode swarm): Sections 3-4
+  of the same reference file. The decomposed swarm pipeline in Section 8b drives
+  these.
 
 ---
 
@@ -337,6 +290,7 @@ Verify all reference files exist:
 - `references/orchestrator-handoff-schema.md`
 - `references/agent-loading-guide.md`
 - `references/swarm-framing-templates.md`
+- `references/agent-prompt-templates.md`
 
 ### Step 0.3a: Skill Base Path Resolution
 
@@ -489,46 +443,11 @@ cfd-bioreactor (depth 0)
 
 1. Read `references/swarm-framing-templates.md` for the appropriate swarm template
    (Swarm 1, 2, or 3) and fill in placeholders with problem parameters
-2. Spawn 3-5 perspective agents as parallel Task calls. Each agent receives:
-
-**Perspective Agent Task Template:**
-```
-ROLE: You are a CFD perspective agent providing the {perspective_name} viewpoint.
-
-PERSPECTIVE: {perspective_description}
-
-CHALLENGE:
-{filled_challenge_template_from_swarm_framing_templates}
-
-REFERENCE CONTEXT:
-{relevant_reference_excerpts_for_this_perspective}
-
-SESSION:
-- Write your perspective output to: {session_dir}/perspectives/phase{N}-{perspective_id}.md
-
-INSTRUCTIONS:
-- Analyze the challenge from your specific perspective
-- Provide 1-2 key insights with specific numerical recommendations
-- Assess your confidence (1-5) in your recommendations
-- Acknowledge blind spots from your perspective
-- Use WebSearch for 1-2 supporting queries if helpful
-- Target ~500 words
-
-OUTPUT FORMAT:
-## {perspective_name} Perspective
-
-### Key Insight
-[1-2 sentence primary recommendation with specific numbers]
-
-### Supporting Analysis
-[2-3 bullets with evidence and reasoning]
-
-### Confidence: [1-5]
-
-### Blind Spots
-[What this perspective might miss]
-```
-
+2. Spawn 3-5 perspective agents as parallel Task calls. Fill the verbatim
+   Perspective Agent Task Template in `references/agent-prompt-templates.md`
+   Section 3 (one filled copy per agent, with its `{perspective_name}` and the
+   challenge text from `references/swarm-framing-templates.md`) and pass each to
+   the Task tool.
 3. Apply per-agent timeout: 5 minutes
 4. Minimum agents required: 3 of 5
 5. If fewer than 3 complete: log warning, skip swarm synthesis, proceed as LITE mode
@@ -552,64 +471,10 @@ For Phase 3 (Transport): prioritize Numerical Analyst, Physical Modeler, Validat
 After all perspective agents complete (or timeout):
 
 1. Collect perspective outputs from `{session_dir}/perspectives/phase{N}-*.md`
-2. Spawn a synthesis agent via Task tool:
-
-**Synthesis Agent Task Template:**
-```
-ROLE: You are a synthesis agent combining multiple CFD perspective analyses
-into a unified assessment.
-
-PERSPECTIVES:
-{concatenated_perspective_outputs}
-
-TASK:
-1. Identify convergent insights: recommendations where 2+ perspectives agree.
-   Extract as specific, actionable items with numbers.
-2. Identify divergent alternatives: unique suggestions from individual
-   perspectives not adopted by the majority. Preserve these as alternatives.
-3. Assess overall confidence (1-5):
-   - 5 = strong consensus (4-5 perspectives agree on key points)
-   - 4 = majority consensus (3 perspectives agree)
-   - 3 = split opinions (2-3 agree, significant dissent)
-   - 2 = no clear consensus
-   - 1 = contradictory recommendations
-4. Flag any unresolved conflicts that the mathematician should address.
-
-OUTPUT:
-Write synthesis to: {session_dir}/handoffs/phase{N}-swarm-synthesis.yaml
-
-Use this exact YAML format:
-```yaml
-handoff:
-  version: "1.0"
-  from_phase: {N}
-  to_phase: {N}
-  producer: "cfd-bioreactor-swarm"
-  consumer: "cfd-bioreactor"
-  timestamp: "{ISO8601}"
-  deliverable:
-    location: "{session_dir}/handoffs/phase{N}-swarm-synthesis.yaml"
-    type: "synthesis"
-  context:
-    task_id: "phase{N}-swarm"
-    description: "Multi-perspective synthesis for phase {N}"
-    focus_areas: []
-    known_gaps: []
-  quality:
-    status: "complete"
-    confidence: "{high|medium|low}"
-    notes: ""
-  swarm_synthesis:
-    perspectives_received: {count}
-    convergent_insights:
-      - "{specific actionable insight with numbers}"
-    divergent_alternatives:
-      - "{specific alternative approach}"
-    confidence_score: {1-5}
-    unresolved_conflicts: []
-```
-```
-
+2. Spawn a synthesis agent via Task tool. Fill the verbatim Synthesis Agent Task
+   Template in `references/agent-prompt-templates.md` Section 4 (it includes the
+   exact swarm-synthesis handoff YAML format the agent must emit) and pass it to
+   the Task tool.
 3. Apply synthesis agent timeout: 5 minutes
 4. If synthesis agent fails or times out: extract insights manually from
    perspective files (orchestrator reads files and summarizes)
@@ -1471,6 +1336,7 @@ section-level loading maps per agent.
 | `references/orchestrator-handoff-schema.md` | Agent invocations | YAML handoff contracts for all agent communication |
 | `references/agent-loading-guide.md` | Agent invocations | Maps agents to reference file sections to load |
 | `references/swarm-framing-templates.md` | FULL mode swarms | Pre-written challenge templates for perspective agents |
+| `references/agent-prompt-templates.md` | Agent invocations | Verbatim Task-tool prompt scaffolds (base, fallback, perspective, synthesis) |
 | `examples/environment.yml` | Phase 0 (if not installed) | Conda environment specification |
 
 ---

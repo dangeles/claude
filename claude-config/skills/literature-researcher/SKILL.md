@@ -1,8 +1,8 @@
 ---
 name: literature-researcher
 version: 1.0
-last_updated: 2026-02-04
-description: Specialized literature review skill with review discovery, deep targeted research (15-30 papers per section), recency surveys, and convergence tracking for comprehensive literature reviews
+last_updated: 2026-06-09
+description: Use when performing deep literature-review research — review-paper discovery, targeted deep research (15-30 papers per section), recency surveys, and convergence tracking (typically dispatched by lit-pm). NOT for orchestrating the full review (use lit-pm) or sourcing individual quantitative parameters (use researcher).
 prerequisites:
   - Clear section scope or review discovery goal (from lit-pm orchestrator)
   - Access to WebSearch for literature discovery

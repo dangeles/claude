@@ -1,21 +1,19 @@
 ---
 name: pov-expansion
-last_updated: 2026-05-24
+last_updated: 2026-06-09
 description: Use when seeking analogous solutions from other domains, when stuck on a problem and need fresh perspectives, or when evaluating whether approaches from field X might apply to field Y. Requires structured problem statement.
 
 handoff:
-  accepts_handoff: true
-  handoff_categories: [creative, analysis, research]
-  handoff_description: "Cross-domain perspective generation via boundary spanning (2-3 hours)"
-  handoff_trigger: "--handoff {payload_path}"
-  protocol_version: "2.0"
-  requires:
-    - context.original_prompt
-    - context.problem_type
-  optional_consumes:
-    - context.reframed_challenge
-    - insights.divergent
-    - insights.blind_spots
+  accepts_from:
+    - "*"
+  provides_to:
+    - "*"
+  schema_version: "3.0"
+  schema_type: universal
+categories:
+  - creative
+  - analysis
+  - research
 ---
 
 # POV-Expansion: Cross-Domain Perspective Generation
