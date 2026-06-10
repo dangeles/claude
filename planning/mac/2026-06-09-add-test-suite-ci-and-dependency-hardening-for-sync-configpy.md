@@ -73,7 +73,7 @@ matched relative to the sync-rule base (e.g. `local-only/`), not the live root
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- e60931e: test(sync): add test suite, CI, and dependency hardening for sync-config.py
 
 ## Next Steps
 
