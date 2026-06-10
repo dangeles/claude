@@ -66,7 +66,7 @@ fix together cover the two false-positive classes seen this session.
 ## Related Commits
 
 - 968cb59: chore(hooks): scope-guard walks subagent transcripts + session-start drift guard
-- [pending]: fix(hooks): scope-guard splits bash statements on newlines
+- 3fb78af: fix(hooks): scope-guard splits bash statements on newlines
 
 ## Next Steps
 
