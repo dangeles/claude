@@ -2,31 +2,22 @@
 
 Per-stage quality validation criteria for the lit-pm pipeline.
 
+## Contents
+
+- Gate Types
+- Per-Stage Quality Gates (1, 2, 3, 4, 5, 6a, 6b, 6c, 7, 7.5, 8)
+- Quality Floor
+- Gate Result Schema
+- Escape Hatches
+- Threshold Provenance
+
 ---
 
 ## Gate Types
 
-### Automated Gates (Programmatic Validation)
+Automated gates are checkable without judgment: count thresholds (papers, words, sections), presence checks (recency survey exists, all sections present), pattern matches (no placeholders), and range checks (word count, section balance).
 
-These checks can be validated automatically without agent judgment:
-
-| Check Type | Description | Implementation |
-|------------|-------------|----------------|
-| Count threshold | Paper count, word count, section count | Integer comparison |
-| Presence check | Recency survey exists, all sections present | Boolean |
-| Pattern match | No placeholders, no "TODO", no "[CITE]" | Regex scan |
-| Range check | Word count in range, section balance | Min/max comparison |
-
-### Human Judgment Gates (Agent Assessment)
-
-These require agent evaluation:
-
-| Check Type | Description | Evaluator |
-|------------|-------------|-----------|
-| Thesis specificity | Is the claim testable/addressable? | fact-checker |
-| Narrative flow | Do sections build logically? | lit-synthesizer |
-| Cross-cutting themes | Are connections identified? | lit-synthesizer |
-| Claim accuracy | Does evidence support claim? | fact-checker |
+Judgment gates need an agent's read: thesis specificity and claim accuracy (fact-checker), narrative flow and cross-cutting themes (lit-synthesizer).
 
 ---
 
@@ -115,10 +106,7 @@ TODO|FIXME|\[CITE\]|\[INSERT\]|\[TBD\]|\[PLACEHOLDER\]|XXX
 | Gap analysis | Semantic | No obvious gaps | No | P1 |
 | Methodological context | Semantic | Present for key data | No | P2 |
 
-**Output Priority Levels**:
-- **P0 (Critical)**: Must fix before delivery
-- **P1 (Important)**: Should fix
-- **P2 (Nice-to-have)**: Editor handles
+Priority levels: **P0** critical (fix before delivery), **P1** important (should fix), **P2** nice-to-have (editor handles).
 
 ### Stage 6c: Devil's Advocate Section Review
 
@@ -130,11 +118,8 @@ TODO|FIXME|\[CITE\]|\[INSERT\]|\[TBD\]|\[PLACEHOLDER\]|XXX
 | Exchange count | Range | 1-2 | Yes | Yes |
 | Uncertainty documented (if 2 exchanges) | Presence | Required if unresolved | No | Yes |
 
-**Pass Conditions**:
-- All strategic challenges resolved, OR
-- 2 exchanges complete with uncertainty_notes documenting unresolved items
+Passes when all strategic challenges are resolved, or when 2 exchanges are complete with `uncertainty_notes` recording what stayed unresolved.
 
-**Output Schema**:
 ```yaml
 stage_6c_gate_result:
   section_id: string
@@ -170,11 +155,8 @@ stage_6c_gate_result:
 | Exchange count | Range | 1-2 | Yes | Yes |
 | Uncertainty documented (if 2 exchanges) | Presence | Required if unresolved | No | Yes |
 
-**Pass Conditions**:
-- All strategic (thesis coherence, cross-cutting theme) challenges resolved, OR
-- 2 exchanges complete with strategic_uncertainty_notes documenting issues
+Passes when thesis-coherence and cross-cutting-theme challenges are resolved, or when 2 exchanges are complete with strategic uncertainty notes.
 
-**Output Schema**:
 ```yaml
 stage_7_5_gate_result:
   status: enum  # PASS | PASS_WITH_UNCERTAINTY | SKIPPED
@@ -196,13 +178,12 @@ stage_7_5_gate_result:
 | P1 revisions incorporated | Count | All P1s | Yes | No |
 | Voice consistent | Semantic | Agent judgment | No | Yes |
 | Formatting consistent | Pattern | Uniform citations | Yes | No |
-| Final read complete | Boolean | True | Yes | Yes |
 
 ---
 
-## Quality Floor (Override Protection)
+## Quality Floor
 
-These checks CANNOT be skipped, even with `--full-auto`:
+These hold even under `--full-auto`, and violations escalate to the user regardless of checkpoint plan or automation settings:
 
 ```yaml
 quality_floor:
@@ -231,72 +212,9 @@ quality_floor:
     on_failure: "HALT: Devil's advocate could not identify thesis for section {id}. Manual intervention required."
 ```
 
-Quality floor violations ALWAYS escalate to user, regardless of checkpoint plan or automation settings.
-
 ---
 
-## Gate Execution Protocol
-
-### Before Each Stage
-
-```yaml
-pre_stage_check:
-  1_load_gate: "Load quality gate for Stage {N}"
-  2_validate_inputs: "Check all required inputs present"
-  3_log: "Beginning Stage {N} with {X} automated checks, {Y} judgment checks"
-```
-
-### After Each Stage
-
-```yaml
-post_stage_check:
-  1_run_automated:
-    for check in automated_checks:
-      result = execute_check(check)
-      log_result(check, result)
-      if check.blocking and not result.passed:
-        return FAIL
-
-  2_run_judgment:
-    for check in judgment_checks:
-      result = agent_evaluate(check)
-      log_result(check, result)
-      if check.blocking and not result.passed:
-        return FAIL
-
-  3_compile_result:
-    return {
-      passed: all_blocking_passed,
-      warnings: non_blocking_failures,
-      details: all_results
-    }
-```
-
-### On Gate Failure
-
-```yaml
-on_gate_failure:
-  if blocking:
-    1_log: "Gate failed: {check_name}"
-    2_determine_action:
-      if escape_hatch_available:
-        increment_cycle_count()
-        if cycle_count < max_cycles:
-          return_to_producer(issues)
-        else:
-          escalate_to_user(options)
-      else:
-        return_to_producer(issues)
-
-  if not blocking:
-    1_log: "Warning: {check_name} failed (non-blocking)"
-    2_add_to_warnings()
-    3_continue()
-```
-
----
-
-## Gate Results Schema
+## Gate Result Schema
 
 ```yaml
 gate_result:
@@ -315,96 +233,18 @@ gate_result:
   action_taken: string | null
 ```
 
----
-
-## Escape Hatch Protocol
-
-For blocking gates with potential infinite loops (Stage 6a):
-
-```yaml
-escape_hatch:
-  max_cycles: 3
-
-  cycle_tracking:
-    section_id: string
-    cycle_count: integer
-    issues_per_cycle:
-      - cycle: 1
-        issues: list
-      - cycle: 2
-        issues: list
-
-  on_max_reached:
-    notify_user: |
-      Section {name} has failed fact-check {max_cycles} times.
-
-      Issues (Cycle {max_cycles}):
-      {issues}
-
-      Options:
-      1. Accept section as-is (waive requirement)
-      2. Adjust requirements for this section
-      3. Assign different researcher to section
-      4. Remove section from outline
-
-    record_decision:
-      field: workflow_state.quality_overrides[]
-      value:
-        section: string
-        decision: enum  # accept | adjust | reassign | remove
-        timestamp: ISO8601
-        issues_waived: list
-```
-
-### Escape Hatch: Devil's Advocate Stages
-
-```yaml
-escape_hatch_da:
-  trigger_conditions:
-    stage_6c:
-      - >50% of sections have unresolved strategic challenges after 2 exchanges
-      - Any section has thesis identified as "fundamentally weak"
-
-    stage_7_5:
-      - Document thesis coherence marked "WEAK" after 2 exchanges
-      - Cross-cutting themes marked "INVALID" after 2 exchanges
-
-  escalation_protocol:
-    notify_user: |
-      Devil's advocate review has identified significant issues that could not
-      be resolved within the standard 2-exchange protocol.
-
-      Issue summary:
-      {list_of_unresolved_challenges}
-
-      Options:
-      1. Accept document with uncertainty notes (proceed to editor)
-      2. Return to section writing with specific guidance (re-write weak sections)
-      3. Return to outline stage (restructure document)
-      4. Abort workflow (if issues are fundamental)
-
-    record_decision:
-      field: workflow_state.da_escape_decisions[]
-      value:
-        stage: string
-        decision: enum  # accept | rewrite | restructure | abort
-        timestamp: ISO8601
-        issues_acknowledged: list
-```
+A failed blocking check goes back to the producer with the specific issues. A failed non-blocking check is recorded as a warning and the pipeline continues.
 
 ---
 
-## Threshold Calibration
+## Escape Hatches
 
-Thresholds are based on:
-- Literature review best practices (15-30 papers per section is standard)
-- Prior technical-pm experience (word count ranges)
-- Error rates in testing (placeholder detection patterns)
+**Stage 6a** caps revision cycles at 3 per section. On the third failure, present the accumulated issues and offer: accept the section as-is (waiving the requirement), adjust requirements for this section, assign a different researcher, or remove the section. Record the outcome in `workflow_state.quality_overrides[]` with the section, decision, timestamp, and waived issues.
 
-### Adjustment Protocol
+**Devil's advocate stages** escalate when Stage 6c leaves more than half of sections with unresolved strategic challenges (or identifies a thesis as fundamentally weak), or when Stage 7.5 marks document thesis coherence WEAK or cross-cutting themes INVALID after 2 exchanges. Offer: accept with uncertainty notes and proceed to the editor, return to section writing with specific guidance, return to the outline stage to restructure, or abort if the issues are fundamental. Record the outcome in `workflow_state.da_escape_decisions[]`.
 
-If thresholds prove too strict/loose in practice:
-1. Log threshold violations with context
-2. After 5 workflows, review violation patterns
-3. Propose threshold adjustments with rationale
-4. Update this document with new thresholds
+---
+
+## Threshold Provenance
+
+Thresholds come from literature review practice (15-30 papers per section is standard), prior technical-pm experience (word count ranges), and observed error rates (placeholder detection patterns). If they prove too strict or too loose in practice, log the violations with context and update this document with the new values and rationale.

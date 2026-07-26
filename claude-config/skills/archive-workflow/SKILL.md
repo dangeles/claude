@@ -6,11 +6,11 @@ description: Use when organizing projects - detecting clutter, enforcing naming 
 
 # archive-workflow
 
-A comprehensive project organization skill with 1 PM orchestrator (library-pm) and 5 specialist agents, using a 4-wave workflow to manage clutter, naming, structure, and expandability across any project type.
+A project organization skill with 1 PM orchestrator (library-pm) and 5 specialist agents, using a 4-wave workflow to manage clutter, naming, structure, and expandability across any project type.
 
 ## Overview
 
-This skill coordinates multiple specialized agents to analyze and reorganize projects. The library-pm orchestrator dispatches 4 READ-ONLY analyst agents across three waves, then hands off to a single WRITE executor agent for synthesis and execution.
+library-pm dispatches up to 4 READ-ONLY analyst agents across three waves, then hands off to a single WRITE executor agent for synthesis and execution.
 
 **Architecture**: Hub-and-spoke multi-agent coordination
 **Pattern**: CQRS (Command Query Responsibility Segregation) - analysts READ, integrator WRITES
@@ -32,103 +32,37 @@ This skill coordinates multiple specialized agents to analyze and reorganize pro
 - Database schema design
 - Secret management beyond gitignore context
 
-## Architecture Diagram
+## Delegation
 
-```
-                        archive-workflow
-                           (SKILL.md)
-                               |
-                               v
-                          library-pm
-                      (Orchestrator Agent)
-                               |
-        +----------------------+----------------------+
-        |                      |                      |
-        v                      v                      v
-   [Wave 1]              [Wave 2]               [Wave 3]
-        |              (parallel)                    |
-        v                  |                         v
-+----------------+    +----+----+         +------------------+
-| clutter-       |    |         |         | expandability-   |
-| analyst        |    v         v         | reviewer         |
-| (READ-ONLY)    | +--------+ +--------+  | (READ-ONLY)      |
-+----------------+ |nomencl-| |struct- |  +------------------+
-        |          |ature-  | |ure-    |          |
-        |          |enforcer| |organiz-|          |
-        v          |(READ)  | |er(READ)|          v
-clutter-report.md  +---+----+ +---+----+  expandability-
-                       |          |       assessment.md
-                       v          v
-              naming-      structure-
-              violations.md proposal.md
-                       |          |
-                       +----+-----+
-                            |
-                            v
-                       [Wave 4]
-                            |
-                            v
-               +------------------------+
-               | decision-integrator    |
-               | (READ + WRITE)         |
-               +------------------------+
-                            |
-                            v
-               execution-log.md + final-organization-report.md
-```
+You are library-pm, the orchestrator. Delegate specialist work when the subtask is
+substantial and independent — a full clutter scan of an unfamiliar tree, a naming audit
+against project-type conventions, a structure proposal plus migration plan, an
+expandability review, or execution of an approved plan. Handle it directly when you could
+finish it in a handful of tool calls, when the work is sequential, or when you need the
+context in your own loop. See `../references/delegation-and-scope.md`.
 
-## Delegation Mandate
+Scale the pipeline to the request. A narrow ask — review the gitignore, rename one file,
+check whether a directory name fits the convention — does not need all four analysts;
+run the relevant check and skip the waves that would return nothing. Reserve the full
+4-wave fan-out for whole-project reorganization, where the analyst tracks are genuinely
+independent and each has real ground to cover.
 
-**You are library-pm, the orchestrator.** You coordinate specialists -- you do not perform their analysis.
+You own: dispatching agents per wave, evaluating quality gates, presenting execution
+plans for user approval, session state, and conflict resolution between analyst outputs
+(applying the Conflict Resolution Rules).
 
-**You do NOT**:
-- Analyze files for clutter (that is archive-clutter-analyst's job)
-- Audit naming conventions (that is archive-nomenclature-enforcer's job)
-- Propose directory structure (that is archive-structure-organizer's job)
-- Assess expandability (that is archive-expandability-reviewer's job)
-- Execute file operations directly (that is archive-decision-integrator's job)
-
-**You DO**:
-- Dispatch agents via Task tool for each wave
-- Evaluate quality gates between waves
-- Present execution plans to the user for approval
-- Manage session state and workflow progress
-- Coordinate conflict resolution between analyst outputs (applying the Conflict Resolution Rules)
-
-### When You Might Be Resisting Delegation
-
-| Rationalization | Reality |
-|----------------|---------|
-| "I can quickly check the naming myself" | Naming analysis consumes your context; nomenclature-enforcer has the reference docs |
-| "The structure is obvious, I do not need an agent" | Structure-organizer references project-type templates you should not load |
-| "Only one file needs renaming" | Even single operations should go through decision-integrator for logging |
-| "The clutter check will be fast" | Speed is not the goal; context isolation is |
-| "The expandability review is not needed for a small project" | Expandability-reviewer decides that, not you |
-
-## Tool Selection
-
-| Situation | Tool | Reason |
-|-----------|------|--------|
-| Specialist doing independent analysis | **Task tool** | Separate context, parallel execution |
-| Wave 2 agents working simultaneously | **Task tool** (multiple) | Only way to parallelize |
-| Loading reference docs for YOUR gate decisions | **Read tool** | Shared context needed |
-
-Default to Task tool. Self-check: "Am I about to analyze files myself instead of dispatching an analyst? If yes, use Task tool."
+Repo-modifying file operations go through archive-decision-integrator so they land in the
+execution log.
 
 ## State Anchoring
 
-Start every response with your current position:
-
-```
-[Wave N/4 - {wave_name}] {brief status}
-```
-
-Before starting any wave: Read workflow-state.yaml. Confirm prior waves complete.
-After user interaction: Re-anchor with current wave and next action.
+Start each response with `[Wave N/4 - {wave_name}] {brief status}`. The authoritative
+record of progress is `workflow-state.yaml` in the session directory; trust it over
+memory.
 
 ## Pre-flight Checks (Phase 0)
 
-Before ANY analysis or file operations:
+Before any analysis or file operations:
 
 ### 1. Git Status Check
 ```bash
@@ -150,7 +84,6 @@ git status --porcelain
 
 ### Wave 1: Clutter Analysis (Sequential)
 **Agent**: archive-clutter-analyst (READ-ONLY)
-**Timeout**: 10 minutes
 
 Detects:
 - Generated files (node_modules/, __pycache__, build/, dist/, .venv)
@@ -159,11 +92,8 @@ Detects:
 
 **Output**: clutter-report.md
 
-**Quality Gate 2**: Clutter report complete with Summary section
-
 ### Wave 2: Parallel Organization (Parallel)
 **Agents**: archive-nomenclature-enforcer + archive-structure-organizer (both READ-ONLY)
-**Timeout**: 10-15 minutes per agent
 
 **nomenclature-enforcer**:
 - Audits file/directory naming against project-type conventions
@@ -175,12 +105,9 @@ Detects:
 - Prescriptive for new projects, adaptive for existing
 - Output: structure-proposal.md
 
-**Quality Gate 3**: Both reports complete
-
 ### Wave 3: Expandability Review (Sequential)
 **Agent**: archive-expandability-reviewer (READ-ONLY)
 **Input**: structure-proposal.md from Wave 2
-**Timeout**: 10 minutes
 
 Assesses:
 - Scalability (can structure handle 10x files? 5x contributors?)
@@ -189,13 +116,10 @@ Assesses:
 
 **Output**: expandability-assessment.md
 
-**Quality Gate 4**: Expandability assessment complete
-
 ### Wave 4: Synthesis & Execution (Sequential, User Approval Required)
 **Agent**: archive-decision-integrator (READ + WRITE)
-**Timeout**: 30 minutes
 
-**Inputs**: All 4 analyst reports
+**Inputs**: the analyst reports produced in Waves 1-3
 **Process**:
 1. Merge outputs, apply conflict resolution rules
 2. Generate execution-plan.md for user review
@@ -203,14 +127,15 @@ Assesses:
 4. Execute file operations
 5. Generate documentation via editor skill
 6. Produce execution-log.md and final-organization-report.md
-7. Generate `.archive-metadata.yaml` in the project root:
+7. Generate `.archive-metadata.yaml` in the project root, per the schema in
+   `references/archive-metadata-schema.md`:
    a. Write to `.archive-metadata.yaml.tmp` first (atomic write pattern)
    b. Populate from Wave 1-3 analysis results:
       - project.type from Wave 1 detection heuristics
       - naming_conventions from Wave 2 nomenclature-enforcer results
       - structure from Wave 2 structure-organizer results
-   c. All string values MUST be double-quoted
-   d. All paths in full_reference MUST be absolute (expand ~ at generation time)
+   c. Double-quote all string values
+   d. Make all paths in full_reference absolute (expand ~ at generation time)
    e. Validate the temp file: parse with yaml.safe_load, verify required fields
    f. If validation passes: mv .archive-metadata.yaml.tmp .archive-metadata.yaml
    g. If validation fails: log ERROR, remove temp file, continue without metadata
@@ -225,30 +150,21 @@ within archive-workflow, include in the Task tool handoff: `archival_context: "s
 This prevents specialists from checking a stale/non-existent .archive-metadata.yaml
 during archive-workflow's own execution.
 
-**Quality Gate 5**: All operations successful, no ERROR entries in log
+## Quality Gates and Degradation
 
-## Timeout Configuration
+Each gate is an objective file check on the session directory, evaluated when the
+preceding wave returns.
 
-| Phase/Wave | Agent | Timeout | Exceeded Action |
-|------------|-------|---------|-----------------|
-| Phase 0 | Pre-flight checks | 5 min | Abort |
-| Phase 1 | library-pm (Project Analysis) | 10 min | Escalate to user |
-| Wave 1 | clutter-analyst | 10 min | Retry once, then proceed without |
-| Wave 2 | nomenclature-enforcer | 10 min | Retry once, then proceed without |
-| Wave 2 | structure-organizer | 15 min | Retry once, then escalate |
-| Wave 3 | expandability-reviewer | 10 min | Proceed with advisory flag |
-| Wave 4 | decision-integrator | 30 min | Escalate to user |
-| Global | All | 2 hours | Save state, escalate to user |
+| Gate | Phase | Checks | On Failure |
+|------|-------|--------|------------|
+| QG1 | Phase 1 | Project type detected, session initialized | Escalate |
+| QG2 | Wave 1 | clutter-report.md exists, has Summary section | Retry once, then proceed without |
+| QG3 | Wave 2 | Both Wave 2 reports exist | Proceed with available; escalate if structure-organizer failed |
+| QG4 | Wave 3 | expandability-assessment.md exists | Proceed with advisory flag |
+| QG5 | Wave 4 | execution-log.md exists, no ERROR entries | Rollback + escalate |
 
-## Quality Gate Specifications
-
-| Gate | Phase | Checks | Pass Threshold | On Failure |
-|------|-------|--------|----------------|------------|
-| QG1 | Phase 1 | Project type detected, session initialized | All pass | Escalate |
-| QG2 | Wave 1 | clutter-report.md exists, has Summary section | 2/2 | Retry once |
-| QG3 | Wave 2 | Both Wave 2 reports exist | 2/2 | Proceed with available |
-| QG4 | Wave 3 | expandability-assessment.md exists | 1/1 | Proceed with advisory |
-| QG5 | Wave 4 | execution-log.md exists, no ERROR entries | 2/2 | Rollback + escalate |
+If an agent stalls or returns nothing usable, retry it once, then continue with the
+reports you have and note the gap in the execution plan.
 
 ## Execution Plan Approval
 
@@ -287,11 +203,11 @@ Apply in order:
 5. **Clutter Priority**: Process clutter first
    - Add to .gitignore before organizing remaining files
 
-6. **Unresolvable Naming Conflict**: ESCALATE to user
+6. **Unresolvable Naming Conflict**: escalate to user
    - When nomenclature and structure propose different names for same file
    - Present both options, document decision
 
-7. **Multi-Analyst Existence Conflict**: ESCALATE to user
+7. **Multi-Analyst Existence Conflict**: escalate to user
    - When clutter says delete, but other analyst needs the file
    - NEVER auto-delete; require explicit user confirmation
 
@@ -375,29 +291,6 @@ rm -f .archive-metadata.yaml.tmp
 rm -rf /tmp/archive-workflow-session-{id}/
 ```
 
-### Quick Rollback Decision Tree
-
-```
-Failure occurred?
-       |
-       v
-Has commit been made?
-       |
-   +---+---+
-   |       |
-   v       v
-  YES      NO
-   |       |
-   v       v
-Case 2:   Case 1:
-Post-     Pre-
-Commit    Commit
-Rollback  Rollback
-(git      (git
-reset     restore)
---hard)
-```
-
 ## Session Directory Structure
 
 ```
@@ -423,6 +316,7 @@ In addition to session-local files, archive-workflow generates persistent files 
 - **Content**: Project type, naming conventions summary, structure summary, references to full docs
 - **Lifecycle**: Created/overwritten on each archive-workflow run
 - **Write pattern**: Atomic (write to .tmp, validate, rename)
+- **Schema**: `references/archive-metadata-schema.md`
 - **Git**: Committed as part of the archive-workflow Wave 4 commit
 
 ### docs/organization/final-organization-report.md
@@ -431,90 +325,6 @@ In addition to session-local files, archive-workflow generates persistent files 
 - **Content**: Full organization report from Wave 4
 - **Lifecycle**: Created/overwritten on each archive-workflow run
 - **Git**: Committed as part of the archive-workflow Wave 4 commit
-
-## .archive-metadata.yaml Schema
-
-The following schema defines the machine-readable archival guidelines file generated
-by Wave 4. Consumers should ignore unknown fields for forward compatibility.
-
-```yaml
-# .archive-metadata.yaml
-# Generated by archive-workflow on successful completion
-# DO NOT EDIT MANUALLY - regenerate by running archive-workflow
-
-version: "1.0"
-
-generated:
-  timestamp: "2026-02-06T14:30:00Z"
-  workflow_session: "archive-workflow-session-20260206-143000-12345"
-  archive_workflow_version: "1.0"
-
-project:
-  type: "code"                  # code | research | data | mixed
-  type_confidence: "high"       # high | medium
-  secondary_type: null          # null or secondary type if mixed
-
-naming_conventions:
-  summary:
-    files: "snake_case"         # snake_case | kebab-case | camelCase | PascalCase
-    directories: "lowercase"    # lowercase | snake_case | kebab-case
-    tests: "test_*.py"
-    documentation: "lowercase with hyphens"
-  project_specific_rules:
-    - pattern: "*.py"
-      convention: "snake_case"
-      example: "my_module.py"
-  anti_patterns:
-    - "spaces in filenames"
-    - "version numbers in filenames"
-    - "mixed case at same directory level"
-  full_reference: "/Users/username/.claude/skills/archive-workflow/references/naming-conventions-code.md"
-  # NOTE: absolute path, expanded at generation time
-
-structure:
-  summary:
-    source_code: "src/"
-    tests: "tests/"
-    documentation: "docs/"
-    scripts: "scripts/"
-    data: null
-    experiments: null
-  top_level_directories:
-    - name: "src/"
-      purpose: "Source code"
-      enforced: true
-    - name: "tests/"
-      purpose: "Test code"
-      enforced: true
-    - name: "docs/"
-      purpose: "Documentation"
-      enforced: true
-  required_files:
-    - "README.md"
-    - "CLAUDE.md"
-    - ".gitignore"
-  full_reference: "/Users/username/.claude/skills/archive-workflow/references/structure-template-code.md"
-  # NOTE: absolute path, expanded at generation time
-
-enforcement:
-  mode: "advisory"              # advisory | soft-mandatory | hard-mandatory
-  # advisory: present options, never block
-  # soft-mandatory: present options, default to archival, log override
-  # hard-mandatory: no override, archival path is mandatory
-
-organization_report:
-  location: "docs/organization/final-organization-report.md"
-
-gitignore:
-  patterns_enforced: true
-  last_reviewed: "2026-02-06T14:30:00Z"
-```
-
-**Schema Notes**:
-- `full_reference` paths are absolute (not tilde-based) to prevent expansion issues
-- All string values are double-quoted to prevent YAML type coercion (the "Norway problem")
-- `enforcement.mode` defaults to "advisory" -- never blocks workflow execution
-- Consumers MUST ignore unknown fields for forward compatibility
 
 ## Project Type Detection Heuristics
 
@@ -548,39 +358,26 @@ If user sends SIGINT (Ctrl+C) or requests cancellation:
 4. Report cancellation status to user
 5. Provide rollback instructions if needed
 
-## Agent Dispatch Templates
+## Agent Dispatch
 
-library-pm dispatches all agents via Task tool. Every dispatch includes the session directory path and `archival_context: "skip"` to prevent circular dependency.
+Dispatch agents via Task tool. Every dispatch includes the session directory path and
+`archival_context: "skip"` — the circular dependency prevention mechanism described
+above. Without it, specialists would attempt to check .archive-metadata.yaml during the
+very workflow that creates it. Launch the two Wave 2 agents in a single message so they
+run concurrently.
 
-### Wave 1: Clutter Analysis
+| Agent | Reference to load | Reads | Writes |
+|-------|-------------------|-------|--------|
+| archive-clutter-analyst | `references/clutter-detection-rules.md` | {project_root} | {session_dir}/clutter-report.md (with a Summary section: total items, severity counts, clutter score) |
+| archive-nomenclature-enforcer | `references/naming-conventions-{project_type}.md` | {project_root}, clutter-report.md (skip flagged files) | {session_dir}/naming-violations.md (detected patterns, violation severity) |
+| archive-structure-organizer | `references/structure-template-{project_type}.md` | {project_root}, clutter-report.md | {session_dir}/structure-proposal.md (migration plan with impact analysis) |
+| archive-expandability-reviewer | — | structure-proposal.md | {session_dir}/expandability-assessment.md (flagging issues that should block Wave 4) |
+| archive-decision-integrator | Conflict Resolution Rules above | all analyst reports | execution-plan.md, execution-log.md, final-organization-report.md, .archive-metadata.yaml |
 
-Agent via Task tool:
-  Description: "Clutter analyst: Scan project for generated files, stale content, and organizational mess"
-  Prompt: You are archive-clutter-analyst. Analyze the project at {project_root} for clutter following the rules in ~/.claude/skills/archive-workflow/references/clutter-detection-rules.md. Detect generated files (node_modules, __pycache__, build, dist, .venv), stale content, and organizational mess. Write clutter-report.md to {session_dir}/clutter-report.md. Include a Summary section with total items, severity counts, and clutter score. archival_context: "skip"
-
-### Wave 2: Parallel Organization (launch both simultaneously)
-
-Agent 1 via Task tool:
-  Description: "Nomenclature enforcer: Audit file and directory naming conventions"
-  Prompt: You are archive-nomenclature-enforcer. Audit naming in {project_root} against the {project_type} conventions in ~/.claude/skills/archive-workflow/references/naming-conventions-{project_type}.md. Read {session_dir}/clutter-report.md for context on files flagged as clutter (skip those in your audit). Write naming-violations.md to {session_dir}/naming-violations.md. Include detected patterns and violation severity. archival_context: "skip"
-
-Agent 2 via Task tool:
-  Description: "Structure organizer: Propose directory structure for project type"
-  Prompt: You are archive-structure-organizer. Analyze {project_root} structure against the {project_type} template in ~/.claude/skills/archive-workflow/references/structure-template-{project_type}.md. Read {session_dir}/clutter-report.md for context. Use adaptive mode for existing projects, prescriptive mode for new projects. Write structure-proposal.md to {session_dir}/structure-proposal.md. Include migration plan with impact analysis. archival_context: "skip"
-
-### Wave 3: Expandability Review
-
-Agent via Task tool:
-  Description: "Expandability reviewer: Assess scalability and modularity of proposed structure"
-  Prompt: You are archive-expandability-reviewer. Read {session_dir}/structure-proposal.md (Wave 2 output). Assess the proposed structure for scalability (10x files, 5x contributors), modularity, and coupling. Flag critical issues that should block Wave 4 execution. Write expandability-assessment.md to {session_dir}/expandability-assessment.md. archival_context: "skip"
-
-### Wave 4: Synthesis and Execution
-
-Agent via Task tool:
-  Description: "Decision integrator: Merge analyst reports, generate execution plan, execute approved operations"
-  Prompt: You are archive-decision-integrator (READ + WRITE). Read all 4 analyst reports from {session_dir}/: clutter-report.md, naming-violations.md, structure-proposal.md, expandability-assessment.md. Apply Conflict Resolution Rules from SKILL.md. Generate execution-plan.md with operations categorized as A (non-destructive), B (cleanup), or C (deletions requiring approval). Present to user for approval. After approval, execute file operations using git mv for history preservation. Generate .archive-metadata.yaml using atomic write pattern (.tmp, validate, rename). Write execution-log.md and final-organization-report.md to {session_dir}/. archival_context: "skip"
-
-**Note**: Every dispatch includes `archival_context: "skip"` -- this is the circular dependency prevention mechanism (see Circular Dependency Prevention above). Without it, specialists would attempt to check .archive-metadata.yaml during the very workflow that creates it.
+archive-decision-integrator categorizes plan operations as A (non-destructive), B
+(cleanup), or C (deletions requiring approval), presents the plan for approval, then uses
+`git mv` for history preservation and the atomic write pattern for
+`.archive-metadata.yaml`.
 
 ## Handoffs
 
@@ -597,6 +394,7 @@ Agent via Task tool:
 ## References
 
 - references/archival-compliance-check.md (centralized compliance check for all consumers)
+- references/archive-metadata-schema.md (.archive-metadata.yaml schema and versioning)
 - references/naming-conventions-code.md
 - references/naming-conventions-research.md
 - references/naming-conventions-data.md
@@ -607,6 +405,7 @@ Agent via Task tool:
 - references/structure-template-mixed.md
 - references/gitignore-patterns.md
 - references/clutter-detection-rules.md
+- ../references/delegation-and-scope.md (shared orchestrator conventions)
 
 ## Examples
 

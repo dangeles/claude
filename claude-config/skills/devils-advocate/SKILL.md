@@ -10,13 +10,6 @@ success_criteria:
   - Logical gaps documented with recommendations
   - Claims scaled appropriately to evidence strength
   - Document ready for fact-checking and editorial polish
-extended_thinking_budget: 4096-8192
-metadata:
-  use_extended_thinking_for:
-    - Deep critical analysis of complex multi-layered arguments
-    - Identifying subtle logical inconsistencies or contradictions
-    - Generating alternative interpretations of evidence
-    - Evaluating strength of evidence chains across documents
 ---
 
 # Devil's Advocate Agent

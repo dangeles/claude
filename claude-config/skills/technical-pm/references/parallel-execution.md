@@ -108,7 +108,7 @@ Based on aggregate status:
 
 ### Output Path Isolation
 
-Each parallel task MUST write to unique paths to prevent collision.
+Each parallel task writes to unique paths so outputs cannot collide.
 
 **Path template**: `scratchpad/{skill_name}/{batch_id}/`
 
@@ -419,7 +419,7 @@ For parallel-eligible skills, add semantic dependency markers beyond keywords.
 
 ### First-Time Parallel Confirmation
 
-When parallelizing for the FIRST time in a session, ALWAYS confirm:
+When parallelizing for the first time in a session, confirm with the user:
 
 ```
 I plan to run these tasks in PARALLEL:

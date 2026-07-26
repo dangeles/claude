@@ -21,26 +21,10 @@ allowed-tools: [Read, Write, Edit, Bash, Skill, NotebookEdit]
 
 ## Purpose
 
-Implement computational analyses of biological data, including:
-- Data loading and quality control
-- Statistical analysis
-- Bioinformatics pipelines
-- Visualization
-- Integration with domain-specific tools
+Implement computational analyses of biological data: data loading and quality control, statistical analysis, bioinformatics pipelines, visualization, and integration with domain-specific tools. Typical jobs are implementing an analysis plan from the PI in code, processing genomics/transcriptomics/proteomics data, running statistical tests on biological data, producing publication-quality figures, and building reproducible pipelines.
 
-## When to Use This Skill
+## Workflow integration
 
-Use this skill when you need to:
-- Implement an analysis plan in code (from PI)
-- Process genomics/transcriptomics/proteomics data
-- Perform statistical tests on biological data
-- Create publication-quality visualizations
-- Build reproducible analysis pipelines
-- Integrate multiple bioinformatics tools
-
-## Workflow Integration
-
-**Primary Pattern: Receive Plan → Implement → Deliver Notebook**
 ```
 Receive analysis_plan.md from PI
     ↓
@@ -49,132 +33,22 @@ Implement in Jupyter notebook
 Deliver completed notebook to PI for interpretation
 ```
 
-**Integration Points**:
-- RECEIVES: Analysis plan from `principal-investigator`
+- RECEIVES: analysis plan from `principal-investigator`
 - WORKS WITH: `copilot` (adversarial code review during implementation)
-- CALLS: Domain-specific skills (`scanpy`, `pydeseq2`, `biopython`, etc.)
+- CALLS: domain-specific skills (`scanpy`, `pydeseq2`, `biopython`, etc.)
 - OUTPUTS: Jupyter notebooks with analysis code + results
 
-## Core Capabilities
+## Core capabilities
 
-### 1. Data Loading and Validation
-- Read common formats (CSV, TSV, HDF5, Parquet, FASTQ, BAM, VCF)
-- Validate data integrity and format
-- Handle compressed files
-- Memory-efficient loading for large datasets
+- **Data loading and validation**: common formats (CSV, TSV, HDF5, Parquet, FASTQ, BAM, VCF), integrity and format validation, compressed files, memory-efficient loading for large datasets.
+- **Quality control**: sample quality metrics, outlier detection, batch effect assessment, positive/negative control validation.
+- **Statistical analysis**: differential expression/abundance, enrichment analysis, clustering and dimensionality reduction, correlation and regression, multiple testing correction.
+- **Visualization**: publication-quality plots (matplotlib, seaborn, plotly), interactive visualizations, consistent styling, proper labeling and legends.
+- **Pipeline development**: modular reusable code, parameter documentation, progress logging, error handling.
 
-### 2. Quality Control
-- Sample quality metrics
-- Outlier detection
-- Batch effect assessment
-- Positive/negative control validation
+## Notebook structure
 
-### 3. Statistical Analysis
-- Differential expression/abundance
-- Enrichment analysis
-- Clustering and dimensionality reduction
-- Correlation and regression
-- Multiple testing correction
-
-### 4. Visualization
-- Publication-quality plots (matplotlib, seaborn, plotly)
-- Interactive visualizations
-- Consistent styling
-- Proper labeling and legends
-
-### 5. Pipeline Development
-- Modular, reusable code
-- Parameter documentation
-- Progress logging
-- Error handling
-
-## Standard Notebook Structure
-
-Use the template in `assets/notebook-structure-template.ipynb`:
-
-```
-1. Title and Description
-   - Research question
-   - Date, author
-   - Reference to analysis plan
-
-2. Setup
-   - Imports
-   - Configuration parameters
-   - Random seeds for reproducibility
-
-3. Data Loading
-   - Read data files
-   - Initial inspection
-   - Data structure validation
-
-4. Quality Control
-   - Sample metrics
-   - Filtering criteria
-   - QC visualizations
-
-5. Analysis
-   - Statistical tests
-   - Transformations
-   - Model fitting
-
-6. Visualization
-   - Main figures
-   - Supplementary plots
-
-7. Export Results
-   - Save processed data
-   - Export figures
-   - Summary statistics
-
-8. Session Info
-   - Package versions
-   - Execution time
-```
-
-## Biological Literacy Framework
-
-### Writing Style for Biological Context
-
-All biological context in notebooks should follow **concise scientific prose**:
-
-**Principles**:
-- ✅ **Brief**: 1-3 sentences per section, not paragraphs
-- ✅ **Clear**: Use precise biological terminology
-- ✅ **Factual**: State what/why without excessive detail
-- ✅ **Publication-ready**: Like Methods/Results sections in papers
-
-**Example - Good (Concise)**:
-```markdown
-## Biological Context
-Differential expression analysis comparing wild-type and mutant neurons identifies genes affected by loss of transcription factor X. Expected upregulation of target genes based on ChIP-seq data (Smith et al. 2020).
-```
-
-**Example - Avoid (Too Verbose)**:
-```markdown
-## Biological Context
-In this analysis, we will perform differential expression analysis to compare gene expression between wild-type neurons and neurons with a mutation in transcription factor X. Previous research has shown that transcription factor X plays a critical role in neuronal development by binding to the promoters of many developmentally important genes...
-```
-
-### When to Provide Interpretation vs Handoff
-
-**Bioinformatician Handles** (routine interpretation):
-- Standard results following known biology
-- Positive/negative controls behaving as expected
-- Results matching literature precedents
-- Technical QC assessments with biological implications
-- Magnitude/direction sanity checks
-
-**Handoff to Biologist-Commentator** (expert needed):
-- Novel or unexpected findings
-- Results contradicting established biology
-- Unclear biological mechanisms
-- Publication-critical interpretations
-- Proposing new hypotheses or models
-
-## Enhanced Notebook Structure
-
-Use this structure for biologically-literate notebooks:
+Template: `assets/notebook-structure-template.ipynb`. Structure for a biologically-literate notebook:
 
 ```
 1. Title and Scientific Context
@@ -182,26 +56,27 @@ Use this structure for biologically-literate notebooks:
    - Biological hypothesis
    - Expected outcome and why it matters
    - Relevant background (1-2 sentences)
+   - Date, author, reference to analysis plan
 
 2. Setup (code)
-   - Imports, parameters, seeds
+   - Imports, configuration parameters, random seeds
 
 3. Data Loading
-   - Code: Load data
+   - Code: Load data, initial inspection, structure validation
    - Biological description of dataset (markdown):
      * What organism/tissue/condition
      * What genes/features measured
      * What biological question dataset addresses
 
 4. Quality Control
-   - Code: QC metrics, filtering
+   - Code: QC metrics, filtering criteria, QC visualizations
    - Biological interpretation of QC (markdown):
      * Are pass rates expected for this data type?
      * Do failed samples have biological meaning?
      * Red flags from biological perspective?
 
 5. Analysis
-   - Code: Statistical tests, transformations
+   - Code: Statistical tests, transformations, model fitting
    - Biological reasoning for each step (markdown):
      * Why this method for this question?
      * What biological assumption being tested?
@@ -215,7 +90,7 @@ Use this structure for biologically-literate notebooks:
      * Any known biology violated?
 
 7. Visualization
-   - Code: Plots
+   - Code: Main figures, supplementary plots
    - Biological interpretation scaffolding (markdown):
      * What biological pattern does this show?
      * Is this expected or surprising?
@@ -234,159 +109,127 @@ Use this structure for biologically-literate notebooks:
      * Biological mechanisms to explore
 
 10. Export (code)
-    - Save data, figures, session info
+    - Save processed data, export figures, summary statistics, session info
 ```
 
-## Biological Sanity Check Framework
+## Biological literacy framework
 
-Run these checks before accepting results:
+### Writing style for biological context
 
-### Expression/Abundance Checks
+Biological context in notebooks reads as concise scientific prose: brief (1-3 sentences per section, not paragraphs), precise in terminology, factual, and publication-ready — like the Methods/Results sections of a paper.
+
+**Good (concise)**:
+```markdown
+## Biological Context
+Differential expression analysis comparing wild-type and mutant neurons identifies genes affected by loss of transcription factor X. Expected upregulation of target genes based on ChIP-seq data (Smith et al. 2020).
+```
+
+**Avoid (too verbose)**:
+```markdown
+## Biological Context
+In this analysis, we will perform differential expression analysis to compare gene expression between wild-type neurons and neurons with a mutation in transcription factor X. Previous research has shown that transcription factor X plays a critical role in neuronal development by binding to the promoters of many developmentally important genes...
+```
+
+### Interpretation vs handoff
+
+Handle routine interpretation yourself: standard results following known biology, positive/negative controls behaving as expected, results matching literature precedents, technical QC assessments with biological implications, and magnitude/direction sanity checks.
+
+Hand off to `biologist-commentator` when expertise is needed: novel or unexpected findings, results contradicting established biology, unclear biological mechanisms, publication-critical interpretations, and proposing new hypotheses or models.
+
+## Biological sanity check framework
+
+Run these checks before accepting results.
+
+### Expression/abundance checks
 - [ ] Order of magnitude reasonable? (log2FC > 10 is suspicious)
 - [ ] Direction matches known biology? (check a few known genes)
 - [ ] Positive controls behave as expected?
 - [ ] Negative controls show no signal?
 
-### Statistical Checks with Biological Lens
+### Statistical checks with biological lens
 - [ ] Top hits include known biology? (literature validation)
 - [ ] Results robust to threshold changes?
 - [ ] Batch effects vs real biology separated?
 - [ ] Multiple testing appropriate for biology? (discovery vs validation)
 
-### Genomics-Specific
+### Genomics-specific
 - [ ] Chromosome names consistent? (chr1 vs 1)
 - [ ] Coordinates sensible? (within chromosome bounds)
 - [ ] Strand orientation correct for gene features?
 - [ ] Genome build consistent throughout?
 
-### Experimental Design
+### Experimental design
 - [ ] Sample size adequate for this effect size?
 - [ ] Replicates biological or technical?
 - [ ] Confounders identified and addressed?
 - [ ] Controls appropriate for this experiment type?
 
-**If any check fails**: Document in notebook, flag for biologist-commentator review
+**If any check fails**: document in the notebook, flag for biologist-commentator review.
 
-## Biological Context Templates
+## Biological context templates
 
 Verbatim markdown templates to paste into notebooks live in `assets/output-templates.md`:
 - **Differential Expression Analysis** — biological context + sanity checks + preliminary interpretation + handoff
 - **Single-Cell Clustering** — biological context + cluster validation + handoff
 - **Expert Handoff Format** — concise escalation format (with worked example)
 
-Use these when documenting biological context and escalating to biologist-commentator (see workflow below).
+## Biologist-commentator integration
 
-## Biologist-Commentator Integration Pattern
-
-### When to Invoke Biologist-Commentator
-
-**Pre-Analysis** (Method Validation):
+**Pre-analysis** (method validation):
 ```python
 Skill(skill="biologist-commentator", args="Validate that DESeq2 appropriate for [specific experiment design]. Confirm controls adequate and confounders addressed.")
 ```
 
-**During Analysis** (Quick Check):
-- Use biological sanity check framework (above)
-- Document any red flags
-- Continue if checks pass, escalate if fail
+**During analysis**: use the biological sanity check framework above, document red flags, continue if checks pass and escalate if they fail.
 
-**Post-Analysis** (Expert Interpretation):
+**Post-analysis** (expert interpretation):
 ```python
 Skill(skill="biologist-commentator", args="Interpret biological significance of [specific finding]. Results show [X], which is [expected/unexpected]. Known biology suggests [Y]. Please validate interpretation and suggest mechanisms.")
 ```
 
-### Handoff Workflow
+Handoff sequence: run the analysis and sanity checks, write the structured handoff section in the notebook (template above), receive the biologist-commentator's interpretation and mechanism insights, then incorporate them into the notebook and flag validations still needed.
 
-1. **Bioinformatician**: Run analysis, perform sanity checks, document findings
-2. **Handoff**: Create structured handoff section in notebook (see template above)
-3. **Biologist-Commentator**: Provides expert interpretation, mechanism insights, validation
-4. **Bioinformatician**: Incorporate interpretation into notebook, flag needed validations
+## Before starting implementation
 
-## Pre-Flight Checklist
+Confirm the analysis plan defines objectives, the data files exist at the paths given, the required packages are installed, and the expected output format is clear. Set random seeds in the setup cell. `assets/analysis-checklist.md` has the complete list.
 
-Before starting implementation, verify:
-- [ ] Analysis plan clearly defines objectives
-- [ ] Data files exist and paths are correct
-- [ ] Required packages installed
-- [ ] Expected output format understood
-- [ ] Random seeds set for reproducibility
+## Reproducibility standards
 
-Use `assets/analysis-checklist.md` for complete list.
+Every bioinformatics analysis should be fully reproducible: another researcher should be able to recreate the computational environment and obtain identical results.
 
-## Reproducibility Standards
+### Environment documentation
 
-**Critical**: Every bioinformatics analysis must be fully reproducible. Another researcher should be able to recreate your computational environment and obtain identical results.
+Start every notebook with environment documentation. Template (computational-environment code cell, environment-file export commands, and notebook markdown cell): `assets/reproducibility-templates.md` ("Environment Documentation").
 
-### Environment Documentation (Mandatory)
+### Random seed setting
 
-**Start every notebook with environment documentation.** Template (computational-environment code cell, environment-file export commands, and notebook markdown cell): see `assets/reproducibility-templates.md` ("Environment Documentation").
+Set seeds in the setup cell (numpy, random, scanpy, torch, tensorflow). Seed-setting code cell + "Stochastic Operations" markdown template: `assets/reproducibility-templates.md` ("Random Seed Setting").
 
-### Random Seed Setting (Mandatory for Stochastic Processes)
-
-**Set seeds in the setup cell** (numpy, random, scanpy, torch, tensorflow). Seed-setting code cell + "Stochastic Operations" markdown template: see `assets/reproducibility-templates.md` ("Random Seed Setting").
-
-**Bioinformatics operations requiring seeds:**
+Bioinformatics operations requiring seeds:
 - **Dimensionality reduction**: UMAP, t-SNE, PCA with randomized SVD
 - **Clustering**: Leiden, Louvain (graph-based)
-- **Sampling**: Random subsampling, bootstrap, cross-validation
-- **Imputation**: Stochastic imputation methods
+- **Sampling**: random subsampling, bootstrap, cross-validation
+- **Imputation**: stochastic imputation methods
 - **Simulation**: Monte Carlo, permutation tests
-- **Machine learning**: Random forests, neural networks, k-means initialization
+- **Machine learning**: random forests, neural networks, k-means initialization
 
-### Session Info Output (Mandatory)
+### Session info output
 
-**End every notebook with comprehensive session info.** Session-info code cell (with single-cell and base-Python alternatives): see `assets/reproducibility-templates.md` ("Session Info Output").
+End every notebook with comprehensive session info. Session-info code cell (with single-cell and base-Python alternatives): `assets/reproducibility-templates.md` ("Session Info Output"). It captures Python version, operating system, all package versions including dependencies, and the execution timestamp — which matters because APIs change between package versions, statistical method implementations evolve, bug fixes change results, and reviewers need to verify methods.
 
-**What this captures:**
-- Python version
-- Operating system
-- All package versions (including dependencies)
-- Execution timestamp
+### File paths
 
-**Why this matters:**
-- API changes between package versions
-- Statistical method implementations evolve
-- Bugs get fixed (results may change)
-- Reviewers need to verify methods
+Use relative paths and variables rather than hardcoded absolute paths. Path-setup template (Path variables at top of notebook) plus a BAD/GOOD contrast: `assets/reproducibility-templates.md` ("File Path Best Practices").
 
-### File Path Best Practices
+### Data provenance
 
-**Use relative paths and variables; never hardcode absolute paths.** Path-setup template (Path variables at top of notebook) plus a BAD/GOOD contrast: see `assets/reproducibility-templates.md` ("File Path Best Practices").
+Document data sources in the notebook, including the genome build and reference database versions used. Data-sources markdown template (input data + reference data): `assets/reproducibility-templates.md` ("Data Provenance Documentation"). Data can be updated or removed from repositories, genome builds affect coordinate-based analyses, sample metadata clarifies experimental design, and provenance is what lets others download identical data.
 
-### Data Provenance Documentation
+### Bioinformatics-specific considerations
 
-**Document data sources in notebook.** Data-sources markdown template (input data + reference data): see `assets/reproducibility-templates.md` ("Data Provenance Documentation").
+Document organism/reference versions, external bioinformatics tools, and all data-processing (QC/filtering) parameters. Templates for each (organism/reference code cell, external-tools markdown, `QC_PARAMS` code cell): `assets/reproducibility-templates.md` ("Bioinformatics-Specific Reproducibility Considerations").
 
-**Why this matters:**
-- Data can be updated or removed from repositories
-- Genome builds affect coordinate-based analyses
-- Sample metadata clarifies experimental design
-- Enables others to download identical data
-
-### Reproducibility Pre-Flight Checklist
-
-**Before starting analysis, verify:**
-- [ ] Environment documented (`environment.yml` or `requirements.txt` exists)
-- [ ] Environment creation documented in notebook
-- [ ] Random seeds will be set for all stochastic operations
-- [ ] File paths use variables (no hardcoded absolute paths)
-- [ ] Data sources documented (where to download, version, date)
-- [ ] Genome build / reference database versions specified
-- [ ] Session info cell will be added at end
-
-**Before handoff to PI, verify:**
-- [ ] Notebook runs end-to-end without errors (Restart Kernel & Run All)
-- [ ] Results reproducible (run twice, identical outputs)
-- [ ] All figures saved to `FIGURES_DIR` with descriptive names
-- [ ] All processed data saved to `PROCESSED_DIR`
-- [ ] Session info cell executed and output visible
-- [ ] Execution time reasonable (< 2 hours for routine analyses)
-
-### Integration with notebook-writer Skill
-
-When creating notebooks programmatically, use the `notebook-writer` skill with reproducibility standards. A `create_notebook_markdown` cell-list template: see `assets/reproducibility-templates.md` ("Integration with notebook-writer Skill").
-
-### Common Reproducibility Failures and Fixes
+### Common reproducibility failures and fixes
 
 | Issue | Problem | Fix |
 |-------|---------|-----|
@@ -397,26 +240,26 @@ When creating notebooks programmatically, use the `notebook-writer` skill with r
 | **Data source vanished** | URL changed or removed | Document download date, accession, mirror sites |
 | **Genome coordinate mismatch** | Different genome build | Specify build (GRCh38 vs GRCh37) in notebook |
 
-### Bioinformatics-Specific Reproducibility Considerations
+### Integration with notebook-writer
 
-Document organism/reference versions, external bioinformatics tools, and all data-processing (QC/filtering) parameters. Templates for each (organism/reference code cell, external-tools markdown, `QC_PARAMS` code cell): see `assets/reproducibility-templates.md` ("Bioinformatics-Specific Reproducibility Considerations").
+When creating notebooks programmatically, use the `notebook-writer` skill with these reproducibility standards. A `create_notebook_markdown` cell-list template: `assets/reproducibility-templates.md` ("Integration with notebook-writer Skill").
 
-## Code Quality Standards
+### Before handoff to the PI
 
-### During Implementation
-- **Copilot reviews continuously** - expect adversarial feedback
-- Write clear comments explaining biological context
-- Use descriptive variable names
-- Modularize repeated operations into functions
-- Log progress for long-running analyses
+Objective checks worth actually running:
+- Restart Kernel & Run All — the notebook executes end to end without errors.
+- Run it twice — outputs are identical.
+- Figures saved to `FIGURES_DIR` with descriptive names; processed data saved to `PROCESSED_DIR`.
+- Session info cell executed with output visible.
+- Execution time is reasonable for the work (routine analyses well under a couple of hours).
 
-### Testing
-- Validate on small test data first
-- Check edge cases (empty data, single sample, all zeros)
-- Compare to expected results (positive controls)
-- Verify reproducibility (run twice, same results)
+## Code quality
 
-## Common Analysis Patterns
+`copilot` reviews code continuously during implementation; expect adversarial, constructive feedback and fix what it finds before building further on top. Write comments that explain the biological context, use descriptive variable names, factor repeated operations into functions, and log progress for long-running analyses.
+
+Validate on small test data first, check edge cases (empty data, single sample, all zeros), compare against positive controls, and confirm reproducibility by running twice.
+
+## Common analysis patterns
 
 ### Pattern 1: Differential Expression (RNA-seq)
 ```python
@@ -452,24 +295,7 @@ Document organism/reference versions, external bioinformatics tools, and all dat
 ```
 → Use `biopython` skill for implementation details
 
-## References
-
-For visualization guidance, invoke the `plotting-advisor` skill — it covers chart-type selection, palette choice (Okabe-Ito, viridis), accessibility, anti-patterns, and domain-specific conventions (volcano plots, UMAP, Manhattan, hierarchical-clustered heatmaps, Kaplan-Meier, ROC, Bland-Altman) per Tufte / Cleveland / Wong / Wilke principles.
-
-For data structures, analysis workflows, and statistical method selection, consult the library skills directly (`scientific-skills:scanpy`, `scientific-skills:pydeseq2`, `scientific-skills:biopython`) or invoke the `statistician` skill for method choice.
-
-## Helper Scripts
-
-Available in `scripts/`:
-- `qc_pipeline.py` - Automated QC for RNA-seq data
-- `differential_expression_template.py` - Complete DESeq2 pipeline
-- `data_loader_helpers.py` - Functions for common file formats
-
-**Usage**: Read these scripts as reference implementations, copy/adapt for your specific analysis, or call directly via Bash if appropriate.
-
-## Integration with Domain Skills
-
-When analysis requires specialized knowledge:
+## Integration with domain skills
 
 | Data Type | Primary Skill | When to Use |
 |-----------|---------------|-------------|
@@ -479,77 +305,27 @@ When analysis requires specialized knowledge:
 | Statistical modeling | `statsmodels` | Regression, time series, GLMs |
 | Pathway analysis | `gseapy` or manual | Gene set enrichment |
 
-**Pattern**:
-1. Use `bioinformatician` for overall workflow
-2. Invoke specialized skill for domain-specific steps
-3. Integrate results back into main analysis
+Use `bioinformatician` for the overall workflow, invoke the specialized skill for domain-specific steps, and integrate results back into the main analysis.
 
-## Copilot Review Integration
+## References
 
-During implementation, `copilot` skill reviews your code:
-- Expect critical feedback (adversarial but constructive)
-- Fix issues immediately before proceeding
-- Iterate until code is robust
-- Don't take criticism personally - it catches bugs early
+For visualization guidance, invoke the `plotting-advisor` skill — it covers chart-type selection, palette choice (Okabe-Ito, viridis), accessibility, anti-patterns, and domain-specific conventions (volcano plots, UMAP, Manhattan, hierarchical-clustered heatmaps, Kaplan-Meier, ROC, Bland-Altman) per Tufte / Cleveland / Wong / Wilke principles.
+
+For data structures, analysis workflows, and statistical method selection, consult the library skills directly (`scientific-skills:scanpy`, `scientific-skills:pydeseq2`, `scientific-skills:biopython`) or invoke the `statistician` skill for method choice.
+
+## Helper scripts
+
+Available in `scripts/`:
+- `qc_pipeline.py` - Automated QC for RNA-seq data
+- `differential_expression_template.py` - Complete DESeq2 pipeline
+- `data_loader_helpers.py` - Functions for common file formats
+
+Read these as reference implementations, copy and adapt them for the analysis at hand, or call them directly via Bash where appropriate.
 
 ## Deliverables
 
-Complete notebook should include:
+**Technical components**: well-commented modular code cells; publication-ready visualizations; complete statistics reporting (test, p-value, effect size, n); exports of processed data and figure files; session info with package versions.
 
-**Technical Components** (existing):
-1. **Code cells**: Well-commented, modular analysis
-2. **Visualizations**: Publication-ready figures
-3. **Statistics**: Complete reporting (test, p-value, effect size, n)
-4. **Exports**: Processed data files, figure files
-5. **Session info**: Package versions for reproducibility
+**Biological components**: biological context cells (research question in biological terms, hypothesis and expected outcomes, description of each analysis step, relevance to the biological question); sanity check documentation (plausibility check results, positive/negative control validation, known biology comparison, red flags); preliminary interpretation (main findings in biological language, consistency with expectations, novel or surprising results, biological implications); and an expert handoff section when needed (structured questions for biologist-commentator, findings needing interpretation, recommended follow-up analyses, caveats and limitations).
 
-**Biological Components** (new):
-6. **Biological Context Cells** (markdown):
-   - Research question in biological terms
-   - Hypothesis and expected outcomes
-   - Biological description of each analysis step
-   - Relevance to biological question
-
-7. **Sanity Check Documentation** (markdown):
-   - Results of biological plausibility checks
-   - Positive/negative control validation
-   - Known biology comparison
-   - Red flags or concerns
-
-8. **Preliminary Interpretation** (markdown):
-   - Main findings in biological language
-   - Consistency with expectations
-   - Novel or surprising results
-   - Biological implications
-
-9. **Expert Handoff Section** (markdown, if needed):
-   - Structured questions for biologist-commentator
-   - Specific findings needing interpretation
-   - Recommended follow-up analyses
-   - Caveats and limitations
-
-**Quality Indicator**: Notebook should be readable by biologist who doesn't code
-
-## Quality Indicators
-
-Your notebook is ready when:
-
-**Technical Quality**:
-- [ ] All code executes without errors
-- [ ] Random seed set, results reproducible
-- [ ] QC checks passed (positive controls work)
-- [ ] Visualizations properly labeled
-- [ ] Statistics completely reported
-- [ ] Copilot approved code (no outstanding critical issues)
-
-**Biological Quality**:
-- [ ] Biological context provided for all major sections (concise, 1-3 sentences)
-- [ ] Biological sanity checks completed and documented
-- [ ] Positive/negative controls validated against biological expectations
-- [ ] Preliminary interpretation written in biological terms
-- [ ] Handoff to biologist-commentator structured (if unexpected findings)
-- [ ] Notebook readable by non-coding biologist
-
-**Integration Ready**:
-- [ ] Ready for PI to expand interpretations for publication
-- [ ] Clear which findings are routine vs need expert review
+The notebook should be readable by a biologist who doesn't code, and it should be clear which findings are routine and which need expert review before the PI expands interpretations for publication.

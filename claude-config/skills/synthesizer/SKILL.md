@@ -10,13 +10,6 @@ success_criteria:
   - Conceptual framework organizes disparate findings
   - Analysis document addresses specific research question
   - Synthesis adds value beyond what reviews alone provide
-extended_thinking_budget: 8192-16384
-metadata:
-  use_extended_thinking_for:
-    - Synthesizing 5+ documents with contradictory findings
-    - Identifying cross-cutting patterns across research domains
-    - Generating conceptual frameworks from disparate sources
-    - Resolving apparent contradictions through deeper analysis
 ---
 
 # Synthesizer Agent
@@ -76,47 +69,27 @@ Before writing any output file:
 
 **synthesizer specific**: Validate synthesis document output paths against archival naming conventions.
 
-## Extended Thinking for Synthesis
+## Framing a synthesis
 
-**When to use extended thinking** (8,192-16,384 token budget):
+Before integrating sources, work out:
 
-Use extended thinking for synthesis requiring deep pattern recognition and integration:
-
-**High complexity (16,384 tokens)**:
-- Synthesizing 10+ documents with contradictory or conflicting findings
-- Building novel conceptual frameworks from disparate research areas
-- Resolving methodological inconsistencies that span multiple research traditions
-- Generating project-specific insights that connect multiple domains
-
-**Moderate complexity (8,192 tokens)**:
-- Synthesizing 5-10 documents on related topics
-- Identifying cross-cutting themes across 2-3 research subdomains
-- Tracing disagreements to their methodological or contextual sources
-- Deriving design implications from complex multi-source evidence
-
-**How to use extended thinking**:
-
-**Before starting synthesis, think deeply about**:
 - What are the major organizing themes that cut across these sources?
 - Where do apparent contradictions reveal something important about the phenomenon?
 - What patterns emerge that individual papers don't explicitly discuss?
 - How do findings from different subfields inform each other?
 
-**Extended thinking prompt examples**:
-- "Let me think deeply about why these 5 papers report such different hepatocyte viability values..."
-- "I need to reason through the conceptual framework that best organizes these disparate findings..."
-- "Let me explore whether this apparent contradiction reflects measurement context or genuine biological variation..."
-
-**When NOT to use extended thinking**:
-- Simple serial summarization (just listing what each paper says)
-- Synthesizing 2-3 highly aligned papers with no contradictions
-- Mechanical integration tasks (combining reference lists)
+These matter most when the sources conflict — 10+ documents with contradictory findings,
+methodological inconsistencies spanning research traditions, or a conceptual framework
+that has to be built rather than inherited. They matter least on serial summarization,
+a handful of well-aligned papers, or mechanical integration such as merging reference
+lists.
 
 ## Workflow
 
 1. **Gather inputs**: Collect all relevant paper notes and reviews from Researcher
-2. **Map the territory**: Create a rough outline of themes and connections (use extended thinking for complex multi-source integration)
-3. **Identify tensions**: Where do sources disagree? Why might that be? (use extended thinking to trace disagreements to their source)
+2. **Map the territory**: Create a rough outline of themes and connections
+3. **Identify tensions**: Where do sources disagree, and why might that be? Trace each
+   disagreement to its methodological or contextual source rather than averaging over it
 4. **Draft synthesis**: Write a document that tells a coherent story
 5. **Make it actionable**: Connect findings to project implications
 6. **Hand off for adversarial review**: Pass draft to Devil's Advocate

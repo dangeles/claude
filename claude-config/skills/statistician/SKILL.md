@@ -270,22 +270,7 @@ mcmc_spec:
 
 ### Standard Statistical Consultation Workflow
 
-1. **Receive request** from programming-pm with analysis goals
-2. **Clarify requirements**:
-   - What is the research question?
-   - What data characteristics?
-   - What decisions depend on results?
-3. **Assess assumptions**:
-   - Data type and distribution
-   - Independence structure
-   - Sample size adequacy
-4. **Select method**:
-   - Appropriate for data characteristics
-   - Robust to assumption violations
-   - Interpretable for stakeholders
-5. **Perform power analysis** (if applicable)
-6. **Document specification** with validation criteria
-7. **Deliver handoff** to senior-developer
+A consultation runs from the programming-pm request to a documented specification handed to senior-developer. Clarify the research question, the data characteristics, and which decisions depend on the result. Assess the assumptions you would be relying on: data type and distribution, independence structure, and whether sample size is adequate. Choose a method that fits those characteristics, holds up under plausible assumption violations, and is interpretable for stakeholders. Run a power analysis where sample size is in question, then document the specification with its validation criteria.
 
 ### Power Analysis Protocol
 
@@ -385,31 +370,23 @@ For Bayesian models using MCMC:
 
 ## Progress Reporting
 
-Update progress file every 15 minutes during active work:
-
-**File**: `/tmp/progress-{request-id}.md`
+Write `/tmp/progress-{request-id}.md` when a milestone completes or when you hit a blocker:
 
 ```markdown
 # Progress: STATS-001
 
 **Status**: In Progress | Complete | Blocked
-**Last Update**: 2026-02-03 14:32:15
-**Completion**: 60%
 
 ## Completed
 - Identified analysis as two-sample comparison
 - Selected Welch's t-test (robust to unequal variance)
 - Completed power analysis (n=64 per group)
 
-## In Progress
-- Documenting validation criteria
-- Writing interpretation guide
+## Next
+- Documenting validation criteria and interpretation guide
 
 ## Blockers
 - None
-
-## Estimated Completion
-- 15 minutes remaining
 ```
 
 ## Example

@@ -21,18 +21,16 @@ estimated_duration: 4-8 hours (comprehensive review), 2-4 hours (focused summary
 
 ## Purpose
 
-The research-pipeline skill automates the complete research workflow by chaining five specialized skills in sequence. Instead of manually invoking researcher, synthesizer, devils-advocate, fact-checker, and editor with handoffs between each, this skill handles the entire pipeline with structured context passing.
+research-pipeline automates the research workflow by chaining five specialized skills in sequence. Instead of manually invoking researcher, synthesizer, devils-advocate, fact-checker, and editor with handoffs between each, this skill runs the whole chain with structured context passing.
 
-This represents the "pipeline pattern" for skill orchestration: a predefined sequence of skills that together accomplish a complex goal requiring multiple specialized capabilities.
+This is the "pipeline pattern" for skill orchestration: a predefined sequence of skills that together accomplish a goal requiring several specialized capabilities.
 
 ## When to Use This Skill
 
-Invoke the research-pipeline when:
-
-1. **Complete research workflow needed**: You need to go from research question to polished document
-2. **Quality matters**: The output must withstand scrutiny (adversarial review, fact-checking)
-3. **Hands-off execution desired**: You want to set the goal and receive the final product
-4. **Standard research pipeline fits**: The researcher -> synthesizer -> review -> edit flow matches your needs
+1. **Complete research workflow needed**: from research question to polished document
+2. **Quality matters**: output must withstand adversarial review and fact-checking
+3. **Hands-off execution desired**: set the goal, receive the final product
+4. **Standard research pipeline fits**: researcher -> synthesizer -> review -> edit matches the need
 
 ### Clear Indicators for Use
 
@@ -43,23 +41,19 @@ Invoke the research-pipeline when:
 
 ### When NOT to Use
 
-Do not use this skill when:
-
 - You only need part of the pipeline (use individual skills instead)
 - Output is exploratory/draft-only (skip adversarial review and editing)
 - Custom skill order is needed (use technical-pm orchestration instead)
 - Parallel research streams are required (use technical-pm with Task tool)
 - Rapid iteration with user feedback between stages is needed
 
-## Personality
+## Orchestration stance
 
-You are **orchestration-focused and quality-driven**. You ensure each pipeline stage receives proper context from the previous stage, validate outputs before proceeding, and maintain the user's original goal throughout the workflow. You are patient with long-running tasks but vigilant about quality gates.
+You keep the user's original goal intact across the chain and make sure each stage receives the context the previous one produced. The pipeline is a convenience, not a constraint: when a stage fails validation or genuinely needs user input, pause and escalate rather than passing weak output downstream.
 
-You understand that the pipeline is a convenience, not a constraint. If a stage fails validation or requires user input, you pause and escalate rather than producing low-quality output.
+Each stage runs as a separate specialist via Task tool. Fan-out conventions: `../references/delegation-and-scope.md`.
 
 ## Pipeline Architecture
-
-### Stage Sequence
 
 ```
 researcher
@@ -85,8 +79,6 @@ editor
 OUTPUT
 ```
 
-### Stage Responsibilities
-
 | Stage | Skill | Key Output | Quality Gate |
 |-------|-------|------------|--------------|
 | 1 | researcher | Literature review draft with citations | Has citations, addresses topic |
@@ -95,23 +87,14 @@ OUTPUT
 | 4 | fact-checker | Verified citations | All claims have valid citations |
 | 5 | editor | Polished prose | CLAUDE.md style compliant |
 
-## Workflow
+## Initializing the pipeline
 
-### Step 1: Initialize Pipeline
+Parse the user's goal into topic, scope (comprehensive vs focused), constraints (time, page count, focus areas), and a `workflow_id`.
 
-**Parse user goal**:
-- Extract research topic or question
-- Determine scope (comprehensive vs focused)
-- Identify any constraints (time, page count, specific focus areas)
-- Generate workflow_id for tracking
+### Archival compliance check
 
-### Archival Compliance Check
-Before creating the pipeline context, follow the archival compliance check pattern:
-1. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
-2. If file not found, use graceful degradation (log warning, proceed without archival check)
-3. Apply the 5-step pattern to all file creation operations
+Before creating the pipeline context, read `~/.claude/skills/archive-workflow/references/archival-compliance-check.md` and apply its 5-step pattern to file creation. If that file is missing, log a warning and proceed without the archival check.
 
-Store archival guidelines in the pipeline context:
 ```yaml
 pipeline:
   archival:
@@ -121,13 +104,10 @@ pipeline:
     enforcement_mode: "advisory"
 ```
 
-When setting the output location (`docs/literature/{topic}/`):
-- Validate against archival structure guidelines
-- If violation detected, present batch advisory options
-- Record the user's choice in the pipeline context
-- Pass archival_context to all downstream stages via handoff
+When setting the output location (default `docs/literature/{topic}/`), validate it against the archival structure guidelines. On a violation, present batch advisory options, record the user's choice in the pipeline context, and pass `archival_context` to every downstream stage.
 
-**Create initial context**:
+### Initial context
+
 ```yaml
 pipeline:
   workflow_id: "research-{uuid}"
@@ -142,109 +122,22 @@ pipeline:
   started_at: "{timestamp}"
 ```
 
-### Step 2: Execute Stage 1 - Researcher
+## The five stages
 
-**Invoke**: researcher via Task tool with topic and constraints in prompt
+Each stage is dispatched via Task tool with the previous stage's handoff file path in the prompt. Judge each output against the one-line quality gate in the table above before writing the handoff; the specialists own how they get there.
 
-**Researcher executes**:
-- Literature search via PubMed, bioRxiv, OpenAlex
-- Paper reading and note-taking
-- Draft literature review with Nature-style citations
+**Stage 1 — researcher.** Literature search (PubMed, bioRxiv, OpenAlex), paper notes, draft review with Nature-style citations. If the draft has no citations or misses the topic, pause and offer the user a retry with narrowed scope, acceptance of partial output, or abort.
 
-**Validate output**:
-- [ ] Document exists at expected location
-- [ ] Contains inline citations (superscripts)
-- [ ] Addresses the stated topic
-- [ ] Minimum length achieved (varies by scope)
+**Stage 2 — synthesizer.** Reads the researcher output, identifies cross-cutting themes, surfaces tensions and contradictions, draws project-specific implications. Should add value beyond a summary and carry citations forward.
 
-**If validation fails**: Pause pipeline, report issue to user with options:
-- Retry researcher with narrowed scope
-- Accept partial output and continue
-- Abort pipeline
+**Stage 3 — devils-advocate.** Identifies the thesis, evaluates strategic coherence, challenges thesis-critical claims, proposes counter-arguments, exchanges with the synthesizer for up to 2 rounds. The handoff records which challenges were addressed, which uncertainties remain, and the approval status.
 
-**Create handoff document** (see Handoff Format section)
+**Stage 4 — fact-checker.** Inventories quantitative claims and verifies each citation against a real source, checks superscript format, flags missing or wrong citations, and produces a verification report. Minor issues get corrected inline; major ones go back to the synthesizer and are then re-checked.
 
-### Step 3: Execute Stage 2 - Synthesizer
+**Stage 5 — editor.** Applies CLAUDE.md style guidelines: bullets to prose where appropriate, bridging transitions, glossary placement, final polish for publication.
 
-**Invoke**: synthesizer via Task tool with handoff file path in prompt
+### Completion report
 
-**Synthesizer executes**:
-- Read researcher's output via handoff
-- Identify cross-cutting themes
-- Highlight tensions and contradictions
-- Draw project-specific implications
-- Create synthesis document
-
-**Validate output**:
-- [ ] Document exists
-- [ ] Adds value beyond summary (themes, tensions, implications)
-- [ ] Maintains citations from source
-- [ ] Addresses original goal
-
-**Create handoff document**
-
-### Step 4: Execute Stage 3 - Devil's Advocate
-
-**Invoke**: devils-advocate via Task tool with handoff file path in prompt
-
-**Devil's Advocate executes**:
-- Identify thesis of synthesized document
-- Evaluate strategic coherence
-- Challenge thesis-critical claims
-- Propose counter-arguments
-- Document exchange with synthesizer (up to 2 rounds)
-
-**Validate output**:
-- [ ] Review report generated
-- [ ] Challenges addressed or uncertainty documented
-- [ ] Synthesizer has responded to critical challenges
-
-**Create handoff document** including:
-- Which challenges were addressed
-- Which uncertainties remain
-- Devil's advocate approval status
-
-### Step 5: Execute Stage 4 - Fact-Checker
-
-**Invoke**: fact-checker via Task tool with handoff file path in prompt
-
-**Fact-Checker executes**:
-- Inventory all quantitative claims
-- Verify each citation exists and supports claim
-- Check citation format (superscripts in text)
-- Flag missing or incorrect citations
-- Generate verification report
-
-**Validate output**:
-- [ ] Verification report generated
-- [ ] All critical citations verified
-- [ ] Issues flagged for correction
-
-**If issues found**:
-- Minor issues: Correct inline and proceed
-- Major issues: Return to synthesizer for corrections, then re-verify
-
-**Create handoff document**
-
-### Step 6: Execute Stage 5 - Editor
-
-**Invoke**: editor via Task tool with handoff file path in prompt
-
-**Editor executes**:
-- Apply CLAUDE.md style guidelines
-- Convert bullets to prose where appropriate
-- Add bridging transitions
-- Verify glossary placement
-- Final polish for publication
-
-**Validate output**:
-- [ ] CLAUDE.md checklist passed
-- [ ] Document flows smoothly
-- [ ] Ready for archival/publication
-
-### Step 7: Complete Pipeline
-
-**Generate completion report**:
 ```markdown
 # Research Pipeline Complete
 
@@ -257,13 +150,13 @@ pipeline:
 **Location**: {path to final document}
 
 ## Pipeline Summary
-| Stage | Duration | Status | Notes |
-|-------|----------|--------|-------|
-| Researcher | 2h 15m | Complete | 8 papers reviewed |
-| Synthesizer | 45m | Complete | 3 themes identified |
-| Devil's Advocate | 30m | Complete | 2 challenges, 1 uncertainty |
-| Fact-Checker | 20m | Complete | 12 citations verified |
-| Editor | 25m | Complete | CLAUDE.md compliant |
+| Stage | Status | Notes |
+|-------|--------|-------|
+| Researcher | Complete | 8 papers reviewed |
+| Synthesizer | Complete | 3 themes identified |
+| Devil's Advocate | Complete | 2 challenges, 1 uncertainty |
+| Fact-Checker | Complete | 12 citations verified |
+| Editor | Complete | CLAUDE.md compliant |
 
 ## Quality Indicators
 - Citations verified: 12/12
@@ -279,35 +172,17 @@ pipeline:
 - Fact-check report: {path}
 ```
 
-### Optional: Git Strategy Advisory
+### Optional: git strategy advisory
 
-After generating the completion report, you MAY invoke `git-strategy-advisor` via
-Task tool in post-work mode to recommend git strategy for the pipeline output files:
+After the completion report you can invoke `git-strategy-advisor` via Task tool in post-work mode:
 
-**Invocation** (via Task tool):
 ```
 Use git-strategy-advisor to determine git strategy for completed work.
 
 mode: post-work
 ```
 
-The advisor analyzes the collection of output files (final document, intermediate
-outputs, notes, reports) and recommends branch strategy, push timing, and PR creation
-based on the actual scope.
-
-**Response handling**: Read the advisor's `summary` field. Include in the completion
-report if available.
-
-**Confidence handling**: If the advisor returns confidence "none" or "low", silently
-skip the git strategy section.
-
-**Note**: git-strategy-advisor analyzes changes within the current git repository only.
-If pipeline output files are written outside the repository (e.g., to /tmp/), the
-advisor will not detect them.
-
-This is **advisory only**. If `git-strategy-advisor` is not available or returns an
-error, skip this step. Include the advisor's recommendation in the completion report
-if available.
+Read the advisor's `summary` field into the completion report. Skip the section silently if confidence is "none" or "low", if the advisor is unavailable or errors, or if output files were written outside the current git repository (the advisor only sees changes inside it).
 
 ## Handoff Format
 
@@ -341,12 +216,7 @@ quality:
   warnings: [concerns for downstream]
 ```
 
-**Validation before each handoff**:
-1. Schema validation: All required fields present
-2. Content validation: Summary >= 50 chars, file exists
-3. Checksum validation: Recompute and compare
-
-**On validation failure**: STOP pipeline, report to user
+Validate before each handoff: required fields present, summary >= 50 chars, file exists, checksum recomputes and matches. On validation failure, stop the pipeline and report to the user.
 
 ## Configuration Options
 
@@ -368,14 +238,12 @@ quality:
 
 ### Skip Options
 
-For experienced users who want to skip stages:
-
 ```
 research-pipeline topic="X" --skip=devils-advocate
 research-pipeline topic="X" --skip=fact-checker,editor
 ```
 
-**Warning**: Skipping stages reduces quality guarantees. Pipeline will note skipped stages in completion report.
+Skipping stages reduces quality guarantees; note skipped stages in the completion report.
 
 ### Output Location
 
@@ -385,14 +253,7 @@ Override: `research-pipeline topic="X" --output="{custom path}"`
 
 ## Error Handling
 
-### Stage Failure
-
-If any stage fails:
-
-1. **Preserve completed work**: All previous stage outputs kept
-2. **Save partial output**: Current stage's work-in-progress saved
-3. **Pause pipeline**: Do NOT proceed to next stage
-4. **Report to user**:
+If a stage fails: keep all previous stage outputs, save the current stage's work-in-progress, stop before the next stage, and report with options.
 
 ```
 Pipeline paused: Stage 3 (devils-advocate) failed
@@ -410,21 +271,10 @@ Options:
 (D) Abort pipeline (keep completed outputs)
 ```
 
-### Timeout Handling
-
-For long-running stages (especially researcher):
-
-- **Progress updates**: Every 30 minutes during researcher stage
-- **Timeout threshold**: 4 hours for researcher, 1 hour for other stages
-- **On timeout**: Pause pipeline, show progress, offer options
-
 ### Interruption Recovery
 
-Pipeline state is saved after each stage completion:
+Pipeline state is saved after each stage completes, at `/tmp/pipeline-state-{workflow_id}.yaml`.
 
-**Location**: `/tmp/pipeline-state-{workflow_id}.yaml`
-
-**On resume**:
 ```
 Found interrupted pipeline: research-abc123
 Topic: "hepatocyte oxygenation"
@@ -462,29 +312,15 @@ Options:
 
 ## Integration with Other Skills
 
-### When to Escalate to technical-pm
+Use technical-pm instead of research-pipeline when multiple independent research streams need parallel execution, when custom skill ordering is required, when non-research skills belong in the workflow, or when dependency management gets complex.
 
-Use technical-pm instead of research-pipeline when:
-- Multiple independent research streams needed (parallel execution)
-- Custom skill ordering required
-- Non-research skills needed in the workflow
-- Complex dependency management required
+After the pipeline completes, the user may invoke archive-workflow separately for project organization:
 
-### Handoff to archive-workflow
-
-After pipeline completion, user may want to invoke archive-workflow separately for project organization:
 ```
 Skill(archive-workflow, project="{project root}")
 ```
 
-Pipeline does NOT automatically invoke archive-workflow to give user control over organization decisions.
-
-### Handoff to git-strategy-advisor
-
-After pipeline completion, the pipeline MAY invoke git-strategy-advisor for git workflow
-recommendations. This is optional and advisory -- it provides recommendations for branching,
-pushing, and PR creation based on the scope of produced files. Invocation is via Task tool,
-not Skill tool.
+The pipeline does not invoke archive-workflow automatically — organization decisions stay with the user. It may invoke git-strategy-advisor (via Task tool, not Skill tool) for advisory branch/push/PR recommendations.
 
 ## Example Invocations
 
@@ -492,12 +328,11 @@ not Skill tool.
 
 **User**: "Research hepatocyte oxygenation and write a comprehensive literature review"
 
-**Pipeline executes**:
-1. Researcher: Reviews 8-10 papers on hepatocyte oxygen consumption
-2. Synthesizer: Identifies themes (measurement methods, culture conditions, species variations)
-3. Devil's Advocate: Challenges assumption that in vitro values apply to bioreactor design
-4. Fact-Checker: Verifies all K_oA values trace to primary sources
-5. Editor: Polishes into CLAUDE.md-compliant document
+1. Researcher: reviews 8-10 papers on hepatocyte oxygen consumption
+2. Synthesizer: identifies themes (measurement methods, culture conditions, species variations)
+3. Devil's Advocate: challenges the assumption that in vitro values apply to bioreactor design
+4. Fact-Checker: verifies all K_oA values trace to primary sources
+5. Editor: polishes into a CLAUDE.md-compliant document
 
 **Output**: `docs/literature/hepatocyte-oxygenation/review-hepatocyte-oxygenation.md`
 
@@ -505,12 +340,7 @@ not Skill tool.
 
 **User**: "Give me a quick summary of hollow fiber bioreactor designs for liver support"
 
-**Pipeline executes** (focused mode):
-1. Researcher: Reviews 3-4 key papers
-2. Synthesizer: Single-theme summary
-3. Devil's Advocate: 1 exchange round
-4. Fact-Checker: Critical citations only
-5. Editor: Essential polish
+Focused mode: 3-4 key papers, single-theme synthesis, 1 devil's advocate round, critical citations only, essential polish.
 
 **Output**: `docs/literature/hollow-fiber-bioreactor/review-hollow-fiber-bioreactor.md`
 
@@ -518,24 +348,16 @@ not Skill tool.
 
 **User**: "Research Matrigel alternatives for hepatocyte culture, focus on chemical approaches, max 5 pages"
 
-**Pipeline parses**:
-- Topic: Matrigel alternatives for hepatocyte culture
-- Focus: Chemical approaches (not biological)
-- Constraint: 5 pages max
-
-**Adjusts behavior**:
-- Researcher: Filters for chemical/synthetic matrix papers
-- Synthesizer: Respects page limit in synthesis
-- All stages: Honor focus constraint
+Topic is Matrigel alternatives for hepatocyte culture, focus is chemical rather than biological approaches, and the 5-page limit propagates: the researcher filters for chemical/synthetic matrix papers, the synthesizer respects the page limit, and every stage honors the focus constraint.
 
 ## Common Pitfalls
 
 1. **Scope creep in researcher stage**
-   - **Symptom**: Researcher spends 6+ hours on "quick summary" request
+   - **Symptom**: Researcher spends 6+ hours on a "quick summary" request
    - **Fix**: Set explicit scope at pipeline init (comprehensive vs focused)
 
 2. **Thesis drift between stages**
-   - **Symptom**: Final document doesn't answer original question
+   - **Symptom**: Final document doesn't answer the original question
    - **Fix**: Handoff includes original_goal; each stage checks alignment
 
 3. **Citation format inconsistency**
@@ -544,7 +366,7 @@ not Skill tool.
 
 4. **Skipping stages reduces quality**
    - **Symptom**: Unchallenged arguments, unverified citations in final output
-   - **Fix**: Warn user when stages are skipped; note in completion report
+   - **Fix**: Warn the user when stages are skipped; note it in the completion report
 
 ## Handoffs
 

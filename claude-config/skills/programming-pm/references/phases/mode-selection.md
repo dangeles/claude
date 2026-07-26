@@ -5,6 +5,14 @@ procedure) for the programming-pm workflow. SKILL.md keeps the mode summary,
 tier triggers, and a pointer here. Read this file when actively running mode
 selection after Quality Gate 1.
 
+## Contents
+
+- Step 1: Run Complexity Detection
+- Step 2: Display Mode Selection Prompt
+- Step 3: User Override Confirmation
+- Step 4: Record Mode Selection
+- Step 5: Mode-Based Branching
+
 **Objective**: Select workflow execution mode based on project complexity.
 
 **Trigger**: After Quality Gate 1 passes (requirements approved)

@@ -177,14 +177,14 @@ gmsh.model.geo.synchronize()
 
 ## 3. Physical Group Definition
 
-### Physical Groups Are MANDATORY
+### Define Physical Groups Before Meshing
 
 Physical groups map geometric entities to named boundary/subdomain markers.
 Without them, DOLFINx has no way to identify where to apply boundary
 conditions or subdomain-specific source terms. Defining physical groups is
-MANDATORY before meshing.
+Required before meshing.
 
-**Anti-pattern** (NEVER do this):
+**Anti-pattern** (do not do this):
 ```python
 # BAD: meshing without physical groups
 gmsh.model.mesh.generate(3)

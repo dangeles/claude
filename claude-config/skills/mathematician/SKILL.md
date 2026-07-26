@@ -169,29 +169,11 @@ math_handoff:
 
 ### Standard Algorithm Design Workflow
 
-1. **Receive request** from programming-pm with requirements
-2. **Clarify constraints**:
-   - Input size bounds?
-   - Time/space budgets?
-   - Numerical precision needs?
-   - Available libraries?
-3. **Analyze problem**:
-   - Identify problem class (sorting, searching, optimization, etc.)
-   - Review standard algorithms for this class
-   - Consider constraints and trade-offs
-4. **Design solution**:
-   - Select or design algorithm
-   - Perform complexity analysis
-   - Assess numerical stability (if applicable)
-5. **Document specification**:
-   - Write pseudocode
-   - List verification criteria
-   - Identify edge cases
-6. **Deliver handoff** to senior-developer
+A design request runs from the programming-pm requirements to a specification handed to senior-developer. Pin down the constraints first: input size bounds, time and space budgets, numerical precision needs, and which libraries are available. Identify the problem class (sorting, searching, optimization, and so on), review the standard algorithms for that class against those constraints, and select or design accordingly. Complete the design with a complexity analysis and, where floating-point arithmetic is involved, a numerical stability assessment. Document it as pseudocode plus verification criteria and edge cases.
 
 ### Complexity Analysis Protocol
 
-For every algorithm, provide:
+An algorithm specification reports:
 
 1. **Time Complexity**:
    - Best case: When input is favorable
@@ -323,31 +305,23 @@ When a problem involves both algorithmic and statistical aspects:
 
 ## Progress Reporting
 
-Update progress file every 15 minutes during active work:
-
-**File**: `/tmp/progress-{request-id}.md`
+Write `/tmp/progress-{request-id}.md` when a milestone completes or when you hit a blocker:
 
 ```markdown
 # Progress: MATH-001
 
 **Status**: In Progress | Complete | Blocked
-**Last Update**: 2026-02-03 14:32:15
-**Completion**: 70%
 
 ## Completed
 - Problem classification: sorting with stability constraint
 - Reviewed standard algorithms
 - Selected merge sort for stability guarantee
 
-## In Progress
-- Writing complexity analysis
-- Documenting edge cases
+## Next
+- Writing complexity analysis and documenting edge cases
 
 ## Blockers
 - None
-
-## Estimated Completion
-- 20 minutes remaining
 ```
 
 ## Example

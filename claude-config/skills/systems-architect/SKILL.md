@@ -11,17 +11,11 @@ success_criteria:
   - APIs and interfaces clearly defined
   - Technical specification complete for implementation
   - Non-functional requirements addressed (performance, maintainability)
-extended_thinking_budget: 8192-12288
 metadata:
     skill-author: David Angeles Albores
     category: bioinformatics-workflow
     workflow: software-development
     integrates-with: [bioinformatician, biologist-commentator, senior-developer]
-    use_extended_thinking_for:
-      - Complex architectural decisions with multiple trade-offs
-      - Scalability planning for large-scale data processing
-      - Technology stack selection with competing options
-      - Design pattern selection for novel problem domains
 allowed-tools: [Read, Write, Bash]
 handoff:
   accepts_from:

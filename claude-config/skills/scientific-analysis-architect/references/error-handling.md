@@ -1,229 +1,59 @@
 # Error Handling
 
-Comprehensive error handling specification for the scientific-analysis-architect skill.
+Failure handling, compensation, and escalation for the scientific-analysis-architect workflow.
 
-## Timeout Configuration
+## Contents
 
-### Per-Phase Timeouts
+- Failure Handling Protocol
+- Retry and Failure Ceilings
+- Compensation Actions by Phase
+- Escalation Prompt Templates
+- Fan-Out Failure Handling
+- Logging
+- Graceful Degradation
+- Recovery Practices
 
-| Phase | Timeout | Description |
-|-------|---------|-------------|
-| 0 | 5 min | Initialization (session, output validation) |
-| 1 | 15 min | Birds-eye planning |
-| 2 | 20 min | Subsection planning (includes consultant fan-out) |
-| 3 | 10 min | Structure review |
-| 4 | 15 min | Plan review (parallel) |
-| 5 | 20 min | Document generation (parallel) |
-| 6 | 30 min | Statistical fact-checking (interview mode) |
-| 7 | 15 min | Audience document generation |
+---
 
-### Per-Agent Timeouts
+## Failure Handling Protocol
 
-| Agent | Timeout | Criticality |
-|-------|---------|-------------|
-| research-architect | 15 min | Critical |
-| analysis-brainstormer | 3 min | Optional |
-| method-brainstormer | 3 min | Optional |
-| analysis-planner | 8 min per chapter | Critical |
-| statistician-consultant | 5 min | Critical |
-| mathematician-consultant | 5 min | Optional |
-| programmer-consultant | 5 min | Optional |
-| structure-reviewer | 10 min | Critical |
-| notebook-reviewer | 5 min per chapter | Critical |
-| notebook-generator | 7 min per chapter | Critical |
-| statistical-fact-checker | 30 min | Critical |
+**Detect**: catch Task tool failures, and validate that each agent's output file exists and has the expected format.
 
-## Exception Handling Protocol
+**Contain**: isolate the failed agent from its parallel group, preserve partial outputs, and log the details to `{session_dir}/logs/errors.log`.
 
-### Detection
+**Recover**: retry, then compensate per phase.
 
-- Monitor agent execution time against timeout
-- Catch Task tool failures
-- Validate output file existence and format
+**Escalate**: use the AskUserQuestion templates below.
 
-### Containment
+## Retry and Failure Ceilings
 
-- Isolate failed agent from parallel group
-- Preserve partial outputs
-- Log failure details to `{session_dir}/logs/errors.log`
+Retry a failed agent once with the same inputs, logging "Retry attempt 1 for {agent_name}". On a second consecutive failure, escalate to the user. Two attempts per agent per invocation; the count resets on a successful execution.
 
-### Recovery
-
-- Apply retry protocol (see below)
-- Execute compensation actions (see below)
-
-### Escalation
-
-- Use AskUserQuestion templates (see below)
-
-## Retry Protocol
-
-### Automatic Retry (Attempt 1)
-
-- Trigger: Agent timeout or failure
-- Wait: 30 seconds
-- Action: Retry same agent with same inputs
-- Log: "Retry attempt 1 for {agent_name}"
-
-### User Escalation (After Attempt 2)
-
-- Trigger: Second consecutive failure
-- Action: Present escalation prompt (see templates below)
-
-### Maximum Retries
-
-- 2 attempts per agent per invocation
-- Reset on successful execution
-
-## Circuit Breaker Configuration
-
-### Thresholds
+Wider ceilings:
 
 | Metric | Threshold | Action |
 |--------|-----------|--------|
-| Consecutive failures per agent | 2 | Open circuit, escalate |
-| Total failures per phase | 50% of agents | Abort phase, escalate |
-| Session-wide failures | 5 | Suggest abort workflow |
-
-### States
-
-- **Closed**: Normal operation
-- **Open**: Agent bypassed, escalation active
-- **Half-Open**: Testing single request after cooldown
-
-### Reset Conditions
-
-- Closed -> Open: 2 consecutive failures
-- Open -> Half-Open: 60 second cooldown
-- Half-Open -> Closed: 1 successful execution
-- Half-Open -> Open: 1 failure
+| Consecutive failures per agent | 2 | Stop using that agent, escalate |
+| Failures within one phase | 50% of agents | Abort the phase, escalate |
+| Session-wide failures | 5 | Suggest aborting the workflow |
 
 ## Compensation Actions by Phase
 
-### Phase 0 Failure: Initialization
+**Phase 0 — initialization.** Session directory creation or output validation failure is terminal: clean up any partial session directory, log the error, and exit with a clear message. No retry.
 
-**Trigger**: Session directory creation fails, output validation fails
+**Phase 1 — birds-eye planning.** Save any partial `research-structure.md`, log the failure to session state, escalate. Options: retry Phase 1, user supplies a manual research structure, or abort.
 
-**Compensation**:
-1. Clean up any partial session directory
-2. Log error to stdout
-3. Exit with clear error message
+**Phase 2 — subsection planning.** Retry each failed consultant once. If the statistician (critical) still fails, escalate with the statistical guidance gap and offer manual guidance, proceeding without, retrying, or aborting. If the mathematician or programmer (optional) still fails, proceed with a warning and log the gap in the analysis plans. For an analysis-planner failure, save partial chapter plans and allow per-chapter retry; escalate if more than 50% of chapters fail.
 
-**No retry** - Initialization failures are terminal
+**Phase 3 — structure review.** Skip the review with a warning. The user can accept the unreviewed structure, retry the review, or abort. If proceeding, carry an "unreviewed" flag into Phase 4 and show the warning at the structure approval gate.
 
-### Phase 1 Failure: Birds-Eye Planning
+**Phase 4 — plan review.** Mark failed chapters "unreviewed" and proceed with the reviewed ones. The user can accept the partial set, retry the failed chapters, or abort.
 
-**Trigger**: research-architect timeout or failure
+**Phase 5 — document generation.** Preserve successfully generated documents, mark failed chapters in session state, and offer per-chapter regeneration, manual creation instructions, or proceeding to Phase 6 with a partial set.
 
-**Compensation**:
-1. Save partial research-structure.md (if any content generated)
-2. Log failure to session state
-3. Escalate to user
+**Phase 6 — statistical fact-checking.** Save interview progress and `corrections-manifest.json` with the decisions made so far, then offer to resume from the last concern, skip the remaining concerns, or pass without statistical review (logged as a warning).
 
-**Recovery options**:
-- Retry Phase 1
-- User provides manual research structure
-- Abort workflow
-
-### Phase 2 Failure: Subsection Planning
-
-**Trigger**: Consultant timeout or failure
-
-**For statistician-consultant (Critical)**:
-1. Retry once
-2. If retry fails, escalate with statistical guidance gap
-3. User can: provide manual guidance, proceed without, retry, abort
-
-**For mathematician-consultant (Optional)**:
-1. Retry once
-2. If retry fails, proceed with warning
-3. Log gap in analysis plans
-
-**For programmer-consultant (Optional)**:
-1. Retry once
-2. If retry fails, proceed with warning
-3. Log gap in analysis plans
-
-**Compensation for analysis-planner failure**:
-1. Save partial chapter plans
-2. Allow per-chapter retry
-3. If >50% chapters fail, escalate
-
-### Phase 3 Failure: Structure Review
-
-**Trigger**: structure-reviewer timeout or failure
-
-**Compensation**:
-1. Skip review (warning to user)
-2. User can: accept unreviewed structure, retry review, abort
-
-**Recovery**:
-- Proceed to Phase 4 with "unreviewed" flag
-- Structure approval gate shows warning
-
-### Phase 4 Failure: Plan Review
-
-**Trigger**: notebook-reviewer timeout or failure
-
-**Compensation**:
-1. Mark failed chapters as "unreviewed"
-2. Proceed with reviewed chapters
-3. User can: accept partial, retry failed, abort
-
-**Recovery**:
-- Per-chapter retry option
-- Proceed with partial reviews
-
-### Phase 5 Failure: Document Generation
-
-**Trigger**: notebook-generator timeout or failure
-
-**Compensation**:
-1. Preserve successfully generated analysis documents
-2. Mark failed chapters in session state
-3. Offer per-chapter regeneration
-
-**Recovery**:
-- Retry failed chapters only
-- Manual document creation instructions
-- Proceed to Phase 6 with partial (user choice)
-
-### Phase 6 Failure: Statistical Fact-Checking
-
-**Trigger**: statistical-fact-checker timeout or failure
-
-**Compensation**:
-1. Save interview progress (concerns reviewed so far)
-2. Save corrections-manifest.json with partial decisions
-3. Offer resume interview
-
-**Recovery**:
-- Resume interview from last concern
-- Skip remaining concerns (user accepts risk)
-- Pass without statistical review (warning logged)
-
-### Phase 7 Failure: Audience Document Generation
-
-**Trigger**: Document generation timeout or failure
-
-**Compensation**:
-1. Preserve any successfully generated audience documents
-2. Mark failed documents in session state
-3. Log failure to session state errors array
-
-**Recovery options**:
-- Retry failed documents (up to 2 retries per document)
-- Proceed without failed documents (warn user)
-- Abort Phase 7 (Phase 0-6 outputs are unaffected)
-
-**For individual document failure**:
-- Retry once with same inputs
-- If retry fails: mark as skipped, proceed with remaining documents
-- All three documents are independent; failure of one does not affect others
-
-**For total failure (all three documents fail)**:
-- Escalate to user with Template 1
-- Options: retry all, proceed without audience documents, abort
+**Phase 7 — audience document generation.** The three documents are independent; one failing does not affect the others. Retry a failed document once, then mark it skipped and continue with the rest (up to 2 retries per document). Preserve what succeeded and log failures to the session state errors array. If all three fail, escalate with Template 1 — retry all, proceed without audience documents, or abort. Phase 0-6 outputs are unaffected either way.
 
 ## Escalation Prompt Templates
 
@@ -269,18 +99,18 @@ Options:
 Enter choice [A/B/C/D]:
 ```
 
-### Template 3: Phase Timeout
+### Template 3: Partial Phase Completion
 
 ```
-[TIMEOUT] Phase {phase_number} ({phase_name}) exceeded {timeout} minutes
+[PARTIAL] Phase {phase_number} ({phase_name}) did not complete fully
 
-Status at timeout:
+Status:
   - Completed: {completed_items}
-  - In progress: {in_progress_items}
+  - Failed: {failed_items}
   - Not started: {not_started_items}
 
 Options:
-  (A) Wait additional {extension} minutes
+  (A) Retry the incomplete items
   (B) Proceed with completed items only
   (C) Abort phase and troubleshoot
   (D) Abort workflow
@@ -288,26 +118,7 @@ Options:
 Enter choice [A/B/C/D]:
 ```
 
-### Template 4: Circuit Breaker Open
-
-```
-[CIRCUIT BREAKER] {agent_name} circuit breaker opened
-
-Consecutive failures: {failure_count}
-Last error: {last_error}
-Time since last success: {time_elapsed}
-
-This agent is temporarily disabled to prevent cascading failures.
-
-Options:
-  (A) Wait {cooldown} seconds and retry
-  (B) Skip this agent for this session
-  (C) Abort workflow
-
-Enter choice [A/B/C]:
-```
-
-### Template 5: Session-Wide Failure Threshold
+### Template 4: Session-Wide Failure Threshold
 
 ```
 [WORKFLOW STABILITY WARNING]
@@ -332,18 +143,9 @@ Enter choice [A/B/C]:
 
 ## Fan-Out Failure Handling
 
-### Consolidated Escalation Protocol
+When several agents run in parallel (Phase 2 consultants, Phase 4 and 5 per-chapter), wait for all of them to return before escalating, collect every failure into one report, present Template 2, and let the user decide once for the whole group.
 
-When multiple parallel agents are running (Phase 2 consultants, Phase 4/5 per-chapter):
-
-1. **Wait for all agents** to complete or timeout (do not escalate immediately)
-2. **Collect all failures** into single failure report
-3. **Present consolidated prompt** (Template 2 above)
-4. **User makes single decision** for all failures
-
-### Critical vs Optional Agents
-
-| Agent | Criticality | Failure Behavior |
+| Agent | Criticality | Failure behavior |
 |-------|-------------|------------------|
 | statistician-consultant | Critical | Escalate if fails |
 | mathematician-consultant | Optional | Warn and proceed |
@@ -351,16 +153,11 @@ When multiple parallel agents are running (Phase 2 consultants, Phase 4/5 per-ch
 | notebook-reviewer (per chapter) | Critical | Per-chapter escalation |
 | notebook-generator (per chapter) | Critical | Per-chapter escalation |
 
-### >50% Failure Rule
-
-If more than 50% of parallel agents in a fan-out fail:
-1. Abort the current phase
-2. Present escalation prompt
-3. Options: Retry all, abort workflow, return to previous phase
+If more than 50% of a fan-out fails, abort the current phase and escalate with the options retry all, return to the previous phase, or abort the workflow.
 
 ## Logging
 
-### Error Log Format
+`{session_dir}/logs/errors.log`, one JSON object per line:
 
 ```json
 {
@@ -368,38 +165,21 @@ If more than 50% of parallel agents in a fan-out fail:
   "session_id": "session-20260204-143022-12345",
   "phase": 2,
   "agent": "statistician-consultant",
-  "error_type": "timeout",
-  "error_message": "Agent exceeded 5 minute timeout",
+  "error_type": "no_output",
+  "error_message": "Agent returned without writing consultation file",
   "retry_count": 2,
   "resolution": "user_escalation",
   "user_choice": "proceed_without"
 }
 ```
 
-### Log Location
-
-`{session_dir}/logs/errors.log` - one JSON object per line
-
-### Log Levels
-
-- **ERROR**: Agent failure, timeout, validation failure
-- **WARNING**: Optional agent failure, partial completion
-- **INFO**: Retry attempt, circuit breaker state change
-- **DEBUG**: Agent input/output details (verbose mode only)
+Levels: **ERROR** for agent failure or validation failure, **WARNING** for optional agent failure or partial completion, **INFO** for retry attempts, **DEBUG** for agent input/output details in verbose mode.
 
 ## Graceful Degradation
 
-### Degradation Paths
+Degradation paths, in order of decreasing completeness: full workflow; optional consultants missing but statistician succeeded; some chapters failed generation or review; no statistical review (user accepts the risk); no audience documents.
 
-1. **Full workflow** (all agents succeed)
-2. **Partial consultant** (optional consultants fail, statistician succeeds)
-3. **Partial chapters** (some chapters fail generation/review)
-4. **No statistical review** (fact-checker fails, user accepts risk)
-5. **No audience documents** (Phase 7 fails, user accepts)
-
-### Degradation Warnings
-
-When degraded workflow completes, show summary:
+When a degraded workflow completes, summarize what is missing:
 
 ```
 Workflow Complete (with degradation)
@@ -415,41 +195,17 @@ Generated outputs:
 Recommendation: Manually review Chapter 3 algorithms and Chapter 4 statistics.
 ```
 
-## Recovery Best Practices
+## Recovery Practices
 
-### When to Retry vs Abort
+Retry on a single isolated failure, a transient error, or a first occurrence in the session. Abort when the same agent fails 3+ times, when more than 50% of a parallel group fails, or when the user asks.
 
-**Retry when:**
-- Single agent failure (not pattern)
-- Network/timeout error (transient)
-- First occurrence in session
+Checkpoint session state before spawning parallel agents, before user approval gates, and before document generation, so that user-provided context, approval decisions, and statistical interview progress survive a failure.
 
-**Abort when:**
-- Same agent fails 3+ times
-- >50% parallel agents fail
-- Circuit breaker opens twice
-- User requests abort
-
-### Preserving User Progress
-
-Always checkpoint before:
-- Spawning parallel agents
-- User approval gates
-- Notebook generation
-
-Never lose:
-- User-provided context
-- Approval decisions
-- Statistical interview progress
-
-### Post-Failure Diagnostics
-
-When session aborts or errors, provide:
+When a session aborts, report:
 
 ```
 Session Summary
 
-Duration: {elapsed_time}
 Completed: Phases {completed_list}
 Failed at: Phase {phase} - {agent}
 

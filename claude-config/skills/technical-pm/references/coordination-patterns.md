@@ -214,7 +214,7 @@ or defer to Economist agent?
 **Symptom**: Agent can't find parameter, data unavailable, literature search yields nothing
 
 **Diagnosis questions**:
-- Have we searched exhaustively? (PubMed, Google Scholar, citation chaining)
+- Which sources have we searched? (PubMed, Google Scholar, citation chaining)
 - Are we using correct keywords? (biological vs. clinical terminology)
 - Is information actually published, or do we need experimental data?
 
@@ -286,14 +286,14 @@ or defer to Economist agent?
 
 ---
 
-## Agent Timeout Response Flowchart
+## Agent Off-Target Response Flowchart
 
 ```
-Agent working >30 min without progress update
+Agent returns, or a milestone boundary is reached
 │
-├─ Check progress file: Is agent making progress?
-│   ├─ YES (recent updates, milestones advancing) → Continue monitoring, check again in 30 min
-│   └─ NO (no updates, or repeated failed attempts) → INTERVENTION NEEDED
+├─ Check output: Is the agent making progress?
+│   ├─ YES (milestones advancing) → Continue, re-check at the next milestone
+│   └─ NO (no output, or repeated failed attempts) → INTERVENTION NEEDED
 │       │
 │       ├─ Diagnose issue:
 │       │   ├─ Overly broad scope → Narrow focus
@@ -309,15 +309,15 @@ Agent working >30 min without progress update
 └─ Agent completes or reaches new milestone → Update work plan, check for handoffs
 ```
 
-**Key principle**: Intervene early (30 min) to prevent waste, but don't micromanage steady progress.
+**Key principle**: Intervene early to prevent waste, but don't micromanage steady progress.
 
 ---
 
 ## Coordination Anti-Patterns (What NOT to Do)
 
 ### ❌ "Fire and Forget" (Assign task, never check progress)
-**Problem**: Agent spins for hours, blocker undetected until too late
-**Fix**: Progress monitoring every 30-60 min for tasks >1 hour
+**Problem**: Agent spins, blocker undetected until too late
+**Fix**: Check outputs at milestone boundaries
 
 ### ❌ Implicit Dependencies ("Task B depends on Task A")
 **Problem**: Agent doesn't know WHEN to start Task B (after A starts? After A completes? After PM reviews A?)

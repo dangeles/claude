@@ -14,13 +14,6 @@ success_criteria:
   - Convergence metrics calculated and reported
   - Gaps in recent literature documented
 estimated_duration: 45-90 min for review discovery (parallel), 60-120 min for deep section research
-extended_thinking_budget: 8192-16384
-metadata:
-  use_extended_thinking_for:
-    - Convergence tracking across diverse search strategies
-    - Priority scoring with multiple factors (recency, citations, journal quality)
-    - Deep synthesis of 15-30 papers within section scope
-    - Identifying contradictions and knowledge gaps
 ---
 
 # Literature Researcher

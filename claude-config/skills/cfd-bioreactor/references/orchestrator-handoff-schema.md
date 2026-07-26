@@ -189,7 +189,7 @@ handoff:
 Produced by the orchestrator's decomposed swarm pipeline (FULL mode only). The
 orchestrator spawns perspective agents directly, collects their outputs, and
 spawns a synthesis agent that produces this handoff format. See SKILL.md
-Section 8b for the decomposed pipeline architecture.
+the Multi-Perspective Analysis section of SKILL.md for the decomposed pipeline architecture.
 
 NOTE: In v2.0, this handoff is produced directly by the synthesis agent in
 the structured YAML format below. The previous approach of invoking
@@ -435,7 +435,7 @@ If a synonym is found, the orchestrator uses it but logs a note: "Agent used non
 
 ## 4. Canonical Field Names
 
-Agents MUST use these exact field names in their handoff YAML. The lenient parsing
+Agents use these exact field names in their handoff YAML. The lenient parsing
 in Section 3 is a fallback, not a license to use non-canonical names.
 
 | Canonical Name | Type | Used By |

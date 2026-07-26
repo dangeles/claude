@@ -126,12 +126,12 @@ Agent SKILL.md files reference domain concepts by name (e.g., "check SUPG stabil
 values live exclusively in reference files.
 
 **Rules**:
-1. Agent SKILL.md files MUST NOT contain formulas, numerical constants, or parameter values.
+1. Agent SKILL.md files do not contain formulas, numerical constants, or parameter values.
 2. All numerical and formula knowledge lives exclusively in the reference files listed above.
 3. Agents load the relevant reference sections at invocation time via the Read tool.
-4. **Exception**: The orchestrator's Section 13 (Code Generation Protocol) embeds safety-critical
-   "ALWAYS" and "NEVER" rules inline. These rules must always be in the orchestrator's context
-   because they guard against code-level errors that could produce silently wrong results.
+4. **Exception**: the orchestrator's Code Generation Protocol embeds its include-in-every-script
+   and avoid rules inline, because they guard against code-level errors that could produce
+   silently wrong results.
 
 ### 4b. Authority and Known Discrepancies
 

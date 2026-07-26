@@ -2,25 +2,27 @@
 
 Templates for invoking each specialist via the Task tool. Fill all `{placeholder}` values from session state and handoff files before dispatching.
 
-## Pre-conditions (verify before filling ANY template)
+## Contents
 
-1. Session directory exists: confirm `SESSION_DIR` is set and the directory is readable
-2. Session state file is readable: `${SESSION_DIR}/session-state.json` exists and parses
-3. Source handoff files exist before pasting their content
-4. No unresolved `{placeholder}` strings remain in the filled template
+- Content gate for Phase 1 handoff
+- Paste verbatim discipline
+- Template: Dispatch to systems-architect (Phase 3)
+- Template: Dispatch to senior-developer (Phase 4)
+- Template: Dispatch to senior-developer (Phase 4 Step 0 Pre-flight)
+- Template: Dispatch to junior-developer (Phase 4)
+- Template: Dispatch to copilot (Phase 5)
+- Template: Dispatch to mathematician (Phase 4)
+- Template: Dispatch to statistician (Phase 4)
 
-## Content validation for Phase 1 handoff
+## Content gate for Phase 1 handoff
 
-Before pasting requirements into any template, verify:
-
-- `requirements.problem_statement` is non-empty (> 50 characters)
-- `requirements.success_criteria` has at least 1 entry
-
-If either check fails: do NOT proceed with the dispatch. Return to Phase 1 for requirements clarification.
+Before pasting requirements into any template, check that `requirements.problem_statement`
+is non-empty (> 50 characters) and `requirements.success_criteria` has at least 1 entry.
+If either check fails, return to Phase 1 for requirements clarification instead of dispatching.
 
 ## Paste verbatim discipline
 
-When filling templates with handoff content, paste VERBATIM from source handoff files. Do not summarize, paraphrase, or editorialize. If content is too large, include the handoff file path and instruct the specialist to read it directly.
+Fill templates with content copied verbatim from the source handoff files rather than summaries or paraphrases. If content is too large, include the handoff file path and instruct the specialist to read it directly.
 
 ---
 
@@ -45,13 +47,13 @@ Use the systems-architect skill to design the system architecture.
 4. Specialist assignment flags per component (requires_mathematician, requires_statistician, requires_notebook_writer with rationale)
 
 ## Required Handoff Field
-Your architecture handoff YAML MUST include: `producer: "systems-architect"`
+Your architecture handoff YAML includes: `producer: "systems-architect"`
 
 ## Constraints
 - Output must follow architecture_handoff schema (see handoff-schema.md)
 - All components must have defined interfaces (inputs/outputs)
 - Implementation order must be specified
-- Each component MUST include specialist_flags with explicit boolean values and rationale field
+- Each component includes specialist_flags with explicit boolean values and a rationale field
 - SIMPLE mode minimum: at least 1 component with interfaces, 1 technology choice rationale, 1 testing strategy
 ```
 
@@ -90,10 +92,9 @@ Use the senior-developer skill to implement the following component.
 - Code handoff YAML at: {SESSION_DIR}/handoffs/phase4-code-handoff-{task_id}.yaml
 
 ## Delegation Instruction
-If this task contains multiple independently implementable subtasks, you MUST evaluate
-whether any subtasks are suitable for junior-developer delegation (see your Delegation
-Evaluation step). Document your delegation decision in your code handoff regardless of
-the outcome.
+If this task contains multiple independently implementable subtasks, consider whether any
+are suitable for junior-developer delegation (see your Delegation Evaluation step).
+Document your delegation decision in your code handoff either way.
 ```
 
 ---
@@ -184,7 +185,7 @@ Note: Copilot performs static code review (Read-based analysis only). Automated 
 ## Expected Output
 Write a review document to: {SESSION_DIR}/deliverables/copilot-review.md
 
-The review MUST include:
+The review includes:
 - CRITICAL issues (must fix before merge) — with file:line, description, impact, fix
 - MAJOR issues (should fix) — with file:line and suggestion
 - MINOR issues (nice to have)

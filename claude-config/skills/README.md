@@ -99,7 +99,7 @@ primary home.
 | **copilot** | Inline code review during development — real-time, adversarial-but-collaborative second opinion. |
 | **completion-verifier** | Before marking a task complete or handing off — verifying requirements, edge cases, tests, no regressions. |
 | **edge-case-analyst** | BEFORE implementation — identifying failure scenarios while planning features. |
-| **systematic-troubleshooter** | Systematic debugging of errors/bugs, with extended thinking for multi-layer issues. |
+| **systematic-troubleshooter** | Systematic debugging of errors/bugs, including multi-layer issues. |
 | **git-strategy-advisor** | Deciding integration strategy — branch vs. commit, when to push, PR vs. merge. |
 
 ### 📐 Quantitative, Modeling & Visualization

@@ -47,7 +47,7 @@ The junior-developer skill handles well-scoped implementation tasks that have cl
 - Require external service integration
 - Have dependencies on unfinished work
 
-**On receiving unclear task**: Do NOT proceed. Request clarification from senior-developer or programming-pm with specific questions.
+**On receiving an unclear task**: request clarification from senior-developer or programming-pm with specific questions rather than implementing against a guess.
 
 ## Archival Compliance
 
@@ -239,33 +239,15 @@ class TestValidateEmail:
 
 ## Pre-Flight: Architecture Context
 
-**When to read**: Before starting implementation (Step 3 of Standard Task Workflow).
+If `.architecture/context.md` exists in the project root, read it before implementing to see which modules you're touching and what depends on them. Its Quick Reference Index lists each module's Modification Risk:
 
-**Purpose**: Understand which modules you're modifying and what depends on them.
+- **Low**: Foundation modules with no dependents → safe to modify
+- **Medium**: Core modules with few dependents → check dependents
+- **High**: Application-layer modules with many dependents → be careful with interface changes
 
-### Check for Architecture Context Document
+Also review the "Intended Usage Patterns" section for your module. If the document doesn't exist, proceed with implementation.
 
-```bash
-# Check if .architecture/context.md exists in project root
-if [ -f .architecture/context.md ]; then
-  echo "Architecture context available"
-fi
-```
-
-**If context document exists**:
-
-1. **Read the Quick Reference Index** (at top of document)
-2. **Find your module** in the table
-3. **Check the Modification Risk column**:
-   - **Low**: Foundation modules with no dependents → Safe to modify
-   - **Medium**: Core modules with few dependents → Check dependents
-   - **High**: Application-layer modules with many dependents → Be careful with interface changes
-4. **Review "Intended Usage Patterns"** section for your module
-
-**If context document does NOT exist**:
-- Proceed with implementation (no pre-flight requirement)
-
-**Note**: You don't need to report architecture discrepancies—focus on implementing the assigned task correctly. senior-developer will handle architecture drift detection during code review.
+You don't need to report architecture discrepancies — senior-developer handles drift detection during code review.
 
 ## Workflow
 
@@ -280,11 +262,8 @@ fi
 3. **Analyze context** - Read existing code patterns in the project
 4. **Implement** - Write code following specification exactly
 5. **Write tests** - Cover all examples plus edge cases
-6. **Self-check**:
-   - Run tests: `pytest tests/path/to/test_file.py -v`
-   - Run linter: `ruff check src/path/to/file.py`
-   - Verify: All acceptance criteria met?
-7. **Submit for review** - Create deliverable with self-check results
+6. **Run checks** - `pytest tests/path/to/test_file.py -v` and `ruff check src/path/to/file.py`
+7. **Submit for review** - Create deliverable with check results
 
 ### Handling Unclear Requirements
 
@@ -307,7 +286,7 @@ When task specification is unclear:
 - [What you need to proceed]
 ```
 
-**Do NOT implement based on assumptions for critical behavior**. Wait for clarification.
+For behavior that is critical to get right, wait for clarification rather than implementing against an assumption.
 
 ## Revision Cycle Protocol
 
@@ -327,7 +306,7 @@ When task specification is unclear:
 
 1. **Read all feedback** before making changes
 2. **Make changes** addressing each required item
-3. **Re-run self-check** (tests, linter)
+3. **Re-run tests and linter**
 4. **Update deliverable** with revision notes:
 
 ```yaml
@@ -347,9 +326,9 @@ junior_deliverable:
 
 ### Revision Cycle Limit
 
-**Maximum 3 revision cycles**. If not resolved after 3 cycles:
+Maximum 3 revision cycles. If not resolved after 3 cycles:
 
-1. **Do not continue revising** - Escalate to senior-developer
+1. **Stop revising** - Escalate to senior-developer
 2. **Document blockers**:
    ```markdown
    ## Escalation: TASK-001-A
@@ -369,55 +348,29 @@ junior_deliverable:
 
 ## Quality Standards
 
-### Code Requirements
+**Code**: function signature matches the specification exactly, type hints on all functions, `ruff` clean.
 
-- [ ] Function signature matches specification exactly
-- [ ] All acceptance criteria met
-- [ ] Type hints on all functions
-- [ ] Docstring with Args, Returns, Examples
-- [ ] No linting errors (ruff clean)
+**Tests**: cover the provided examples, edge cases (empty input, boundary values), and any specified error conditions. Test names describe what they test, and tests are independent of each other.
 
-### Test Requirements
-
-- [ ] Tests cover all provided examples
-- [ ] Tests cover edge cases (empty input, boundary values)
-- [ ] Tests cover error conditions (if specified)
-- [ ] Test names describe what they test
-- [ ] Tests are independent (no shared state)
-
-### Documentation Requirements
-
-- [ ] Module docstring explains purpose
-- [ ] Function docstrings complete (Args, Returns, Examples)
-- [ ] Complex logic has inline comments
-- [ ] Any assumptions documented
+**Documentation**: module docstring explaining purpose; function docstrings with Args, Returns, and Examples; inline comments on complex logic; assumptions recorded in the deliverable notes.
 
 ## Progress Reporting
 
-Update progress file every 15 minutes during active work:
-
-**File**: `/tmp/progress-{task-id}.md`
+Write `/tmp/progress-{task-id}.md` when a milestone completes or when you hit a blocker:
 
 ```markdown
 # Progress: TASK-001-A
 
 **Status**: In Progress | Complete | Blocked | Awaiting Review
-**Last Update**: 2026-02-03 14:32:15
-**Completion**: 75%
 
 ## Completed
-- Implemented validate_email function
-- Added basic unit tests
+- Implemented validate_email function, added basic unit tests
 
-## In Progress
+## Next
 - Writing edge case tests
 
 ## Blockers
 - None
-
-## Time Remaining
-- Estimated: 15 minutes
-- Time limit: 1h (45 min elapsed)
 ```
 
 ## Example

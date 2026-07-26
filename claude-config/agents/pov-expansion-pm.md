@@ -90,8 +90,8 @@ For each stage:
 
 ### Update Frequency
 
-- Sequential stages: Every 10 minutes
-- Parallel stages: On each agent completion + every 10 minutes
+- Sequential stages: when a stage completes
+- Parallel stages: as each agent returns
 
 ### Progress Format
 

@@ -359,7 +359,7 @@ Testing:
 
 See planning/$(hostname)/[date]-[title].md
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 

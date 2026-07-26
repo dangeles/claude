@@ -2,6 +2,8 @@
 
 > Canonical reference for orchestrator skill patterns extracted from 8 existing orchestrators.
 > This document is the single source of truth. Other files reference it, not duplicate it.
+> Tiers describe how widely a pattern is adopted and how strong the evidence is — they are
+> not mandates. Apply a pattern where it fits the orchestrator's architecture.
 
 **Version**: 1.0
 **Last Updated**: 2026-02-07
@@ -9,6 +11,20 @@
 **Next Review**: When a new orchestrator is created or modified
 
 **Staleness Warning**: If current date is more than 90 days past Last Updated, patterns may not reflect recent orchestrator changes. Consider running a refresh analysis.
+
+## Contents
+
+- What Is an Orchestrator Skill?
+- Pattern Classification Methodology
+- Pattern Categories
+- Core Patterns (1-6)
+- Common Patterns (7-10)
+- Emerging Patterns (11)
+- Pattern Interactions
+- Anti-Patterns
+- Industry Considerations
+- Pattern Evolution Protocol
+- Cross-Orchestrator Coverage Matrix
 
 ---
 
@@ -42,12 +58,12 @@ Score the target skill against these signals (0-7 possible):
 
 Patterns are classified into 4 evidence-based tiers:
 
-| Tier | Criteria | Severity |
+| Tier | Criteria | Strength |
 |------|----------|----------|
-| **Best Practice** | 4+ orchestrators, independently discovered, demonstrated effectiveness | REQUIRED |
-| **Strong Practice** | 4+ orchestrators OR 2+ with strong evidence, independently discovered | RECOMMENDED |
-| **Common Practice** | 2-3 orchestrators, may be propagated rather than independently discovered | RECOMMENDED |
-| **Promising Pattern** | 1 orchestrator, insufficient evidence for broader classification | OPTIONAL |
+| **Best Practice** | 4+ orchestrators, independently discovered, demonstrated effectiveness | core |
+| **Strong Practice** | 4+ orchestrators OR 2+ with strong evidence, independently discovered | common |
+| **Common Practice** | 2-3 orchestrators, may be propagated rather than independently discovered | common |
+| **Promising Pattern** | 1 orchestrator, insufficient evidence for broader classification | emerging |
 
 ---
 
@@ -60,46 +76,42 @@ Patterns are classified into 4 evidence-based tiers:
 
 ---
 
-## REQUIRED Patterns (6 patterns)
+## Core Patterns (6 patterns, widely adopted)
 
 ### Pattern 1: Delegation Mandate
 
-**Classification**: Best Practice | **Severity**: REQUIRED | **Adoption**: 4/8
+**Classification**: Best Practice | **Strength**: core | **Adoption**: 4/8
 
 **Source orchestrators**: programming-pm (Delegation Mandate section), lit-pm (Delegation Mandate section), scientific-analysis-architect (Delegation Mandate section), brainstorming-pm (Delegation Mandate section)
 
 **Evidence**: Prevents context bloat by keeping specialist instructions out of orchestrator context. All 4 implementations were independently developed with consistent structure.
 
-**Variants**:
-- **Formal anti-resistance table** (programming-pm only): Full Rationalization/Reality table with 5+ entries
-- **Self-check prompt** (lit-pm, scientific-analysis-architect, brainstorming-pm): Briefer "Am I about to do specialist work?" prompt with 2-3 rationalization examples
+**Note on the older variants**: earlier implementations paired the mandate with an
+anti-resistance Rationalization/Reality table and a "am I about to do specialist work?"
+self-check. Those push delegation of trivial work, which costs more than it returns. Use the
+proportional template below instead.
 
-**Template** (formal variant):
+**Template**:
 
 ```markdown
-## Delegation Mandate
+## Delegation
 
-You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
-**You ARE the coordinator who ensures** [actions] happen through delegation.
-**You are NOT** a [specialist]. You do not [specialist actions].
-**Orchestrator-owned tasks**: Session setup, state management, quality gate evaluation, user communication, workflow routing.
+You are the orchestrator. Delegate specialist work when the subtask is substantial and
+independent — [domain-appropriate examples]. Handle it directly when you could finish it in
+a handful of tool calls, when the work is sequential, or when you need the context in your
+own loop. See `../references/delegation-and-scope.md`.
 
-### When You Might Be Resisting Delegation
-| Rationalization | Reality |
-|----------------|---------|
-| "This is too simple to delegate" | Simple tasks still consume context window. Delegate. |
-| "I can do it faster myself" | Speed is not the goal; context isolation is. |
-
-**Self-check**: "Am I about to load specialist instructions into my context? If yes, use Task tool."
+You own: session setup, state management, gate evaluation, user communication, and workflow
+routing.
 ```
 
-**Applicability**: All orchestrator skills. Skip only if the skill has a single phase with no delegation.
+**Applicability**: orchestrator skills that delegate. Skip if the skill has a single phase with no delegation.
 
 ---
 
 ### Pattern 2: State Anchoring
 
-**Classification**: Best Practice | **Severity**: REQUIRED | **Adoption**: 4/8
+**Classification**: Best Practice | **Strength**: core | **Adoption**: 4/8
 
 **Source orchestrators**: programming-pm (State Anchoring section), lit-pm (State Anchoring section), scientific-analysis-architect (State Anchoring section), brainstorming-pm (State Anchoring section)
 
@@ -110,21 +122,18 @@ You are an **orchestrator**. You coordinate specialists -- you do not perform sp
 ```markdown
 ## State Anchoring
 
-Start every response with: `[Phase N/M - {phase_name}] {brief status}`
-
-**Protocol**:
-1. Before starting any phase: Read state file. Confirm current_phase matches expectations.
-2. After any user interaction: Answer the user, then re-anchor with phase indicator.
-3. If phase indicator and state file disagree: Trust state file, not memory.
+Start each response with `[Phase N/M - {phase_name}] {brief status}`. After a user
+interaction, answer first, then re-anchor. The state file is the authoritative record of
+progress; trust it over memory.
 ```
 
-**Applicability**: All orchestrator skills with 2+ phases. Skip for single-phase orchestrators.
+**Applicability**: orchestrator skills with 2+ phases. Skip for single-phase orchestrators.
 
 ---
 
 ### Pattern 3: Tool Selection Table
 
-**Classification**: Best Practice | **Severity**: REQUIRED | **Adoption**: 4/8
+**Classification**: Best Practice | **Strength**: core | **Adoption**: 4/8
 
 **Source orchestrators**: programming-pm (Tool Selection section), lit-pm (Tool Selection section), scientific-analysis-architect (Tool Selection section), brainstorming-pm (Tool Selection section)
 
@@ -143,17 +152,15 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 | User interaction | AskUserQuestion | Structured communication |
 | File operations | Write/Edit tool (via executor) | Delegated to specialist |
 | Infrastructure commands | Bash tool | Validation, git, sync |
-
-**Self-check**: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
 ```
 
-**Applicability**: All orchestrator skills that delegate work. Skip for orchestrators that only sequence file operations.
+**Applicability**: orchestrator skills that delegate work. Skip for orchestrators that only sequence file operations.
 
 ---
 
 ### Pattern 4: Error Handling (Structured)
 
-**Classification**: Best Practice | **Severity**: REQUIRED | **Adoption**: 5/8
+**Classification**: Best Practice | **Strength**: core | **Adoption**: 5/8
 
 **Source orchestrators**: programming-pm (Circuit Breaker section), lit-pm (Saga Compensation section), scientific-analysis-architect (Error Handling section), brainstorming-pm (Timeout/Error section), skill-editor (Error Handling section)
 
@@ -172,13 +179,13 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 ## Error Handling
 
 ### Retry Protocol
-- First failure: Wait 30s, retry automatically
-- Second failure: User decision required
+- First unusable result: retry automatically
+- Second unusable result: user decision required
 - Maximum 2 attempts per critical component
 
 ### Graceful Degradation
-- Supplementary component timeout: Proceed without
-- Critical component timeout (after retry): Escalate to user
+- Supplementary component returns nothing usable: proceed without it
+- Critical component returns nothing usable after retry: escalate to user
 
 ### Circuit Breaker
 - If 2+ critical components fail: Stop retrying, escalate to user
@@ -198,31 +205,36 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 
 ### Pattern 5: Timeout Configuration
 
-**Classification**: Best Practice | **Severity**: REQUIRED | **Adoption**: 5/8
+**Classification**: Best Practice | **Strength**: core | **Adoption**: 5/8
 
 **Source orchestrators**: programming-pm (timeout-config.md reference), lit-pm (Timeout Configuration section), scientific-analysis-architect (Timeout Configuration section), brainstorming-pm (Timeout Configuration section), research-pipeline (stage timeout section)
 
-**Evidence**: Prevents indefinite hangs in multi-agent workflows. Orchestrators without timeout configuration have experienced unbounded agent execution.
+**Evidence**: Prevents indefinite hangs in multi-agent workflows. Orchestrators without a bound on each delegated component have experienced unbounded agent execution.
+
+**Note on wall-clock tables**: the original form of this pattern was a per-phase table of
+minute budgets. Claude has no timer and cannot wake itself, so those budgets are not
+enforceable and invite fabricated status. Bound each component by what happens when it
+returns instead.
 
 **Template**:
 
 ```markdown
-## Timeout Configuration
+## Degradation
 
-| Phase | Component | Timeout | Exceeded Action |
-|-------|-----------|---------|-----------------|
-| 1 | [component] | N min | [action] |
-| 2 | [component] | N min | [action] |
-| Global | entire workflow | N hours | Safety ceiling, force escalate |
+| Phase | Component | If it returns nothing usable |
+|-------|-----------|------------------------------|
+| 1 | [component] | [degradation or escalation action] |
+| 2 | [component] | [degradation or escalation action] |
+| Global | entire workflow | After N failed components, stop and escalate |
 ```
 
-**Applicability**: All orchestrator skills that delegate to agents. Skip for orchestrators that only perform file operations.
+**Applicability**: orchestrator skills that delegate to agents. Skip for orchestrators that only perform file operations.
 
 ---
 
 ### Pattern 6: Session Management
 
-**Classification**: Best Practice | **Severity**: REQUIRED | **Adoption**: 5/8
+**Classification**: Best Practice | **Strength**: core | **Adoption**: 5/8
 
 **Source orchestrators**: skill-editor (Pre-Workflow section), programming-pm (Session Management section), lit-pm (Session Management section), scientific-analysis-architect (Session Management section), brainstorming-pm (atomic writes section)
 
@@ -244,15 +256,15 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 - **Resume Protocol**: On invocation, check for existing session; offer resume from last completed phase
 ```
 
-**Applicability**: All orchestrator skills with workflows longer than 10 minutes. Skip for quick single-pass orchestrators.
+**Applicability**: orchestrator skills whose work spans several phases and could be interrupted mid-run. Skip for quick single-pass orchestrators.
 
 ---
 
-## RECOMMENDED Patterns (4 patterns)
+## Common Patterns (4 patterns)
 
 ### Pattern 7: Handoff Schema
 
-**Classification**: Strong Practice | **Severity**: RECOMMENDED | **Adoption**: 4/8
+**Classification**: Strong Practice | **Strength**: common | **Adoption**: 4/8
 
 **Source orchestrators**: programming-pm (Handoff Schema section with validation scripts), lit-pm (Handoff Schema v1.1), research-pipeline (Handoff v1.0), brainstorming-pm (perspective-swarm handoffs)
 
@@ -264,7 +276,7 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 
 ### Pattern 8: Pre-Flight Validation
 
-**Classification**: Strong Practice | **Severity**: RECOMMENDED | **Adoption**: 2/8
+**Classification**: Strong Practice | **Strength**: common | **Adoption**: 2/8
 
 **Source orchestrators**: programming-pm (Pre-Flight Validation section), lit-pm (Dependency Check section)
 
@@ -276,7 +288,7 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 
 ### Pattern 9: Mode Selection / Complexity Detection
 
-**Classification**: Common Practice | **Severity**: RECOMMENDED | **Adoption**: 3/8
+**Classification**: Common Practice | **Strength**: common | **Adoption**: 3/8
 
 **Source orchestrators**: skill-editor (Mode Selection section), programming-pm (Complexity Detection section), lit-pm (Adaptive Orchestration section)
 
@@ -291,7 +303,7 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 
 ### Pattern 10: Handoff Frontmatter
 
-**Classification**: Common Practice | **Severity**: RECOMMENDED | **Adoption**: 3/8
+**Classification**: Common Practice | **Strength**: common | **Adoption**: 3/8
 
 **Source orchestrators**: programming-pm (YAML frontmatter), lit-pm (YAML frontmatter), brainstorming-pm (YAML frontmatter)
 
@@ -301,11 +313,11 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 
 ---
 
-## OPTIONAL Patterns (1 pattern)
+## Emerging Patterns (1 pattern)
 
 ### Pattern 11: Quality Gate Override Protocol
 
-**Classification**: Promising Pattern | **Severity**: OPTIONAL | **Adoption**: 1/8
+**Classification**: Promising Pattern | **Strength**: emerging | **Adoption**: 1/8
 
 **Source orchestrators**: programming-pm (Gate Override Protocol section)
 
@@ -339,10 +351,10 @@ Start every response with: `[Phase N/M - {phase_name}] {brief status}`
 The delegation mandate says "don't do specialist work." Pre-flight validation requires the orchestrator to read skill files to check dependencies. **Resolution**: Pre-flight checks are infrastructure/routing work, not specialist analysis. Reading a file to check existence is not the same as reading it to perform specialist analysis.
 
 **2. Delegation Mandate vs Tool Selection**
-Tool Selection says "use Read tool for routing decisions." This can blur the line with specialist work. **Resolution**: The self-check prompt ("Am I loading specialist instructions to do their work?") distinguishes routing reads from specialist reads.
+Tool Selection says "use Read tool for routing decisions." This can blur the line with specialist work. **Resolution**: reading to route is not the same as reading to perform the analysis; the distinction is whether the orchestrator is about to produce the specialist's deliverable itself.
 
 **3. Mode Selection vs Delegation**
-Simple mode may tempt the orchestrator to skip delegation entirely. **Resolution**: Mode selection controls which phases run, not whether delegation happens within a phase.
+A lightweight mode may skip delegation entirely, and for a small change that is the correct outcome. **Resolution**: mode selection controls both which phases run and whether a phase's work is worth delegating; a phase can legitimately run in the orchestrator's own loop.
 
 ---
 
@@ -359,7 +371,7 @@ Simple mode may tempt the orchestrator to skip delegation entirely. **Resolution
 
 ## Industry Considerations (Advisory)
 
-The following patterns are recognized in industry orchestrator frameworks but are NOT present in our current orchestrators. They are noted here for awareness only -- they are not formal patterns and should not be enforced.
+The following patterns are recognized in industry orchestrator frameworks but are not present in our current orchestrators. They are noted here for awareness only -- they are not formal patterns and are not enforced.
 
 1. **Observability/Telemetry**: Structured logging with correlation IDs for tracing agent execution
 2. **Idempotency Guarantees**: Ensuring re-running a phase produces the same result
@@ -386,15 +398,15 @@ This document was created by skill-editor modifying itself -- a self-modificatio
 
 ### Adding New Patterns
 
-1. **1 orchestrator adopts** a new pattern: Add as OPTIONAL (Promising Pattern)
-2. **2-3 orchestrators adopt** with some evidence: Promote to RECOMMENDED (Common/Strong Practice)
-3. **4+ orchestrators adopt** with demonstrated effectiveness: Promote to REQUIRED (Best Practice)
+1. **1 orchestrator adopts** a new pattern: add as emerging (Promising Pattern)
+2. **2-3 orchestrators adopt** with some evidence: promote to common (Common/Strong Practice)
+3. **4+ orchestrators adopt** with demonstrated effectiveness: promote to core (Best Practice)
 
 ### Deprecating Patterns
 
-1. If evidence shows a pattern is ineffective: REQUIRED -> RECOMMENDED
-2. If no orchestrator uses the pattern after 2 review cycles: RECOMMENDED -> removed
-3. OPTIONAL patterns with no second adoption after 6 months: Consider removal
+1. If evidence shows a pattern is ineffective: core -> common
+2. If no orchestrator uses the pattern after 2 review cycles: common -> removed
+3. Emerging patterns with no second adoption after 6 months: consider removal
 
 ### Review Triggers
 

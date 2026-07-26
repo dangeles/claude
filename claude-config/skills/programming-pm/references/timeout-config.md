@@ -2,13 +2,25 @@
 
 Reference for timeout thresholds and intervention protocols in programming-pm orchestrated projects.
 
+## Contents
+
+- Overview
+- Per-Phase Timeouts
+- Per-Specialist Timeouts
+- Progress Reporting
+- Timeout Detection Protocol
+- Timeout Intervention Protocol
+- Circuit Breaker Pattern
+- Global Workflow Timeout
+- Configuration Customization
+
 ---
 
 ## Overview
 
-Timeouts prevent stuck workflows and enable proactive intervention. The programming-pm monitors progress and intervenes when specialists exceed expected durations.
-
-**Principle**: Better to intervene early than wait for complete stall.
+Timeouts prevent stuck workflows and enable proactive intervention. The tables below are duration
+expectations, not a polling schedule: they tell programming-pm what "too long" looks like when a
+specialist returns late, returns nothing usable, or reports itself blocked.
 
 ---
 
@@ -110,11 +122,11 @@ Default timeouts for specialist tasks.
 
 ---
 
-## Progress Monitoring
+## Progress Reporting
 
 ### Progress File Format
 
-Each specialist updates a progress file every 15 minutes during active work.
+Specialists write a progress file for long-running work.
 
 **Location**: `/tmp/progress-{task-id}.md`
 
@@ -142,42 +154,24 @@ Each specialist updates a progress file every 15 minutes during active work.
 - Time limit: Z min
 ```
 
-### Progress Check Frequency
-
-| Phase | Check Frequency | Staleness Threshold |
-|-------|-----------------|---------------------|
-| Active implementation | Every 15 min | 30 min |
-| Code review | Every 10 min | 20 min |
-| Architecture | Every 15 min | 30 min |
-| All others | Every 10 min | 20 min |
-
-**Staleness**: If progress file not updated within staleness threshold, trigger intervention.
-
 ---
 
 ## Timeout Detection Protocol
 
-### Detection Steps
+Read the progress file when a specialist returns late, returns nothing usable, or reports itself
+blocked. Then:
 
-1. **Check progress file** at configured frequency
-2. **Compare timestamps**:
-   - Last update vs. current time
-   - Elapsed time vs. warning threshold
-   - Elapsed time vs. timeout threshold
-3. **Assess completion**:
-   - Is completion percentage increasing?
-   - Are next steps being completed?
-4. **Evaluate blockers**:
-   - Are blockers documented?
-   - Have blockers changed?
+1. **Compare timestamps**: last update vs. now; elapsed vs. warning threshold; elapsed vs. timeout threshold
+2. **Assess completion**: is the completion percentage moving, are next steps being closed out
+3. **Evaluate blockers**: are they documented, have they changed
 
 ### Detection Outcomes
 
 | Condition | Status | Action |
 |-----------|--------|--------|
-| Progress updating, on track | Green | Continue monitoring |
-| Progress updating, behind schedule | Yellow | Increase check frequency |
-| Progress stale, approaching timeout | Orange | Send warning, offer options |
+| Progress updating, on track | Green | Let the specialist finish |
+| Progress updating, behind schedule | Yellow | Note it, prepare narrowing options |
+| Progress stale, approaching timeout | Orange | Warn, offer options |
 | Progress stale, exceeded timeout | Red | Trigger intervention |
 | Blockers documented | Blue | Review blockers, assist |
 
@@ -247,7 +241,6 @@ Based on user selection:
 action: extend
 new_timeout: {current + extension}
 notes: "Extended by user decision"
-continue_monitoring: true
 ```
 
 **Narrow Scope**:
@@ -377,8 +370,6 @@ After user intervention and successful retry:
 
    Note: State is automatically checkpointed.
    ```
-
-3. **If no response within 24 hours**: Auto-checkpoint and pause
 
 ---
 

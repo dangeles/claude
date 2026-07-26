@@ -9,7 +9,7 @@ producing generic advice.
 **Usage**: The orchestrator reads the appropriate template below, fills in the
 placeholder variables `{...}` with values from the problem specification and
 preceding phase results, then passes the filled template to each perspective
-agent via parallel Task tool invocations (see SKILL.md Section 8b).
+agent via parallel Task tool invocations (see Multi-Perspective Analysis in SKILL.md).
 
 **Swarm invocation**: FULL mode only. LITE and DIRECT modes skip all perspective steps.
 
@@ -260,7 +260,8 @@ agents CAN use Read tool, but inline delivery is more reliable):
 ### Current Protocol (v2.0 Decomposed Pipeline)
 
 The synthesis agent produces a structured swarm-synthesis handoff YAML directly
-(see SKILL.md Section 8b and orchestrator-handoff-schema.md Section 2c). No
+(see Multi-Perspective Analysis in SKILL.md and orchestrator-handoff-schema.md
+Section 2c). No
 extraction from prose is needed.
 
 The orchestrator validates the synthesis handoff:
@@ -301,5 +302,5 @@ integration design and is retained for reference:
 4. Assess confidence and map to 1-5 integer score
 5. Construct swarm-synthesis handoff YAML
 
-This protocol is no longer used because the decomposed pipeline (Section 8b
-of SKILL.md) produces structured YAML output directly via the synthesis agent.
+This protocol is no longer used because the decomposed pipeline (Multi-Perspective
+Analysis in SKILL.md) produces structured YAML output directly via the synthesis agent.

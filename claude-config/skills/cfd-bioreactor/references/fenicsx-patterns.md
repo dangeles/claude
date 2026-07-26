@@ -1,21 +1,21 @@
 # FEniCSx v0.10 Code Patterns Library
 
-> **Purpose**: Canonical code patterns for FEniCSx v0.10 API. All generated scripts
-> MUST use these patterns. This is the single authoritative source for FEniCSx code
-> in the cfd-bioreactor skill. Every code block here has been verified against the
-> FEniCSx v0.10 API surface.
+> **Purpose**: Canonical code patterns for FEniCSx v0.10 API. Generated scripts use
+> these patterns. This is the single authoritative source for FEniCSx code in the
+> cfd-bioreactor skill. Every code block here has been verified against the FEniCSx
+> v0.10 API surface.
 >
 > **Version target**: FEniCSx (dolfinx) 0.10.x, Basix 0.10.x, gmsh >= 4.11
 >
-> **Anti-pattern**: NEVER generate code using the legacy `dolfin` or `fenics` API.
-> NEVER use `from dolfin import *`. NEVER use `FunctionSpace()` (capital F).
-> NEVER use `dolfinx.io.gmshio` (renamed to `dolfinx.io.gmsh` in v0.10).
+> **Anti-patterns**: the legacy `dolfin` or `fenics` API, `from dolfin import *`,
+> `FunctionSpace()` (capital F), and `dolfinx.io.gmshio` (renamed to
+> `dolfinx.io.gmsh` in v0.10).
 
 ---
 
 ## 1. Version Assertion Pattern
 
-Every generated script MUST begin with this version check immediately after imports.
+Every generated script begins with this version check immediately after imports.
 
 ```python
 # === Version Assertion (REQUIRED) ===
@@ -85,7 +85,7 @@ and the `NewtonSolver` import from `dolfinx.nls.petsc` reflect the v0.10 API. If
 future v0.10.x patch release changes these paths, update this section first. The
 executor verified these paths against the v0.10.0 release notes and DOLFINx source.
 
-**Anti-pattern -- NEVER use these**:
+**Anti-pattern -- do not use these**:
 ```python
 # WRONG: Legacy FEniCS (pre-FEniCSx)
 from dolfin import *
@@ -328,7 +328,7 @@ F_ns = (
 J_ns = ufl.derivative(F_ns, w, ufl.TrialFunction(W))
 ```
 
-### Newton Continuation Pattern (CRITICAL)
+### Newton Continuation Pattern
 
 Direct Newton iteration on high-Re Navier-Stokes often diverges. Use this
 three-stage continuation strategy:
@@ -874,7 +874,7 @@ print(f"  Average outlet velocity: {u_avg_outlet:.6e} m/s")
 
 ## 12. PyVista Visualization
 
-Always detect headless environments and save output files (screenshots + VTK)
+Detect headless environments and save output files (screenshots + VTK)
 regardless of whether interactive display is available.
 
 ### Setup and Headless Detection
@@ -1251,7 +1251,7 @@ def compute_pointwise_error(domain, uh, u_exact_callable, points):
 
 ## 15. Reproducibility Header
 
-Every generated script MUST include this metadata header after the version check.
+Every generated script includes this metadata header after the version check.
 Fill in all fields programmatically.
 
 ```python

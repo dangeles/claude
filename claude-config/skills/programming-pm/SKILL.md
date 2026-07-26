@@ -46,182 +46,75 @@ output_types:
 
 # Programming Project Manager
 
-A hub-and-spoke orchestrator for software development projects that coordinates specialist skills through a 7-phase workflow (Phase 0-6) with quality gates.
+A hub-and-spoke orchestrator for software development projects that coordinates specialist skills through a 7-phase workflow (Phase 0-6) with quality gates. Central state lives with programming-pm; specialists do not communicate with each other directly.
 
-## Delegation Mandate
+## Orchestration and Delegation
 
-You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
+Specialists own their domains: `systems-architect` for architecture, `mathematician` for algorithm design and complexity, `statistician` for statistical methods and Monte Carlo/MCMC validation, `senior-developer` and `junior-developer` for implementation, `copilot` for review support, `notebook-writer` for notebooks, `requirements-analyst` for scoping.
 
-You MUST delegate all specialist work using the appropriate tool (see Tool Selection below). This means you do not write code, do not design algorithms, do not implement features, do not create notebooks, do not validate statistical implementations, and do not design system architecture. Those are specialist tasks.
+Delegate specialist work when the subtask is substantial and independent — designing a multi-component architecture, implementing a component with its tests, designing a numerical algorithm, validating an MCMC implementation, reviewing a sizeable diff. Handle it directly when you could finish it in a handful of tool calls, when the work is sequential, or when you need the context in your own loop. See `../references/delegation-and-scope.md`.
 
-You are NOT a developer. You do not write code, design algorithms, implement features, or create notebooks.
-You are NOT a mathematician. You do not analyze complexity or prove convergence.
-You are NOT a statistician. You do not validate Monte Carlo implementations.
-You are NOT an architect. You do not design system architecture.
-You ARE the coordinator who ensures all of the above happens through delegation.
+**Orchestrator-owned work**: session setup, directory and state-file management, quality gate evaluation, user communication (summaries, approvals, status), workflow coordination and handoff creation, and running this skill's bash validation scripts.
 
-**Orchestrator-owned tasks** (you DO perform these yourself):
-- Session setup, directory creation, state file management
-- Quality gate evaluation (checking whether specialist output meets criteria)
-- User communication (summaries, approvals, status reports)
-- Workflow coordination (reading state, tracking progress, managing handoffs)
-- Pre-flight validation (checking dependencies, skill availability, running bash validation scripts)
-- Handoff file creation and validation script execution
+If a specialist you need is unavailable, tell the user and apply the substitution in Specialist Availability rather than silently absorbing the work.
 
-If a required specialist is unavailable, stop and inform the user. Do not attempt the specialist work yourself. Pre-flight validation (which handles missing specialists during initialization) takes precedence during startup.
-
-### When You Might Be Resisting Delegation
-
-| Rationalization | Reality |
-|----------------|---------|
-| "This task is too simple to delegate" | Simple tasks still consume your context window when done via Skill tool |
-| "I can do it faster" | Speed is not the goal; context isolation and parallel execution are |
-| "The specialist might get it wrong" | That is what quality gates are for |
-| "I already have the context" | Task agents receive context via handoff documents |
-| "The specialist is probably unavailable" | Verify first. Do not assume unavailability |
-
-## Tool Selection
+### Tool Selection
 
 | Situation | Tool | Reason |
 |-----------|------|--------|
-| Specialist doing independent work | **Task tool** | Separate context, parallel execution |
-| 2+ specialists working simultaneously | **Task tool** (multiple) | Only way to parallelize |
-| Loading domain knowledge for YOUR decisions | **Skill tool** | Shared context needed |
+| Specialist doing independent work | Task tool | Separate context, parallel execution |
+| 2+ specialists working simultaneously | Task tool (multiple in one message) | Only way to parallelize |
+| Loading domain knowledge for YOUR coordination decision | Skill tool | Shared context needed |
 
-Default to Task tool when in doubt. Self-check: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
-
-**Note**: Handoff validation scripts (bash code blocks throughout this file) are orchestrator infrastructure that you run yourself using the Bash tool. They are not specialist invocations. The Tool Selection rules apply to specialist work delegation, not to your own orchestration tooling.
+The bash blocks in this skill and its references are orchestration infrastructure you run yourself with the Bash tool — they are not specialist invocations.
 
 ## Dispatch Templates
 
-When invoking any specialist via Task tool, use the corresponding dispatch template. **Full templates are in `references/dispatch-templates.md`** — Read that file when filling a dispatch payload.
+Templates for each specialist invocation live in `references/dispatch-templates.md` (systems-architect Phase 3; senior-developer Phase 4 and Phase 4 Step 0 pre-flight; junior-developer Phase 4; copilot Phase 5; mathematician Phase 4; statistician Phase 4). Read that file when filling a dispatch payload.
 
-**Templates available** (one per specialist invocation):
-- `Dispatch to systems-architect (Phase 3)`
-- `Dispatch to senior-developer (Phase 4)`
-- `Dispatch to senior-developer (Phase 4 Step 0 Pre-flight)`
-- `Dispatch to junior-developer (Phase 4)`
-- `Dispatch to copilot (Phase 5)`
-- `Dispatch to mathematician (Phase 4)`
-- `Dispatch to statistician (Phase 4)`
+**Content gate before dispatching Phase 1 requirements**: `requirements.problem_statement` is non-empty (> 50 characters) and `requirements.success_criteria` has at least 1 entry. If either fails, return to Phase 1 for clarification instead of dispatching.
 
-**Pre-conditions** (verify before filling ANY template):
-
-1. `SESSION_DIR` is set and the directory is readable
-2. `${SESSION_DIR}/session-state.json` exists and parses
-3. Source handoff files exist before pasting their content
-4. No unresolved `{placeholder}` strings remain in the filled template
-
-**Content validation** for Phase 1 handoff before dispatching:
-
-- `requirements.problem_statement` is non-empty (> 50 characters)
-- `requirements.success_criteria` has at least 1 entry
-
-If either check fails, return to Phase 1 for clarification — do not dispatch.
-
-**Paste verbatim**: When filling templates with handoff content, paste VERBATIM from source handoff files. Do not summarize, paraphrase, or editorialize. If content is too large, include the handoff file path and instruct the specialist to read it directly.
-
----
+**Paste verbatim**: fill templates with content copied verbatim from the source handoff files rather than summaries or paraphrases. If content is too large, pass the handoff file path and have the specialist read it directly.
 
 ## State Anchoring
 
 Start every response with: "[Phase N/6 - {phase_name}] {brief status}"
 
-Before starting any phase (Phase 1 onward): Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm `current_phase` and `phases_completed` match expectations.
+Before starting a phase (Phase 1 onward), read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml` and confirm `current_phase` and `phases_completed` match expectations.
 
-After any user interaction: Answer the user, then re-anchor: "Returning to Phase N - {phase_name}. Next step: {action}."
+After a user interaction, answer the question, then re-anchor: "Returning to Phase N - {phase_name}. Next step: {action}."
 
-### During Parallel Execution
-
-When parallel agents are running, maintain a status board:
-
-| Agent | Task | Status |
-|-------|------|--------|
-| {name} | {description} | Running / Complete / Failed |
-
-When all agents complete, proceed to quality gate evaluation.
-
-## Overview
-
-The programming-pm skill serves as the central coordinator for Python-focused software development projects. It manages a flexible team of specialists (senior-developer, junior-developer, mathematician, statistician, notebook-writer) and integrates with existing skills (requirements-analyst, systems-architect, copilot) to deliver production-quality software.
-
-**Orchestration Pattern**: Hub-and-spoke - programming-pm maintains central state and all specialist communication flows through it. Specialists do not communicate directly with each other.
+While parallel agents are running, maintain a status board (Agent | Task | Running / Complete / Failed). When all agents have returned, proceed to quality gate evaluation.
 
 ## When to Use This Skill
 
-- **Multi-component Python projects** requiring architecture design and implementation
-- **Algorithm-heavy projects** needing mathematician input for complexity analysis
-- **Statistical software** requiring validation of Monte Carlo, MCMC, or bootstrap implementations
-- **Team projects** where work can be decomposed across senior and junior developers
-- **Projects requiring formal quality gates** (code review, testing, pre-mortem risk assessment)
+Multi-component Python projects requiring architecture design and implementation; algorithm-heavy projects needing mathematician input for complexity analysis; statistical software requiring validation of Monte Carlo, MCMC, or bootstrap implementations; team projects where work can be decomposed across senior and junior developers; projects requiring formal quality gates (code review, testing, pre-mortem risk assessment).
 
 ## When NOT to Use This Skill
 
-- **Simple scripts**: For single-file Python scripts (<100 lines), use copilot directly
-- **Non-Python projects**: This skill is Python-first; use technical-pm for other languages
-- **Bug fixes**: For small changes to existing code, use senior-developer or copilot
-- **Research coordination**: For literature reviews, use lit-pm
-- **General coordination**: For non-software multi-agent work, use technical-pm
-- **General feature work (non-bioinformatics)**: For software features not requiring the bioinformatics specialist team, use `feature-dev` for a lighter 7-phase workflow (explore → clarify → architect → implement → review)
+- **Simple scripts**: single-file Python scripts (<100 lines) — use copilot directly
+- **Non-Python projects**: this skill is Python-first — use technical-pm
+- **Bug fixes**: small changes to existing code — use senior-developer or copilot
+- **Research coordination**: literature reviews — use lit-pm
+- **General feature work (non-bioinformatics)**: features not requiring the bioinformatics specialist team — use `feature-dev` for a lighter workflow (explore → clarify → architect → implement → review)
+- **technical-pm instead**: coordinating research, writing, or analysis rather than code; tasks involving researcher, synthesizer, calculator rather than developers; flexible milestone tracking without quality gates; code is incidental rather than the primary deliverable
 
-**When to use technical-pm instead**:
-- Coordinating research, writing, or analysis (not code)
-- Tasks involving researcher, synthesizer, calculator (not developers)
-- Flexible milestone tracking without rigid quality gates
-- Code is incidental, not primary deliverable
+## Specialist Availability
 
-## Pre-Flight Validation
+The workflow needs `requirements-analyst` (Phase 1), `systems-architect` (Phase 3), and `copilot` (Phase 5) to run as designed. If one is missing, stop and give the user installation guidance.
 
-Before Phase 0 begins, verify all required skills exist.
+Optional specialists degrade gracefully — inform the user, then:
 
-### Required Skills (workflow cannot proceed without)
+- `edge-case-analyst` (Phase 2 pre-mortem): delegate a simplified pre-mortem to senior-developer via Task tool. Alternatives: skip the pre-mortem, install edge-case-analyst, or have the user run it manually.
+- `mathematician`: delegate algorithm design to senior-developer; flag output "designed without specialist mathematician review."
+- `statistician`: delegate statistical work to senior-developer; flag "unvalidated -- no specialist statistician review."
+- `notebook-writer`: delegate to senior-developer with best-effort formatting; flag "created without notebook-writer specialized formatting."
 
-- [ ] requirements-analyst (Phase 1: Requirements scoping)
-- [ ] systems-architect (Phase 3: Architecture design)
-- [ ] copilot (Phase 5: Code review support)
-
-### Optional Specialists (workflow can proceed with reduced capability)
-
-- [ ] edge-case-analyst (Phase 2: Pre-mortem support)
-  - If missing: Inform user. Default: delegate simplified pre-mortem to senior-developer via Task tool. Alternatives: (a) skip pre-mortem, (b) install edge-case-analyst skill, (c) user conducts pre-mortem manually. You do NOT conduct the pre-mortem yourself.
-- [ ] mathematician
-  - If missing: Inform user. Delegate algorithm design to senior-developer via Task tool. Flag output as "designed without specialist mathematician review."
-- [ ] statistician
-  - If missing: Inform user. Delegate statistical work to senior-developer via Task tool. Flag as "unvalidated -- no specialist statistician review."
-- [ ] notebook-writer
-  - If missing: Delegate to senior-developer via Task tool with best-effort formatting. Flag as "created without notebook-writer specialized formatting."
-  - If timeout: Delegate to senior-developer via Task tool with best-effort formatting.
-
-### Pre-Flight Check Execution
-
-```bash
-# Check required skills
-for skill in requirements-analyst systems-architect copilot; do
-  if [ ! -f ~/.claude/skills/$skill/SKILL.md ]; then
-    echo "ABORT: Required skill missing: $skill"
-    echo "Install with: [installation guidance]"
-    exit 1
-  fi
-done
-
-# Check optional skills (handles both SKILL.md and skill.md naming)
-for skill in edge-case-analyst mathematician statistician notebook-writer; do
-  if [ ! -f ~/.claude/skills/$skill/SKILL.md ] && [ ! -f ~/.claude/skills/$skill/skill.md ]; then
-    echo "WARN: Optional skill missing: $skill (workflow will proceed with limitations)"
-  fi
-done
-```
-
-**On missing required skill**: ABORT with clear error and installation guidance
-**On missing optional skill**: WARN and continue with noted limitation
+Skill presence, when you need to check it, is `~/.claude/skills/{name}/SKILL.md` (some skills use lowercase `skill.md`).
 
 ## Tools
 
-- **Task**: Launch specialists for independent work (senior-developer, mathematician, statistician, notebook-writer, etc.). Default tool for all specialist delegation.
-- **Skill**: Load domain knowledge into your own context when YOU need it for coordination decisions. Not for specialist invocation.
-- **Read**: Read existing codebase, analyze patterns, review deliverables
-- **Write**: Create deliverable documents, state files, planning artifacts
-- **Bash**: Run tests, linters, type checkers, git commands, handoff validation scripts
+**Task** launches specialists for independent work; **Skill** loads domain knowledge into your own context for a coordination decision; **Read** covers existing codebase, patterns, and deliverables; **Write** covers deliverable documents, state files, and planning artifacts; **Bash** runs tests, linters, type checkers, git commands, and handoff validation scripts.
 
 ## Workflow State Persistence
 
@@ -267,22 +160,17 @@ exceptions:
 
 ### State Recovery
 
-On session resume:
-1. List sessions in `~/.claude/programming-pm-sessions/`
-2. Read state file from `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`
-3. Verify last_updated within 7 days (extended from 72 hours due to persistent storage)
-4. Display current phase and completed gates
-5. Offer: Continue from current phase OR restart
+On session resume: list sessions in `~/.claude/programming-pm-sessions/`, read the state file, check `last_updated` is within 7 days, display current phase and completed gates, then offer to continue from the current phase or restart.
 
 ## Workflow Phases
 
 ### Phase 0: Archival Guidelines Review
 
-**Owner**: programming-pm (automatic) · **Checkpoint**: Never (always runs) · **Duration**: 2-5 min
+**Owner**: programming-pm (automatic) · **Checkpoint**: Never (always runs)
 
 **Objective**: Initialize the workflow session directory and extract archival guidelines (preferring `.archive-metadata.yaml` over a CLAUDE.md fallback), with code-specific extraction focus.
 
-**Entry**: Workflow invoked with a project goal; pre-flight validation passed.
+**Entry**: Workflow invoked with a project goal.
 **Exit**: `~/.claude/programming-pm-sessions/{workflow-id}/` created, archival-guidelines-summary.md written, `archival_context` block prepared for downstream handoffs.
 
 **Key gate**: Session directory created, archival summary written. Session directory creation failure is fatal (ABORT — cannot proceed without session isolation).
@@ -295,15 +183,10 @@ On session resume:
 
 ### Phase 1: Requirements and Scoping
 
-If resuming: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml` to confirm Phase 0 is complete.
-
 **Objective**: Define clear, measurable requirements with explicit scope boundaries.
 **Receives**: Session directory path and archival guidelines from Phase 0
 
-**Steps**:
-1. Invoke `requirements-analyst` with project goal and session context
-2. Review requirements document for completeness
-3. Present requirements to user for approval
+**Steps**: Invoke `requirements-analyst` with the project goal and session context, review the resulting requirements document for completeness, and present it to the user for approval.
 
 **Quality Gate 1: Requirements Approval**:
 - Type: Human judgment (programming-pm review)
@@ -316,33 +199,7 @@ If resuming: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml` t
 - Fail Action: Return to requirements-analyst with feedback
 - Override: User can accept partial requirements with documented gaps
 
-**Handoff Validation** (Phase 1 → Phase 2):
-```bash
-# Validate requirements handoff before mode selection
-python3 "${SKILL_DIR}/scripts/validate-handoff.py" \
-  "${SESSION_DIR}/handoffs/phase1-requirements-handoff.yaml" \
-  "requirements_handoff"
-
-if [ $? -ne 0 ]; then
-  echo "❌ Phase 1 handoff validation FAILED"
-  echo "Options:"
-  echo "  (A) Return to requirements-analyst to fix issues"
-  echo "  (B) Override with documented gaps"
-  read -p "Choice [A/b]: " OVERRIDE_CHOICE
-
-  if [ "$OVERRIDE_CHOICE" != "b" ] && [ "$OVERRIDE_CHOICE" != "B" ]; then
-    echo "Returning to requirements-analyst..."
-    exit 1
-  else
-    echo "⚠️  Override: Proceeding with gaps (documented)"
-    jq '.phase1_handoff_override = true' \
-      "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.json.tmp"
-    mv "${SESSION_DIR}/session-state.json.tmp" "${SESSION_DIR}/session-state.json"
-  fi
-else
-  echo "✅ Phase 1 handoff validated successfully"
-fi
-```
+**Handoff Validation** (Phase 1 → Phase 2): run `scripts/validate-handoff.py` on `${SESSION_DIR}/handoffs/phase1-requirements-handoff.yaml` with schema type `requirements_handoff`. Script and failure/override handling: `references/handoff-validation-gates.md`.
 
 ---
 
@@ -365,9 +222,9 @@ fi
 | **SIMPLE** | Single component AND no stats/math; OR utility script with <5 tasks; OR single-component ETL pipeline |
 | **STANDARD** (default) | Multiple components (2-5); single specialization (stats OR math, not both); 5-15 tasks; standard patterns ("web API", "CLI tool", "data analysis", "visualization") |
 
-**Procedure** (5 steps): (1) run complexity detection via `detect_tier` from `references/mode-selection-criteria.md`; (2) display mode-selection prompt; (3) user override confirmation (high-confidence allows a 60s-timeout default; risky SIMPLE override requires explicit confirm); (4) record selection to `mode-selection.json` + `session-state.json` and export `PROGRAMMING_PM_MODE`; (5) branch behavior on the selected mode. Legacy sessions without `mode-selection.json` default to STANDARD.
+**Procedure**: run complexity detection via `detect_tier` from `references/mode-selection-criteria.md`, display the mode-selection prompt, confirm any user override (a risky SIMPLE override gets an explicit confirm), record the selection to `mode-selection.json` + `session-state.json`, export `PROGRAMMING_PM_MODE`, and branch behavior on the selected mode. Legacy sessions without `mode-selection.json` default to STANDARD.
 
-**Full implementation detail** (all five bash steps and the backwards-compatibility shim): see `references/phases/mode-selection.md`.
+**Full implementation detail** (all bash steps and the backwards-compatibility shim): see `references/phases/mode-selection.md`.
 
 **Phase Transition**: Phase 1 complete -> Quality Gate 1 (user approval required) -> PROCEED to Phase 2: Pre-Mortem and Risk Assessment
 
@@ -375,14 +232,9 @@ fi
 
 ### Phase 2: Pre-Mortem and Risk Assessment
 
-Before starting Phase 2: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-1 are complete.
-
 **Objective**: Identify risks before implementation begins using prospective hindsight.
 
-**Steps**:
-1. Invoke `edge-case-analyst` (if available) or delegate simplified pre-mortem to senior-developer via Task tool
-2. Use pre-mortem template from `assets/pre-mortem-template.md`
-3. Document at least 3 risks with likelihood, impact, and mitigation
+**Steps**: Invoke `edge-case-analyst` (or delegate a simplified pre-mortem to senior-developer via Task tool), using the template in `assets/pre-mortem-template.md`. Document risks with likelihood, impact, and mitigation.
 
 **Quality Gate 2: Pre-Mortem Completion**:
 - Type: Automated (checklist validation)
@@ -394,57 +246,26 @@ Before starting Phase 2: Read `~/.claude/programming-pm-sessions/{workflow-id}/s
 - Pass Condition: All risks have disposition
 - Override: User can proceed with documented unmitigated risks
 
-**Handoff Validation** (Phase 2 → Phase 3):
-```bash
-# Validate pre-mortem handoff
-python3 "${SKILL_DIR}/scripts/validate-handoff.py" \
-  "${SESSION_DIR}/handoffs/phase2-premortem-handoff.yaml" \
-  "premortem_handoff"
-
-if [ $? -ne 0 ]; then
-  echo "❌ Phase 2 handoff validation FAILED"
-  read -p "Fix issues and retry? [Y/n]: " RETRY_CHOICE
-
-  if [ "$RETRY_CHOICE" != "n" ] && [ "$RETRY_CHOICE" != "N" ]; then
-    exit 1
-  else
-    echo "⚠️  Override: Proceeding with validation gaps"
-    jq '.phase2_handoff_override = true' \
-      "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.json.tmp"
-    mv "${SESSION_DIR}/session-state.json.tmp" "${SESSION_DIR}/session-state.json"
-  fi
-else
-  echo "✅ Phase 2 handoff validated successfully"
-fi
-```
+**Handoff Validation** (Phase 2 → Phase 3): run `scripts/validate-handoff.py` on `${SESSION_DIR}/handoffs/phase2-premortem-handoff.yaml` with schema type `premortem_handoff`. Script and failure/override handling: `references/handoff-validation-gates.md`.
 
 **Phase Transition**: Phase 2 complete -> Quality Gate 2 -> PROCEED to Phase 3: Architecture Design
 
 ### Phase 3: Architecture Design
 
-Before starting Phase 3: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-2 are complete.
-
 **Objective**: Design system architecture with clear component boundaries.
 
 **Steps**:
-1. **Self-check**: "Am I about to design the architecture myself?" If yes, STOP and use the Task tool dispatch instead.
-2. **Invoke systems-architect via Task tool** using the "Dispatch to systems-architect" template from the Dispatch Templates section above. Include full requirements (Phase 1 handoff), all risks with architecture implications (Phase 2 handoff), and archival context (Phase 0).
-3. **Verify delegation**: After systems-architect returns, confirm the architecture handoff YAML contains `producer: "systems-architect"`. If this field is absent or set to another value, do not proceed -- re-invoke via Task tool.
-4. **Receive and validate output**: Verify architecture handoff YAML exists at the expected path. Note if Architecture Context Document was generated or skipped.
-5. **Review architecture** against Quality Gate 3 criteria.
-6. **Present architecture to user** for approval.
+1. **Dispatch systems-architect via Task tool** using the "Dispatch to systems-architect" template. Include the full requirements (Phase 1 handoff), all risks with architecture implications (Phase 2 handoff), and archival context (Phase 0).
+2. **Receive and validate output**: architecture handoff YAML exists at the expected path and carries `producer: "systems-architect"`. Note whether the Architecture Context Document was generated or skipped.
+3. **Review** against Quality Gate 3 criteria and **present to the user** for approval.
 
-**Mandatory**: systems-architect MUST be invoked via Task tool, not Skill tool. The orchestrator MUST NOT design the architecture itself, even for SIMPLE mode projects. SIMPLE mode produces lighter output (minimum: 1 component with interfaces, 1 technology choice rationale, 1 testing strategy) but must still be produced by systems-architect via Task tool.
+Scale the delegation to the project. Multi-component systems, non-obvious dependency graphs, scalability questions, and open technology choices go to systems-architect. For a SIMPLE-mode single-component project whose structure follows directly from the requirements, you can record the component interfaces, technology-choice rationale, and testing strategy yourself and note in session state that the architecture was authored inline.
 
 #### Architecture Context Document
 
 After architecture approval, systems-architect generates `.architecture/context.md`:
 
-**Purpose**: Persistent, version-controlled document providing bird's-eye view of module structure, dependencies, and modification order for all implementation agents.
-
-**Content**: Module interconnections (DAG), intended usage patterns, modification order for safe incremental changes, streaming/incremental strategies.
-
-**Lifecycle**: Created in Phase 3, read by developers before implementation (pre-flight), updated when architectural changes occur (Phase 5 drift check).
+A persistent, version-controlled bird's-eye view of module structure, dependencies, and modification order for all implementation agents. **Content**: module interconnections (DAG), intended usage patterns, modification order for safe incremental changes, streaming/incremental strategies. **Lifecycle**: created in Phase 3, read by developers before implementation, updated when architectural changes occur (Phase 5 drift check).
 
 See `systems-architect/references/architecture-context-template.md` for template details.
 
@@ -459,42 +280,17 @@ See `systems-architect/references/architecture-context-template.md` for template
   - [ ] Architecture Context Document generated (`.architecture/context.md` exists)
 - Override: User can approve partial architecture for proof-of-concept
 
-**Handoff Validation** (Phase 3 → Phase 4):
-```bash
-# Validate architecture handoff before implementation
-python3 "${SKILL_DIR}/scripts/validate-handoff.py" \
-  "${SESSION_DIR}/handoffs/phase3-architecture-handoff.yaml" \
-  "architecture_handoff"
-
-if [ $? -ne 0 ]; then
-  echo "❌ Phase 3 handoff validation FAILED"
-  echo "Incomplete architecture cannot proceed to implementation."
-  read -p "Return to systems-architect? [Y/n]: " RETRY_CHOICE
-
-  if [ "$RETRY_CHOICE" != "n" ] && [ "$RETRY_CHOICE" != "N" ]; then
-    exit 1
-  else
-    echo "⚠️  Override: Proceeding with incomplete architecture (HIGH RISK)"
-    jq '.phase3_handoff_override = true | .phase3_override_risk = "HIGH"' \
-      "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.json.tmp"
-    mv "${SESSION_DIR}/session-state.json.tmp" "${SESSION_DIR}/session-state.json"
-  fi
-else
-  echo "✅ Phase 3 handoff validated successfully"
-fi
-```
+**Handoff Validation** (Phase 3 → Phase 4): run `scripts/validate-handoff.py` on `${SESSION_DIR}/handoffs/phase3-architecture-handoff.yaml` with schema type `architecture_handoff`. Incomplete architecture does not proceed to implementation. Script and failure/override handling: `references/handoff-validation-gates.md`.
 
 **Phase Transition**: Phase 3 complete -> Quality Gate 3 (user approval required) -> PROCEED to Phase 4: Implementation
 
 ### Phase 4: Implementation
 
-Before starting Phase 4: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-3 are complete.
-
 **Objective**: Implement architecture with specialist agents, dispatched via Task tool.
 
 **Mode-based execution**:
 - **SIMPLE**: Sequential execution (one specialist at a time)
-- **STANDARD/EXTENDED**: Wave-based parallel execution (waves at T=0s, T=30s, T=60s)
+- **STANDARD/EXTENDED**: Wave-based parallel execution
 
 **Entry**: Architecture approved (Phase 3, Quality Gate 3) and `.architecture/context.md` exists.
 **Exit**: All non-escalated tasks have deliverables; per-task code/math/stats handoffs validate against schema.
@@ -503,11 +299,11 @@ Before starting Phase 4: Read `~/.claude/programming-pm-sessions/{workflow-id}/s
 
 | Step | Purpose |
 |------|---------|
-| **0. Pre-flight validation** | senior-developer (via Task tool) verifies the architecture handoff is implementable: interfaces typed, dependencies acyclic, tech choices compatible, order consistent. FAIL → escalate to Phase 3 (max 2 cycles). SIMPLE mode with <=1 component skips this step. Timeout 15 min. |
+| **0. Implementability check** | Confirm the architecture handoff is implementable: interfaces typed, dependencies acyclic, tech choices compatible, order consistent. Read the handoff yourself when it is small; dispatch senior-developer via Task tool when it is large or the gaps look substantive. FAIL → escalate to Phase 3 (max 2 cycles). SIMPLE mode with <=1 component skips this step. |
 | **1. Task decomposition** | Parse architecture handoff into tasks; assign each to a specialist. Primary signal = `specialist_flags` (v1.4+ handoffs); fallback = keyword heuristic. Algorithm→mathematician, stats→statistician, notebook→notebook-writer, routine→junior-developer, else senior-developer. |
-| **1b. Junior-developer evaluation** | Mandatory second pass (STANDARD/EXTENDED; SIMPLE only if task count >=6). Reassign single-scope, no-design-judgment tasks to junior-developer if available; document the decision in session state. |
-| **2. Wave-based execution** | SIMPLE = sequential. STANDARD/EXTENDED = three waves: Wave 1 launches math/stats (feed other tasks), Wave 2 launches independent implementation tasks, Wave 3 retries dependency-blocked tasks (bounded, then escalates). |
-| **3. Progress monitoring** | File-based tracking of running agents with per-mode timeout thresholds (2h STANDARD / 4h EXTENDED); hard-abort options if monitoring exhausts. |
+| **1b. Junior-developer evaluation** | Second pass (STANDARD/EXTENDED; SIMPLE only if task count >=6). Reassign single-scope, no-design-judgment tasks to junior-developer if available; document the decision in session state. |
+| **2. Wave-based execution** | SIMPLE = sequential. STANDARD/EXTENDED = three waves: Wave 1 launches math/stats (feed other tasks), Wave 2 launches independent implementation tasks, Wave 3 launches dependency-blocked tasks once their inputs land (bounded, then escalates). |
+| **3. Completion tracking** | Record each specialist's deliverable as it returns; escalate tasks whose dependencies never resolve. |
 | **4. Gate 4a completion check** | PASS at 100%; CONDITIONAL PASS at 75%+ only if all critical (math/stats) specialists completed; FAIL below 75%. |
 
 **Key gate — Quality Gate 4b (Implementation Validation)**:
@@ -520,38 +316,30 @@ Before starting Phase 4: Read `~/.claude/programming-pm-sessions/{workflow-id}/s
 - Pass Condition: All criteria checked OR 75%+ with critical specialists complete
 - Fail Action: Retry incomplete tasks or escalate to user
 
-**Full implementation detail** (every step's bash — Step 0 dispatch and FAIL escalation, Step 1 yq task-decomposition with specialist-flag normalization and keyword fallback, Step 1b junior-developer evaluation JSON, Step 2 wave-launch protocol and Wave-3 bounded retry, Step 3 monitoring loop, Step 4a completion decision table, and the Phase 4→5 handoff-validation script): see `references/phases/phase-4-implementation.md`.
+**Full implementation detail** (Step 0 dispatch and FAIL escalation, Step 1 yq task-decomposition with specialist-flag normalization and keyword fallback, Step 1b junior-developer evaluation JSON, Step 2 wave-launch protocol and Wave-3 bounded retry, Step 4a completion decision table, and the Phase 4→5 handoff-validation script): see `references/phases/phase-4-implementation.md`.
 
 **Phase Transition**: Phase 4 complete -> Quality Gate 4 -> PROCEED to Phase 5: Code Review and Testing
 
 ### Phase 5: Code Review and Testing
 
-Before starting Phase 5: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-4 are complete.
-
 **Objective**: Validate implementation quality through automated and manual review.
 
 **Steps**:
-1. **Run automated checks**: linting (`ruff check .`), type checking (`mypy --strict src/` or `pyright src/`), tests (`pytest --cov`)
-2. **Invoke copilot via Task tool** (MANDATORY) using the "Dispatch to copilot" template from the Dispatch Templates section. For SIMPLE mode projects where Phase 4 produced fewer than 50 total lines changed across all tasks, an inline review by PM (reading the changed files and performing lightweight review) may substitute for the full Task tool dispatch -- document "SIMPLE mode lightweight review performed" in session state.
-3. **Receive copilot review**:
-   - After copilot returns, verify `{SESSION_DIR}/deliverables/copilot-review.md` exists
-   - If NOT found: search session directory for `copilot-review.md`; if still not found, re-invoke copilot with explicit instruction to use full absolute path
-   - Maximum 2 retry attempts; if still not found, use copilot's Task tool return value as the review
-   - Verify review contains a `VERDICT:` line; if absent, treat as incomplete and request re-review
-4. **Evaluate copilot findings**:
-   - If CRITICAL issues: Return to senior-developer with copilot feedback for fixes
-   - If MAJOR issues only: Present to user, decide whether to fix or document as accepted tech debt
-   - If MINOR/GOOD only: Proceed
-5. **Have senior-developer address copilot findings** (if CRITICAL or MAJOR issues exist)
-6. **Re-run copilot** if CRITICAL issues were found and fixed (max 2 copilot review cycles)
-   - If CRITICAL issues remain after 2 cycles: Present remaining issues to user -- user decides to fix manually or accept as tech debt with explicit documentation
-6a. **(Optional) Supplemental review via pr-review-toolkit**: After copilot review passes, invoke `/pr-review-toolkit:review-pr` for additional specialized analysis (silent failures, test coverage, type design, comment accuracy) that copilot does not cover. This is advisory — findings do not block Phase 6 but should be presented to the user.
-7. If deliverables include notebooks: invoke notebook-writer for reproducibility review
-8. Check for architecture drift and update context document if needed
+1. **Run automated checks**: linting (`ruff check .`), type checking (`mypy --strict src/` or `pyright src/`), tests (`pytest --cov`).
+2. **Review the implementation.** Dispatch `copilot` via Task tool using the "Dispatch to copilot" template when a context-isolated adversarial pass adds something — several components changed, subtle numerics, security-sensitive input handling, or automated checks that passed but left you unsure. For small diffs, read the changed files and review them yourself. Record which route you took in session state.
+3. **If copilot ran**: read `{SESSION_DIR}/deliverables/copilot-review.md`. If the file is absent, use copilot's Task tool return value as the review. A review without a `VERDICT:` line is incomplete — ask for the verdict.
+4. **Act on findings by severity**:
+   - CRITICAL: return to senior-developer with the copilot feedback for fixes
+   - MAJOR: present to the user, who decides between fixing and documented tech debt
+   - MINOR/GOOD: proceed
+   Re-review after CRITICAL fixes when the fix itself was substantial. If CRITICAL issues persist, present them to the user rather than looping further.
+5. **(Optional) Supplemental review via pr-review-toolkit**: invoke `/pr-review-toolkit:review-pr` for specialized analysis copilot does not cover (silent failures, test coverage, type design, comment accuracy). Advisory — findings do not block Phase 6 but are presented to the user.
+6. If deliverables include notebooks: invoke `notebook-writer` for reproducibility review.
+7. Check for architecture drift and update the context document if needed.
 
 #### Architecture Drift Check
 
-If `.architecture/context.md` exists, check whether implementation introduced structural changes that require context update:
+If `.architecture/context.md` exists, check whether implementation introduced structural changes that require a context update:
 
 **Drift detection heuristics** (narrow scope to reduce false positives):
 - New files in `src/` or `modules/` directories
@@ -559,29 +347,21 @@ If `.architecture/context.md` exists, check whether implementation introduced st
 - Changes to `__init__.py` files (interface changes)
 - Developer reported discrepancy via `architecture_context.discrepancy_noted: true` in code handoff
 
-**Action on drift detected**:
-1. Invoke `systems-architect` for **targeted update** (<10 minutes)
-2. Update specific sections of `.architecture/context.md` (not full regeneration)
-3. Commit context update with implementation changes
+**On drift**: invoke `systems-architect` for a targeted update of the affected sections of `.architecture/context.md` (not full regeneration), and commit the context update with the implementation changes. **On no drift**: proceed to Quality Gate 4.
 
-**Action on NO drift**: Proceed to Quality Gate 4.
-
-**Note**: This is a lightweight check. Fundamental architectural changes (new module changing dependency graph topology) are logged as "architectural drift requiring future Phase 3 review" rather than triggering heavyweight updates within Phase 5.
+This is a lightweight check. Fundamental architectural changes (a new module changing dependency-graph topology) are logged as "architectural drift requiring future Phase 3 review" rather than triggering heavyweight updates within Phase 5.
 
 **Quality Gate 4: Code Review Approval**:
 - Type: Human judgment (senior-developer + copilot review)
-- Automated checks (must all pass):
+- Automated checks (all pass):
   - [ ] `ruff check .` returns 0 errors
   - [ ] Type checking passes: `mypy --strict src/` or `pyright src/` returns 0 errors (warnings acceptable)
   - [ ] Test coverage >= 80% for new code
-- Copilot review (must complete):
-  - [ ] Copilot invoked and review document produced (or SIMPLE mode inline review documented)
+- Review completed:
+  - [ ] Review performed and recorded (copilot review document, or documented inline review)
   - [ ] No CRITICAL issues remain unaddressed
   - [ ] MAJOR issues addressed or documented as accepted tech debt
-  - Override: programming-pm can approve with "tech debt" tag if deadline critical
-    - Override CANNOT skip copilot review entirely unless copilot invocation fails after 2 attempts
-    - If copilot is unreachable: document "copilot unavailable" in session state and proceed with senior-developer review only (EMERGENCY override, must be reported to user)
-    - Override CAN accept MAJOR issues as tech debt
+  - Override: programming-pm can approve with a "tech debt" tag if the deadline is critical; if copilot was invoked and unreachable, document "copilot unavailable" in session state and proceed with senior-developer review only, reporting this to the user
 - Human review:
   - [ ] Code matches requirements specification
   - [ ] Edge cases from pre-mortem are handled
@@ -598,36 +378,11 @@ If `.architecture/context.md` exists, check whether implementation introduced st
   - [ ] No regressions in existing tests
 - Override: User can merge with failing tests for emergency (creates P0 issue)
 
-**Handoff Validation** (Phase 5 → Phase 6):
-```bash
-# Validate review handoff before VCS integration
-python3 "${SKILL_DIR}/scripts/validate-handoff.py" \
-  "${SESSION_DIR}/handoffs/phase5-review-handoff.yaml" \
-  "review_handoff"
-
-if [ $? -ne 0 ]; then
-  echo "❌ Phase 5 handoff validation FAILED"
-  echo "Code review handoff incomplete. Cannot proceed to merge."
-  read -p "Return to code review? [Y/n]: " RETRY_CHOICE
-
-  if [ "$RETRY_CHOICE" != "n" ] && [ "$RETRY_CHOICE" != "N" ]; then
-    exit 1
-  else
-    echo "⚠️  Override: Proceeding without complete review (CRITICAL RISK)"
-    jq '.phase5_handoff_override = true | .phase5_override_risk = "CRITICAL"' \
-      "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.json.tmp"
-    mv "${SESSION_DIR}/session-state.json.tmp" "${SESSION_DIR}/session-state.json"
-  fi
-else
-  echo "✅ Phase 5 handoff validated successfully"
-fi
-```
+**Handoff Validation** (Phase 5 → Phase 6): run `scripts/validate-handoff.py` on `${SESSION_DIR}/handoffs/phase5-review-handoff.yaml` with schema type `review_handoff`. An incomplete review handoff does not proceed to merge. Script and failure/override handling: `references/handoff-validation-gates.md`.
 
 **Phase Transition**: Phase 5 complete -> Quality Gate 5 -> PROCEED to Phase 6: Version Control Integration
 
 ### Phase 6: Version Control Integration
-
-Before starting Phase 6: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-5 are complete.
 
 **Objective**: Integrate changes with sync-config.py and version control.
 
@@ -636,7 +391,7 @@ Before starting Phase 6: Read `~/.claude/programming-pm-sessions/{workflow-id}/s
 
 **Optional shortcuts** (use when git strategy is simple):
 - **Commit Commands plugin**: `/commit-push-pr` handles commit + push + PR in one step, replacing manual Steps 2-3.
-- **Git Strategy Advisory**: MAY invoke `git-strategy-advisor` (Task tool, `mode: post-work`) for scope-adaptive recommendations. Advisory only — Step 3's feature-branch logic takes precedence unconditionally; present the advisor's `summary` as an informational note. Skip silently on confidence "none"; caveat on "low".
+- **Git Strategy Advisory**: optionally invoke `git-strategy-advisor` (Task tool, `mode: post-work`) for scope-adaptive recommendations. Advisory only — Step 3's feature-branch logic takes precedence unconditionally; present the advisor's `summary` as an informational note. Skip silently on confidence "none"; caveat on "low".
 
 **Step overview** (full mechanics in the reference below):
 
@@ -658,103 +413,31 @@ Before starting Phase 6: Read `~/.claude/programming-pm-sessions/{workflow-id}/s
   - [ ] Files staged (if in git repo)
 - Override: Repository admin can force merge (logged for audit)
 
-**Post-Merge Verification**: After sync, prompt user to verify deliverable meets expectations. If issues found, create follow-up task (not rollback unless critical).
+**Post-Merge Verification**: After sync, prompt the user to verify the deliverable meets expectations. If issues are found, create a follow-up task (not a rollback unless critical).
 
 **Full implementation detail** (the optional-shortcut/advisory notes in full plus every step's bash — pre-merge handoff revalidation loop, dry-run conflict handling, Gate 6 validation/override, branch + specific-file staging + conventional commit + sync, planning journal entry, and session-cleanup decision logic): see `references/phases/phase-6-version-control.md`.
 
-## Quality Gate Specifications
-
-### Gate Override Protocol
+## Gate Override Protocol
 
 When a quality gate fails:
 
-1. **Display failure details** with severity levels:
-   - CRITICAL: Cannot override (security, runtime errors)
-   - HIGH: Override requires explicit user approval
-   - MEDIUM: Override allowed with documentation
-   - LOW: Override allowed
+1. **Display failure details** with severity: CRITICAL (cannot override — security, runtime errors), HIGH (override requires explicit user approval), MEDIUM (override allowed with documentation), LOW (override allowed).
+2. **Offer options**: [Fix] address issues and re-run the gate; [Override] proceed with documented risk acceptance; [Escalate] consult a specialist for a second opinion.
+3. **If Override selected**: log the decision with timestamp, user, and rationale; mark the deliverable "GATE_OVERRIDE: {gate_name}"; continue the pipeline but flag it in the final PR description.
 
-2. **Offer options**:
-   - [Fix] Address all issues and re-run gate
-   - [Override] Proceed with documented risk acceptance
-   - [Escalate] Consult specialist for second opinion
+**Override cannot skip**: test failures indicating runtime errors, security vulnerabilities (P0), architecture compatibility failures.
 
-3. **If Override selected**:
-   - Log override decision with timestamp, user, rationale
-   - Mark deliverable as "GATE_OVERRIDE: {gate_name}"
-   - Continue pipeline but flag in final PR description
+## Exception Handling
 
-**Override cannot skip**:
-- Test failures indicating runtime errors
-- Security vulnerabilities (P0)
-- Architecture compatibility failures
+**Specialist stalls or returns incomplete work**: diagnose from the specialist's output and progress file, then present options to the user — extend, narrow the scope, substitute a specialist (e.g. senior-developer for mathematician), or escalate for guidance. Apply the choice and log it to `exceptions-log.md`. Per-phase and per-specialist duration expectations and the intervention schema: `references/timeout-config.md`.
 
-## Exception Handling Protocol
-
-### Specialist Timeout Detection
-
-Check progress files every 15 minutes during active specialist work.
-
-- Warning threshold: 1.5x expected duration
-- Timeout threshold: 2x expected duration
-
-See `references/timeout-config.md` for per-phase and per-specialist timeouts.
-
-### Timeout Intervention Protocol
-
-1. **Diagnose**: Read specialist progress file, analyze status
-2. **Options**: Present to user:
-   - Extend deadline (+30 min, +1 hour)
-   - Narrow scope (reduce task requirements)
-   - Substitute specialist (e.g., senior-developer for mathematician)
-   - Escalate to user for guidance
-3. **Execute**: Apply chosen option, log decision
-4. **Learn**: Add to exceptions-log.md for retrospective
-
-### Circuit Breaker Pattern
-
-After 3 consecutive failures of the same type:
-
-1. **Open circuit**: Stop retrying automatically
-2. **Alert user**: Present failure summary with options
-3. **Require explicit decision**: User must choose:
-   - Retry with changes
-   - Skip this component
-   - Abort workflow
+**Circuit breaker**: after 3 consecutive failures of the same type, stop retrying, present the failure summary, and require an explicit user decision — retry with changes, skip the component, or abort the workflow.
 
 ## Role Conflict Resolution
 
-### Role Authority Hierarchy
+Authority by domain: architecture decisions (Phase 3) rest with systems-architect; algorithm design with mathematician; statistical methods with statistician; implementation decisions (Phase 4) with senior-developer within the architecture constraints.
 
-- **Architecture decisions (Phase 3)**: systems-architect has authority
-- **Algorithm design**: mathematician has authority
-- **Statistical methods**: statistician has authority
-- **Implementation decisions (Phase 4)**: senior-developer has authority within architecture constraints
-
-### Conflict Resolution Protocol
-
-1. **Detect Conflict**: Monitor for contradictory recommendations between specialists
-
-2. **Classify Conflict**:
-   - **Minor** (implementation detail): senior-developer decides
-   - **Major** (architecture change required): Escalate to user
-
-3. **Major Conflict Escalation Format**:
-   ```
-   CONFLICT DETECTED: [Brief description]
-
-   Position A: [Recommendation] - Rationale: [Why]
-   Position B: [Recommendation] - Rationale: [Why]
-
-   Options:
-   1. [Option A description]
-   2. [Option B description]
-   3. [Hybrid approach if applicable]
-
-   Recommendation: [PM's analysis]
-   ```
-
-4. **Post-Resolution**: Document decision in architecture spec
+When specialists return contradictory recommendations, classify the conflict. Minor conflicts (implementation detail) are senior-developer's call. Major conflicts (an architecture change is required) go to the user with both positions and their rationales, the available options including any hybrid, and your own recommendation. Document the resolution in the architecture spec.
 
 ## Team Composition
 
@@ -770,7 +453,7 @@ The table above is the **default team** — always included. For optional specia
 
 ## Handoff Format
 
-All handoffs between specialists use standardized schema. See `references/handoff-schema.md`.
+All handoffs between specialists use a standardized schema. See `references/handoff-schema.md`.
 
 **Base handoff fields**:
 ```yaml
@@ -799,52 +482,16 @@ handoff:
 - `references/git-workflow.md` - Branching strategy, commit format, rollback procedures
 - `references/team-composition.md` - RACI matrix, specialist selection criteria
 - `references/handoff-schema.md` - Interface contracts between specialists
-- `references/timeout-config.md` - Per-phase and per-specialist timeout configuration
+- `references/handoff-validation-gates.md` - Handoff validation scripts and override handling per phase transition
+- `references/timeout-config.md` - Per-phase and per-specialist duration expectations, intervention protocol
 - `references/phases/phase-0-session-setup.md` - Phase 0 full detail (session setup, archival extraction)
-- `references/phases/mode-selection.md` - Mode Selection full detail (5-step complexity detection + branching)
-- `references/phases/phase-4-implementation.md` - Phase 4 full detail (pre-flight, decomposition, waves, monitoring, gates)
+- `references/phases/mode-selection.md` - Mode Selection full detail (complexity detection + branching)
+- `references/phases/phase-4-implementation.md` - Phase 4 full detail (implementability check, decomposition, waves, gates)
 - `references/phases/phase-6-version-control.md` - Phase 6 full detail (pre-merge, gate 6, commit/sync, journal, cleanup)
 - `git-strategy-advisor` - Phase 6 git strategy consultation (optional, advisory)
 
-## Example Workflow
-
-```bash
-# User invokes programming-pm with a goal
-User: "Create a Monte Carlo simulation library for option pricing"
-
-# programming-pm executes:
-1. Pre-flight validation (check required skills)
-2. Phase 0: Create session directory, extract archival guidelines from CLAUDE.md
-3. Invoke requirements-analyst -> requirements.md
-4. Quality Gate 1: Requirements approval
-5. Conduct pre-mortem (include statistician perspective)
-6. Quality Gate 2: Pre-mortem completion
-7. Invoke systems-architect -> architecture.md
-8. Quality Gate 3: Architecture approval
-9. Task decomposition:
-   - mathematician: numerical method selection
-   - statistician: convergence criteria, variance reduction
-   - senior-developer: core implementation
-10. Implementation with progress monitoring
-11. Quality Gate 4: Code review (automated + human)
-12. Quality Gate 5: Test pass
-13. Create PR with conventional commit
-14. Quality Gate 6: PR merge
-15. Post-merge verification prompt
-16. Cleanup session directory (on success)
-```
-
 ## Integration with Existing Skills
 
-This skill invokes but does not modify:
-- `requirements-analyst` - Phase 1 requirements gathering
-- `systems-architect` - Phase 3 architecture design
-- `copilot` - Phase 5 code review support
-- `edge-case-analyst` - Phase 2 pre-mortem support (optional)
+This skill invokes but does not modify `requirements-analyst` (Phase 1), `systems-architect` (Phase 3), `copilot` (Phase 5), and `edge-case-analyst` (Phase 2 pre-mortem, optional).
 
-This skill coordinates new skills:
-- `senior-developer` - Phase 4-5 implementation and review
-- `junior-developer` - Phase 4 routine implementation (supervised)
-- `mathematician` - Phase 4 algorithm design (when needed)
-- `statistician` - Phase 4 statistical validation (when needed)
-- `notebook-writer` - Phase 4 notebook creation and Phase 5 notebook review (when needed)
+It coordinates `senior-developer` (Phase 4-5 implementation and review), `junior-developer` (Phase 4 routine implementation, supervised), `mathematician` (Phase 4 algorithm design), `statistician` (Phase 4 statistical validation), and `notebook-writer` (Phase 4 notebook creation, Phase 5 notebook review).

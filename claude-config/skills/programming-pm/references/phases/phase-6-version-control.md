@@ -5,7 +5,15 @@ Phase 6 of the programming-pm workflow. SKILL.md keeps the phase summary, gate
 criteria, optional shortcuts/advisory notes, and a pointer here. Read this file
 when actively executing Phase 6.
 
-Before starting Phase 6: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-5 are complete.
+## Contents
+
+- Optional: Commit Commands Shortcut
+- Optional: Git Strategy Advisory
+- Step 1: Pre-Merge Validation
+- Step 2: Quality Gate 6 Validation
+- Step 3: Commit and Sync
+- Step 4: Create Planning Journal Entry
+- Step 5: Session Cleanup
 
 **Objective**: Integrate changes with sync-config.py and version control.
 
@@ -226,7 +234,7 @@ COMMIT_MESSAGE="feat(programming-pm): ${PROBLEM_STATEMENT}
 
 Implemented via programming-pm workflow ($(date -u +"%Y-%m-%d"))
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
+Co-Authored-By: Claude <noreply@anthropic.com>"
 
 git commit -m "$COMMIT_MESSAGE"
 

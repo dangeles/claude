@@ -15,7 +15,6 @@ success_criteria:
   - Axis treatment (scale, zero, breaks) explicitly addressed
   - Decision card produced as paste-ready block
   - Accessibility minimums met (font size, redundant encoding when color encodes a meaningful variable)
-extended_thinking_budget: 2048
 ---
 
 # Plotting Advisor

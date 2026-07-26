@@ -64,28 +64,7 @@ Announce: "I'm using the latex-document-manager skill for LaTeX document managem
 
 ## Architecture
 
-```
-                    ┌─────────────────────────┐
-                    │    User (main thread)    │
-                    └────────────┬────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │     Orchestrator         │
-                    │  (this SKILL.md)         │
-                    │  Owns: user interaction, │
-                    │  compilation, state,     │
-                    │  change approval         │
-                    └──┬─────────┬─────────┬──┘
-                       │         │         │
-              Task tool│  Task tool│  Task tool│
-                       │         │         │
-              ┌────────▼──┐ ┌───▼──────┐ ┌▼─────────┐
-              │  Content   │ │ Writing  │ │ Proof-   │
-              │  Examiner  │ │ Expert   │ │ reader   │
-              └────────────┘ └──────────┘ └──────────┘
-```
-
-The orchestrator owns all user interaction. Sub-agents receive context via Task tool and return structured reports. Sub-agents never interact with the user directly.
+You are the orchestrator. You own user interaction, compilation, session state, and change approval. Three specialists receive context via the Task tool and return structured reports: the content examiner (structure, logs, bibliography), the writing expert (authoring and editing), and the proofreader (prose and inline syntax). Sub-agents never interact with the user directly.
 
 ---
 
@@ -95,55 +74,26 @@ The orchestrator owns all user interaction. Sub-agents receive context via Task 
 2. **Project Detection**: Enumerate .tex files, map dependencies, identify style and bibliography files
 3. **Action Routing**: Present action menu or auto-route based on user request
 4. **Delegate to Specialist(s)**: Dispatch appropriate sub-agent(s) via Task tool
-5. **Quality Gate Evaluation**: Verify sub-agent output meets criteria
-6. **Present Results**: Show report to user, handle follow-up actions
-7. **Compilation** (if applicable): Build PDF, compare against baseline, present delta
+5. **Present Results**: Show report to user, handle follow-up actions
+6. **Compilation** (if applicable): Build PDF, compare against baseline, present delta
 
 Read `references/latex-compilation-guide.md` (resolved to absolute path) before any compilation step to obtain engine detection rules and log parsing protocol.
 
 ---
 
-## Delegation Mandate
+## Delegation
 
-You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
+You are an orchestrator. You coordinate specialists -- you do not perform specialist work yourself.
 
-**You ARE the coordinator who ensures** document examination, content writing, proofreading, and compilation happen through delegation.
+Delegate specialist work when the subtask is substantial and independent -- a full document examination, a content-writing task that needs the style-learning protocol, a prose review across several files. Handle it directly when you could finish it in a handful of tool calls, when the work is sequential, or when you need the context in your own loop. See `../references/delegation-and-scope.md`.
 
-**You are NOT** a LaTeX content analyst, a writing expert, or a proofreader. You do not analyze document structure, write LaTeX content, or check grammar yourself.
-
-**Orchestrator-owned tasks**: Session setup, project detection, action routing, compilation execution, quality gate evaluation, user communication, change approval, PDF preview.
-
-### When You Might Be Resisting Delegation
-
-| Rationalization | Reality |
-|----------------|---------|
-| "This is a simple grammar fix, I can do it myself" | Even simple fixes consume context. Delegate to proofreader. |
-| "I can write this LaTeX snippet quickly" | You lack the specialist's style-learning protocol. Delegate to writing expert. |
-| "Reading the log myself is faster" | The content examiner has structured extraction patterns. Delegate. |
-| "The user only wants one small check" | Delegate to the appropriate specialist. Present their report. |
-
-**Self-check**: "Am I about to analyze LaTeX content, write LaTeX code, or check prose quality? If yes, delegate to the appropriate specialist via Task tool."
+**Orchestrator-owned tasks**: Session setup, project detection, action routing, compilation execution, user communication, change approval, PDF preview.
 
 ---
 
-## State Anchoring Protocol
+## State Anchoring
 
-Start every response with: `[Action - {description}] {status}`
-
-Examples:
-- `[Detect - ~/repos/cv/] Scanning project structure`
-- `[Examine - cv-llt.tex project] Presenting examination report`
-- `[Write - employment.tex] Presenting proposed changes for approval`
-- `[Proofread - publications.tex] Reviewing proofreader report`
-- `[Compile - pdfLaTeX] Running latexmk, parsing log`
-- `[Full Review - cv-llt.tex] Running examination and proofreading in parallel`
-
-**Re-anchor after:**
-- User approves or rejects a change
-- Switching between actions (Examine -> Write -> Compile)
-- Resuming from a pause
-- Any compilation attempt
-- Receiving a sub-agent report
+Open responses with an action anchor -- `[Compile - pdfLaTeX] Running latexmk, parsing log`, `[Write - employment.tex] Presenting proposed changes for approval` -- and re-anchor when the action changes, after a compilation attempt, or after a sub-agent report comes back. It keeps a long editing session legible.
 
 ---
 
@@ -161,15 +111,13 @@ Examples:
 | Detect project structure | Read + Bash + Grep tools | Orchestrator routing decision |
 | Save session state | Bash tool | File write to session directory |
 
-**Self-check**: "Am I about to analyze LaTeX content or check prose quality? If yes, delegate to the appropriate specialist via Task tool."
-
 ---
 
 ## Pre-Flight Validation
 
 Run these checks before any workflow action. Report all results before proceeding.
 
-### Required Checks (BLOCKING if failed)
+### Required Checks (blocking if failed)
 
 **1. LaTeX Installation**
 
@@ -197,7 +145,7 @@ Find `.tex` files containing `\documentclass` in the target directory.
 
 Follow the priority order from `references/latex-compilation-guide.md` Section 2.
 
-### Optional Checks (WARNING if failed)
+### Optional Checks (warning if failed)
 
 **4. Biber**: Only if biblatex is detected. Warn if biber is not found.
 
@@ -209,44 +157,15 @@ Follow the priority order from `references/latex-compilation-guide.md` Section 2
 
 ## Session Management
 
-### Session Directory
-
-Create on first invocation:
+Create a session directory on first invocation and store its path for the rest of the conversation:
 
 ```bash
 mkdir -p "/tmp/latex-document-manager-$(date +%Y%m%d-%H%M%S)-$$"
 ```
 
-Store the session directory path for all subsequent operations in this conversation.
+Track detected facts in `session-state.json` within it: `project_root`, `main_file`, `document_class`, `engine`, `tex_bin_dir`, `compilation_baseline` (errors, warnings, timestamp), `actions_completed`, `last_action`, `status`. Update it after each action. On a later invocation, detect an existing session directory and offer to resume. The directory is cleaned up when the user ends the session or after 24 hours.
 
-### Session State
-
-Track in a `session-state.json` file within the session directory:
-
-```json
-{
-  "project_root": "/absolute/path/to/project",
-  "main_file": "document.tex",
-  "document_class": "article",
-  "engine": "pdflatex",
-  "tex_bin_dir": "/Library/TeX/texbin",
-  "compilation_baseline": {
-    "errors": 0,
-    "warnings": 3,
-    "timestamp": "2026-02-15T10:30:00Z"
-  },
-  "actions_completed": ["detect", "examine"],
-  "last_action": "examine",
-  "status": "active"
-}
-```
-
-### Lifecycle
-
-- **Create**: On first invocation for a project
-- **Update**: After each action completes
-- **Resume**: On subsequent invocation, detect existing session directory, offer to resume
-- **Cleanup**: Session directory is cleaned up when the user explicitly ends the session or after 24 hours
+Rely on these session files for historical data rather than conversation memory: summarize sub-agent reports in your thread instead of retaining them in full, and read the compilation baseline back from the file when you need it.
 
 ---
 
@@ -286,9 +205,7 @@ Found LaTeX project at {path}
 
 ### Single-File Mode
 
-If only one `.tex` file with no `\input`/`\include` dependencies:
-- Skip full project enumeration
-- Offer streamlined menu: [1] Proofread [2] Edit [3] Compile
+If only one `.tex` file with no `\input`/`\include` dependencies, skip full project enumeration and offer a streamlined menu: [1] Proofread [2] Edit [3] Compile.
 
 ---
 
@@ -305,12 +222,7 @@ What would you like to do with this LaTeX project?
   [5] Full Review - Run examination + proofreading + compilation
 ```
 
-### Routing Logic
-
-- If the user's request clearly maps to one action: auto-route without menu
-- If ambiguous: present menu
-- After any Write/Edit action with approved changes: auto-compile to check for regressions
-- After Full Review: present combined report
+If the request clearly maps to one action, auto-route without the menu. After any Write/Edit action with approved changes, compile to check for regressions. After a Full Review, present a combined report.
 
 ---
 
@@ -329,7 +241,7 @@ Context:
 - Style files: {list of .sty files}
 - Bibliography: {bib_file or "none"}
 
-Instructions: Read the content examiner instructions and the compilation guide. The orchestrator MUST resolve these to absolute paths before dispatching:
+Instructions: Read the content examiner instructions and the compilation guide. Resolve these to absolute paths before dispatching:
 - Content examiner instructions: {skill_dir}/references/content-examiner-instructions.md
 - Compilation guide: {skill_dir}/references/latex-compilation-guide.md
 
@@ -352,10 +264,10 @@ Context:
 - Target file: {the specific .tex file to modify}
 - Style files: {list of .sty files to read for conventions}
 
-Instructions: Read the writing expert instructions. The orchestrator MUST resolve this to an absolute path before dispatching:
+Instructions: Read the writing expert instructions, resolved to an absolute path before dispatching:
 - Writing expert instructions: {skill_dir}/references/writing-expert-instructions.md
 
-MANDATORY: Complete the Style Learning Protocol before proposing any changes.
+Complete the Style Learning Protocol before proposing any changes.
 
 Output: Follow the output schema in the instructions file exactly. Return proposed changes as structured text.
 ```
@@ -372,10 +284,10 @@ Context:
 - Scope: {errors-only | errors-and-warnings | full-review}
 - ChkTeX results: {summary if available, or "not available"}
 
-Instructions: Read the proofreader instructions. The orchestrator MUST resolve this to an absolute path before dispatching:
+Instructions: Read the proofreader instructions, resolved to an absolute path before dispatching:
 - Proofreader instructions: {skill_dir}/references/proofreader-instructions.md
 
-CRITICAL: Do NOT rewrite content. Flag issues with location, type, and brief correction only.
+Do NOT rewrite content. Flag issues with location, type, and brief correction only.
 
 Output: Follow the output schema in the instructions file exactly.
 ```
@@ -416,8 +328,7 @@ Use the Bash tool with a timeout of 120000 ms for all compilation commands.
 After applying any approved change:
 
 1. Run compilation
-2. Compare against baseline:
-   - Count new errors, new warnings, resolved warnings
+2. Compare against baseline: count new errors, new warnings, resolved warnings
 3. If new errors introduced: offer rollback
 4. Present delta:
    ```
@@ -437,56 +348,32 @@ After applying any approved change:
 
 | Gate | Trigger | Criteria | Failure Action |
 |------|---------|----------|----------------|
-| G-DETECT | After project detection | Main .tex found, class identified | Report error, ask user to specify file |
 | G-PREFLIGHT | After pre-flight validation | TeX tools found (or degraded mode accepted) | Report missing tools, offer degraded mode |
-| G-EXAMINE | After content examination | Report generated with findings | Retry once; if fails, report partial results |
 | G-WRITE | After writing expert proposes | Changes compile without new errors | Reject changes, return to expert with error context |
-| G-PROOF | After proofreading | Report generated with findings | Retry once; if fails, skip with notification |
 | G-COMPILE | After compilation | Exit code 0, log parsed | Present errors, offer diagnosis |
 | G-APPROVE | Before applying file changes | User has reviewed diff and approved | Do not apply; ask for instructions |
+
+G-APPROVE is not optional: no file is modified without the user seeing the diff first.
 
 ### G-WRITE Failure Recovery
 
 If the writing expert's proposed changes introduce compilation errors:
 
 1. Extract relevant error messages from the compilation log (use grep extraction Steps 1-2)
-2. Dispatch a new Task to the writing expert with:
-   - Original task description
-   - The proposed changes that failed
-   - Compilation errors (relevant excerpt)
-   - Instruction: "Revise proposed changes to resolve these compilation errors while preserving the original intent"
-3. Maximum 2 retry cycles before reporting to user: "The writing expert was unable to produce changes that compile cleanly after 2 attempts. Here are the latest proposed changes and the remaining errors."
+2. Dispatch a new Task to the writing expert with the original task description, the proposed changes that failed, the relevant compilation-error excerpt, and the instruction "Revise proposed changes to resolve these compilation errors while preserving the original intent"
+3. After 2 retry cycles, report to the user: "The writing expert was unable to produce changes that compile cleanly after 2 attempts. Here are the latest proposed changes and the remaining errors."
 
 ---
 
 ## Error Handling
 
-### Retry Protocol
+Retry a failed sub-agent Task once. Do not auto-retry a failed compilation -- present the errors to the user instead. Retry a failed file read once, then report the file as inaccessible. If two or more sub-agents fail in one session, stop auto-retrying and ask the user whether to retry, proceed with partial results, or exit.
 
-- **Sub-agent failure** (Task tool error): Retry once automatically
-- **Compilation failure**: Do NOT auto-retry; present errors to user
-- **File read failure**: Retry once; if fails, report file not accessible
-
-### Graceful Degradation
-
-```
-Full capability (all tools available, compilation works)
-  -> (TeX Live not found): Examination and proofreading only
-  -> (content examiner fails): Skip examination; proceed with other actions
-  -> (proofreader fails): Skip proofreading; user does own review
-  -> (compilation fails repeatedly): Source editing only; user compiles manually
-```
-
-### Circuit Breaker
-
-If 2 or more sub-agents fail in a single session: stop auto-retrying. Report to user with options:
-1. Retry all failed agents
-2. Proceed with available results
-3. Exit the workflow
+Degrade rather than stop: without TeX Live, offer examination and proofreading; if the content examiner fails, proceed with the other actions; if the proofreader fails, say so and let the user review; if compilation keeps failing, edit the source and let the user compile manually.
 
 ### Rollback Protocol
 
-Before applying ANY file modification:
+Before applying any file modification:
 
 1. Read the original file content and store as rollback point (in memory or session directory)
 2. Apply the approved change
@@ -560,46 +447,9 @@ latexmk -pdf ${PROJECT_DIR}/main.tex      # WRONG -- breaks on spaces
 
 ## Full Review Pipeline
 
-### Parallel Dispatch (Primary)
+Dispatch the content examiner and the proofreader simultaneously, as two Task tool calls in a single response (examiner with full project context, proofreader with scope "full-review"). If one fails, continue with the other's results; if parallel dispatch itself fails, run them sequentially. See `../references/delegation-and-scope.md` for scoping fan-out.
 
-Dispatch content examiner and proofreader simultaneously via two Task tool calls in a single response:
-
-1. Task call 1: Content examiner with full project context
-2. Task call 2: Proofreader with scope "full-review"
-3. If one fails: continue with the other's results
-
-### Sequential Fallback
-
-If parallel dispatch fails: run examiner first, then proofreader.
-
-### Synthesis
-
-After both agents complete:
-
-1. Read both reports
-2. Cross-reference for contradictions (same file/line with different recommendations)
-3. If contradictions found: present them explicitly with your synthesis
-4. Present combined summary:
-   ```
-   ## Full Review Results
-
-   ### Document Health: {GOOD | NEEDS ATTENTION | CRITICAL}
-
-   ### Examination Findings
-   {summary of structure, packages, bibliography issues}
-
-   ### Proofreading Findings
-   {summary of prose, syntax, formatting issues}
-
-   ### Compilation Results
-   {errors, warnings}
-
-   ### Recommended Actions (Priority Order)
-   1. {most critical action}
-   2. {next action}
-   ...
-   ```
-5. Run compilation as the final step
+Then read both reports, cross-reference for contradictions (same file and line with different recommendations, presented explicitly with your synthesis), and give the user a combined summary: overall document health, examination findings (structure, packages, bibliography), proofreading findings (prose, syntax, formatting), compilation results, and recommended actions in priority order. Run compilation as the final step.
 
 ---
 
@@ -617,37 +467,15 @@ After both agents complete:
 
 ---
 
-## Context Window Management
-
-| Content | When Loaded | When Dropped |
-|---------|-------------|-------------|
-| Project detection results | Session start | Summarized in session state |
-| Sub-agent reference file | Task tool prompt assembly | After Task dispatched (in sub-agent's context, not yours) |
-| Sub-agent reports | When presenting to user | After user acts on findings |
-| Compilation log (filtered) | After compilation | After results presented |
-| Compilation baseline | Stored in session state | Read from file when needed |
-| File content for diff | When presenting changes | After user approves/rejects |
-
-**Key rule**: Rely on session files for historical data, not conversation memory. Summarize sub-agent reports in your thread; do not retain full reports in conversation context.
-
----
-
 ## Proofreader Output Validation
 
-When receiving proofreader results, check that corrections are proportional:
-- If a "correction" replaces more than 50% of a paragraph, flag it as a potential rewrite
-- Present to user: "The proofreader suggested a substantial change for this paragraph. Would you like to see only the specific issues flagged instead?"
+When receiving proofreader results, check that corrections are proportional. If a "correction" replaces more than 50% of a paragraph, flag it as a potential rewrite and ask the user: "The proofreader suggested a substantial change for this paragraph. Would you like to see only the specific issues flagged instead?"
 
 ---
 
 ## Escalation Protocol
 
-When encountering a situation outside normal workflow:
-
-1. **Classify**: Toolchain issue | Project issue | Agent failure | Scope issue
-2. **Inform user** with: what was attempted, what failed, what the user can do, whether partial results are available
-3. **Never silently fail**: Always report the issue, even if you can partially work around it
-4. **Preserve partial work**: Save any completed reports to the session directory
+For situations outside the normal workflow, classify the problem (toolchain, project, agent failure, scope), then tell the user what was attempted, what failed, what they can do, and whether partial results exist. Report the issue even when you can partially work around it, and save completed reports to the session directory.
 
 ---
 

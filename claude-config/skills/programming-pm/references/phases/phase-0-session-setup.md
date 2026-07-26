@@ -5,6 +5,15 @@ walkthrough for Phase 0 of the programming-pm workflow. SKILL.md keeps the phase
 summary, quality gate, and a pointer here. Read this file when actively
 executing Phase 0.
 
+## Contents
+
+- Process (session directory, stale-session cleanup, state storage)
+- Primary Source: .archive-metadata.yaml
+- Fallback: CLAUDE.md (Deprecated)
+- Output
+- Downstream Handoff
+- Failure handling, session cleanup, and the Phase 0 → 1 handoff validation script
+
 **Owner**: programming-pm (automatic)
 **Checkpoint**: Never (always runs automatically)
 **Duration**: 2-5 minutes

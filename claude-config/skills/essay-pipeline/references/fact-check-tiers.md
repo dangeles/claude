@@ -1,5 +1,15 @@
 # Fact-Check Tiers Reference
 
+## Contents
+
+- [Three-Tier Verification System](#three-tier-verification-system)
+- [Deferred Verification Queue](#deferred-verification-queue)
+- [User Override Protocol](#user-override-protocol)
+- [Common Knowledge Exemption Policy](#common-knowledge-exemption-policy)
+- [Contradictory Sources Protocol](#contradictory-sources-protocol)
+- [Claim Classification Guide](#claim-classification-guide)
+- [Source Quality Hierarchy](#source-quality-hierarchy)
+
 ## Three-Tier Verification System
 
 ### Tier 1: Inline Verification (Always Active)
@@ -8,7 +18,7 @@
 - **Who**: essay-fact-checker sub-agent via Task tool
 - **Process**: WebSearch for claim, find authoritative source, confirm via WebFetch
 - **Output**: Verified/Unverified/Partial + source URL
-- **Standard**: Every factual claim in the final essay MUST have a source URL
+- **Standard**: every factual claim in the final essay has a source URL
 
 ### Tier 2: Proactive Research Enrichment (Stage 3, On Request)
 
@@ -41,7 +51,7 @@ When a claim cannot be verified immediately (timeout, service unavailable):
        added_at: "{ISO8601}"
    ```
 3. **Continue pipeline** -- do not block on deferred claims
-4. **Resolve before final approval** -- Quality Gate G5 requires ALL deferred claims to be resolved
+4. **Resolve before final approval** -- Quality Gate G5 requires all deferred claims to be resolved
 5. **Resolution options**: Retry verification, user provides source, revise claim, remove claim
 
 ## User Override Protocol
@@ -71,7 +81,7 @@ Every override is recorded in `fact-check-log.md`:
 ```
 
 ### Step 4: Final Review
-At Quality Gate G5, ALL overrides are surfaced explicitly:
+At Quality Gate G5, every override is surfaced explicitly:
 - "You overrode [N] fact-checker findings. Here they are: [list]. Do you want to revisit any before finalizing?"
 
 ## Common Knowledge Exemption Policy
@@ -84,8 +94,6 @@ The following types of claims do NOT require citation:
 | Standard definitions | "CRISPR stands for Clustered Regularly Interspaced Short Palindromic Repeats" | Flag as `common_knowledge` |
 | Historical events with broad consensus | "CRISPR was first used for gene editing in human cells in 2013" | Flag as `common_knowledge` |
 | Mathematical/logical truths | "Exponential growth means doubling at regular intervals" | Flag as `common_knowledge` |
-
-**When in doubt, verify.** It is better to have an unnecessary citation than a missing one.
 
 ## Contradictory Sources Protocol
 
@@ -116,7 +124,7 @@ Before requesting verification, classify each claim:
 | **Policy** | Value judgment or policy recommendation | Exempt | "We should increase funding for delivery research" |
 | **Common knowledge** | Widely established fact | Flag, optional citation | "DNA encodes genetic information" |
 
-**Rule of thumb**: If a claim uses specific numbers, dates, names, or "studies show" language, it is factual and must be verified.
+**Rule of thumb**: a claim using specific numbers, dates, names, or "studies show" language is factual — verify it.
 
 ## Source Quality Hierarchy
 
@@ -132,4 +140,4 @@ When multiple sources are available, prefer higher-quality sources:
 6. **General news**: Major outlets reporting on science (lower confidence)
 7. **Other**: Blog posts, press releases, Wikipedia (flag as "low-confidence source")
 
-**Always prefer the primary source over secondary reporting.** If a news article cites a study, find and cite the study directly.
+Prefer the primary source over secondary reporting: if a news article cites a study, find and cite the study directly.

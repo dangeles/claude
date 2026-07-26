@@ -2,6 +2,18 @@
 
 This document summarizes key Anthropic guidelines and best practices for developing Claude Code skills.
 
+## Contents
+
+- Core Principles
+- Skill Design Patterns
+- Integration Patterns
+- Error Handling Patterns
+- Anti-Patterns to Avoid
+- Skill Invocation Best Practices
+- Testing and Validation
+- Model-Specific Considerations
+- Accessibility and Documentation
+
 ## Core Principles
 
 ### 1. Clear, Specific Instructions
@@ -106,11 +118,10 @@ Find the pattern somehow.
 Launch `skill-editor-request-refiner` agent via Task tool.
 Agent refines user request interactively.
 
-### Phase 2: Parallel Analysis
-Launch 3 agents in parallel:
-- skill-editor-best-practices-reviewer
-- skill-editor-external-researcher
-- skill-editor-edge-case-simulator
+### Phase 2: Analysis
+For a substantial change, launch the independent analysis tracks in one message so they
+run concurrently — e.g. `brainstorming-pm` for multi-perspective analysis and
+`skill-editor-edge-case-simulator` for failure modes. For a small change, skip this phase.
 ```
 
 ❌ **Bad (for complex workflow):**
@@ -174,16 +185,14 @@ Use for independent tasks that can run simultaneously:
 ```markdown
 ## Workflow
 
-### Step 3: Parallel Analysis
-Launch 3 agents in parallel (single message, multiple Task calls):
-1. Agent A: Best practices review
-2. Agent B: External research
-3. Agent C: Edge case simulation
-
-Wait for all 3 to complete before continuing.
+### Step 3: Analysis
+Launch one agent per genuinely independent track, in a single message with multiple Task
+calls so they run concurrently. Keep the count to the number of distinct tracks — one
+agent per track, not several agents per track.
 ```
 
-**When to use:** Multiple independent analyses needed, time-sensitive tasks.
+**When to use:** several independent, sizeable analyses are needed. If one agent can cover
+the ground, use one.
 
 ### Pattern 4: Agent Delegation
 
@@ -221,7 +230,7 @@ feat(skill-name): Add new feature
 
 Detailed description here.
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 \`\`\`
@@ -439,16 +448,8 @@ Otherwise:
 
 ## Testing and Validation
 
-### Skill Testing Checklist
-
-Before committing a skill:
-
-- [ ] **Syntax validation**: YAML frontmatter parses correctly
-- [ ] **Invocation test**: Skill invokes without errors
-- [ ] **Workflow test**: Complete workflow executes successfully
-- [ ] **Edge case test**: Workflow handles errors gracefully
-- [ ] **Integration test**: Skill works with related skills
-- [ ] **Documentation test**: Examples are accurate
+Before committing a skill, run the objective checks: the YAML frontmatter parses, the skill
+invokes without error, and the sync status is clean.
 
 ### Validation Commands
 
@@ -472,17 +473,33 @@ EOF
 
 ## Model-Specific Considerations
 
-### Sonnet 4.5 (Default)
+This repo's configured default is Claude Opus 5 (`claude-opus-5` in
+`claude-config/settings.json`).
 
-- **Strengths**: Fast, cost-effective, handles most tasks
-- **Use for**: Standard workflows, quick analysis, implementation
-- **Limit**: Very complex reasoning (use Opus for this)
+### Claude Opus 5 — default here
 
-### Opus 4.6 (Premium)
+- Strengths: complex agentic coding, long-horizon work, deep reasoning
+- Use for: architectural decisions, multi-file changes, critical reviews
+- Notes: verifies its own work unprompted and delegates readily, so skills should not
+  instruct it to double-check or to delegate more. Writes longer output by default;
+  prompt for conciseness rather than lowering effort.
 
-- **Strengths**: Highest quality reasoning, complex decisions
-- **Use for**: Critical reviews, complex planning, architectural decisions
-- **Limit**: Cost, speed (use sparingly)
+### Claude Sonnet 5
+
+- Strengths: near-Opus quality on coding and agentic work, lower cost
+- Use for: high-volume or latency-sensitive workflows
+
+### Claude Haiku 4.5
+
+- Strengths: fastest and cheapest
+- Use for: simple, well-scoped, speed-critical tasks
+
+### Claude Fable 5 — not usable for life-sciences work
+
+Anthropic's most capable widely released model, but its safety classifiers target
+biology and life-sciences content, including lab methods and molecular mechanisms.
+Benign research tasks trip them and fall back to Opus 4.8. Do not set it as the default
+for this repo's bioinformatics and research skills.
 
 **Agent Model Selection:**
 

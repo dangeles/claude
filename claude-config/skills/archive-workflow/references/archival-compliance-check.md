@@ -1,5 +1,20 @@
 # Archival Compliance Check Procedure
 
+## Contents
+
+- Purpose
+- Source of Truth Hierarchy
+- Prerequisites
+- Step 1: Detect Archival Metadata
+- Step 2: Read and Validate
+- Step 3: Validate Proposed File Paths
+- Step 4: Advisory Resolution
+- Step 5: Record Decision
+- Producer-Consumer Contract
+- Schema Versioning Policy
+- Standard Archival Context Block
+- Deprecation Notice
+
 ## Purpose
 This document defines the reusable archival compliance check that all file-generating
 workflows follow before writing output files. It is referenced by all consuming
@@ -33,14 +48,14 @@ fi
 
 ### Exception: archive-workflow Internal Invocation
 If this workflow was invoked via handoff with `archival_context: "skip"`:
-- Do NOT check for `.archive-metadata.yaml`
+- Skip the check for `.archive-metadata.yaml`
 - Proceed with the invoking workflow's instructions
 - This prevents circular enforcement when archive-workflow invokes specialists
 
 ### Exception: Orchestrator-Provided Context
 If the handoff from an orchestrator includes an `archival_context` block:
 - Use the provided context directly
-- Do NOT re-read `.archive-metadata.yaml`
+- Skip re-reading `.archive-metadata.yaml`
 - The orchestrator has already resolved guidelines and user choices
 
 ## Step 2: Read and Validate
@@ -126,8 +141,8 @@ Read `enforcement.mode` from the YAML (default: "advisory"):
 
 ### Batch Advisory (Primary Pattern)
 
-Before creating files in a workflow stage, enumerate ALL files, validate ALL paths,
-and collect violations into a batch. Present ONE summary:
+Before creating files in a workflow stage, enumerate every file, validate every path,
+and collect violations into a batch. Present one summary:
 
 ```
 ARCHIVAL GUIDELINE ADVISORY ({N} violations in {M} files)
@@ -203,14 +218,14 @@ archival_decisions:
 8. The file will be committed to git as part of the archive-workflow commit
 
 ### Consumer RESPONSIBILITIES:
-1. MUST parse with yaml.safe_load() or yq (NEVER yaml.load())
-2. MUST check `version` field for compatibility
-3. MUST handle missing `.archive-metadata.yaml` (proceed without checks)
-4. MUST handle malformed YAML (treat as missing, log warning)
-5. MUST present user with options on violation (never silently enforce)
-6. MUST log compliance decisions in session state
-7. MUST NOT modify `.archive-metadata.yaml`
-8. MUST ignore unknown fields (forward compatibility)
+1. MUST parse with yaml.safe_load() or yq (NEVER yaml.load() — it executes arbitrary Python)
+2. Check the `version` field for compatibility
+3. Handle a missing `.archive-metadata.yaml` (proceed without checks)
+4. Handle malformed YAML (treat as missing, log warning)
+5. Present the user with options on violation rather than silently enforcing
+6. Log compliance decisions in session state
+7. Do not modify `.archive-metadata.yaml`
+8. Ignore unknown fields (forward compatibility)
 
 ### Contract VIOLATIONS:
 | Violation | Handler |
@@ -227,12 +242,12 @@ archival_decisions:
   Consumers need no changes.
 - MAJOR versions (1.0 -> 2.0): Breaking changes. Consumers must be updated.
   Migration window: both schemas valid for 30 days.
-- Forward compatibility: Consumers MUST ignore unknown fields.
+- Forward compatibility: consumers ignore unknown fields.
 - Default-to-v1: If `version` field is missing, treat as corrupt (not as v1).
 
 ## Standard Archival Context Block (for orchestrator handoffs)
 
-All orchestrators MUST include this block when dispatching specialists:
+Orchestrators include this block when dispatching specialists:
 
 ```yaml
 archival_context:
@@ -249,7 +264,7 @@ archival_context:
 ### Deprecated: Direct CLAUDE.md Reading for Archival Guidelines
 - **Deprecated in**: v1.0 (2026-02-06)
 - **Replaced by**: `.archive-metadata.yaml` via this compliance check
-- **Fallback**: CLAUDE.md reading preserved ONLY when `.archive-metadata.yaml` absent
+- **Fallback**: CLAUDE.md reading preserved only when `.archive-metadata.yaml` is absent
 - **Removal timeline**: CLAUDE.md fallback will be removed in v2.0 (TBD)
 
 When CLAUDE.md fallback is triggered, log:

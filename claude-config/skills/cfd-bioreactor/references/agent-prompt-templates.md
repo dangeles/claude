@@ -12,9 +12,9 @@ Contents:
 3. Perspective Agent Task Template (FULL mode swarm)
 4. Synthesis Agent Task Template (FULL mode swarm)
 
-Templates 1-2 are used at every agent invocation (Section 6b of SKILL.md).
-Templates 3-4 are used only in FULL mode by the decomposed swarm pipeline
-(Section 8b of SKILL.md).
+Templates 1-2 are used at every agent invocation (see the Role and Delegation
+section of SKILL.md). Templates 3-4 are used only in FULL mode by the decomposed
+swarm pipeline (see Multi-Perspective Analysis in SKILL.md).
 
 ---
 
@@ -51,7 +51,7 @@ TASK:
 {task_description}
 
 {If retry after reviewer rejection:}
-HARD CONSTRAINTS (from reviewer -- you MUST satisfy these):
+HARD CONSTRAINTS (from reviewer -- satisfy these):
 {blocking_issues_from_reviewer}
 
 {If error diagnosis mode:}
@@ -62,7 +62,7 @@ Error history (do NOT recommend fixes already attempted):
 
 OUTPUT:
 Write handoff YAML to: {session_dir}/handoffs/{handoff_filename}
-Follow the exact template in your SKILL.md Section 6.
+Follow the Output Contract handoff YAML template in your SKILL.md.
 ```
 
 ---
@@ -85,8 +85,8 @@ reference content delivery.
 
 ## 3. Perspective Agent Task Template (FULL Mode Swarm)
 
-Spawned 3-5 times as parallel Task calls in Phase D1 of the decomposed swarm
-pipeline (SKILL.md Section 8b). Each agent receives one filled copy with its
+Spawned 3-5 times as parallel Task calls in the decomposed swarm pipeline
+(SKILL.md, Multi-Perspective Analysis). Each agent receives one filled copy with its
 own `{perspective_name}` and `{filled_challenge_template_from_swarm_framing_templates}`.
 
 ```
@@ -130,8 +130,8 @@ OUTPUT FORMAT:
 
 ## 4. Synthesis Agent Task Template (FULL Mode Swarm)
 
-Spawned once in Phase D2 of the decomposed swarm pipeline (SKILL.md Section 8b)
-after all perspective agents complete. Combines the perspective outputs into a
+Spawned once in the decomposed swarm pipeline (SKILL.md, Multi-Perspective
+Analysis) after all perspective agents complete. Combines the perspective outputs into a
 single swarm-synthesis handoff YAML.
 
 ```

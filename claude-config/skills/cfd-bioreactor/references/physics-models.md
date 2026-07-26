@@ -121,10 +121,10 @@ Where h is the local cell diameter.
 
 **Decision tree**:
 - Pe < 1: Standard Galerkin is acceptable (diffusion-dominated)
-- Pe >= 1: SUPG stabilization is REQUIRED (convection-dominated)
+- Pe >= 1: SUPG stabilization is required (convection-dominated)
 
 Since Pe >= 1 is common in practice and SUPG has negligible cost when Pe < 1,
-ALWAYS use SUPG by default. This is not optional.
+Use SUPG by default.
 
 ### SUPG Weak Form (Default -- Always Use)
 

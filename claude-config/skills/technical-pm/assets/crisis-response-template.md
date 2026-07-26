@@ -306,7 +306,7 @@ milestone with 1-day buffer.
    - Recreate sections 3-5 (oxygen transfer, clinical trials, cost analysis)
    - Use Edit tool only (never Write on existing file)
    - Backup after each section: `cp docs/literature-review.md backups/lit-review-v5-section-[N].md`
-4. Set 30-minute checkpoints: verify progress every 30 min
+4. Checkpoint after each recreated section: confirm the file is intact before continuing
 
 ═══════════════════════════════════════════════════════════════
 ARTIFACTS AVAILABLE FOR REVIEW

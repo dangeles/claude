@@ -53,18 +53,18 @@
 
 ---
 
-### 2. Agent Spinning / Timeout
-**Symptom**: Agent works >30 min without progress update; stuck in loop or overly broad task
+### 2. Agent Spinning / Off-Target Work
+**Symptom**: Agent returns without usable progress; stuck in a loop or working an overly broad task
 **Likelihood**: Medium (especially on ambiguous or open-ended tasks)
-**Impact**: Medium (wastes time, blocks downstream work)
+**Impact**: Medium (wastes effort, blocks downstream work)
 
 **Mitigations**:
-- ✅ Set up progress monitoring: Check progress files every 30-60 min for tasks >1 hour
-- ✅ Define concrete milestones: Not "research topic" but "find 3 papers with parameter X"
-- ✅ Narrow scope when agent spins: Reduce parameters, shorten timeline, focus on subset
-- ✅ Use timeout intervention protocol: Analyze → Notify → Options → Execute
+- Check outputs at milestone boundaries rather than only at the end
+- Define concrete milestones: Not "research topic" but "find 3 papers with parameter X"
+- Narrow scope when an agent spins: Reduce parameters, focus on a subset
+- Analyze → present options → execute (see SKILL.md, "When an Agent Returns Off-Target or Over-Broad Work")
 
-**Escalation trigger**: Agent >30 min without update → use timeout intervention; if scope unclear, ask user for prioritization
+**Escalation trigger**: Agent returns off-target work and narrowing scope needs domain knowledge → ask user for prioritization
 
 ---
 
@@ -136,10 +136,10 @@
 **Mitigations**:
 - ✅ Document search dead-ends: "Searched PubMed with X keywords, found nothing" → prevents repeated failed searches
 - ✅ Use proxies or ranges: If exact value unknown, can we bound it? (e.g., "literature reports 5-15, we'll use 10")
-- ✅ Escalate information needs early: Don't spin for 2 hours, ask user after 30 min if they have data source
+- Escalate information needs early: Don't spin, ask the user whether they have a data source
 - ✅ Compile paywall list proactively: Send to user in batch for access, don't block per-paper
 
-**Escalation trigger**: If information unavailable after exhaustive search (30+ min), use AskUserQuestion with summary of what you tried and what's needed
+**Escalation trigger**: If information remains unavailable after searching the obvious sources, use AskUserQuestion with a summary of what you tried and what's needed
 
 ---
 

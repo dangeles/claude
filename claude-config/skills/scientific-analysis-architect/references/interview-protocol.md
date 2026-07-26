@@ -2,30 +2,25 @@
 
 Specification for Phase 6 statistical fact-checking interview mode.
 
+## Contents
+
+- Initial Presentation
+- Concern Template
+- User Response Handling
+- Batch Options
+- Rejection Handling
+- Correction Application
+- Progress and Resume
+
+---
+
 ## Initial Presentation
 
-### Decision Logic
+Concern count sets the entry point: zero concerns means showing the justification and finishing; 5 or fewer goes straight to one-at-a-time interview; more than 5 shows the summary and batch options first.
 
-```python
-def present_concerns(concerns: list):
-    """Determine how to present statistical concerns."""
+### Zero concerns
 
-    total = len(concerns)
-
-    if total == 0:
-        # No concerns - show justification
-        return present_zero_concerns()
-    elif total <= 5:
-        # Few concerns - go straight to interview
-        return start_interview_mode(concerns)
-    else:
-        # Many concerns - show summary first
-        return present_summary_then_interview(concerns)
-```
-
-### Zero Concerns Handling
-
-When no statistical concerns are found, the fact-checker must provide justification:
+When no statistical concerns are found, the fact-checker states why:
 
 ```
 Statistical Review Complete
@@ -44,11 +39,9 @@ Confidence: {high/medium/low}
 Proceed to completion? [yes/request-second-review]
 ```
 
-If confidence is low or user requests:
-- Re-run fact-checker with stricter criteria
-- Or proceed with warning logged
+If confidence is low or the user asks, re-run the fact-checker with stricter criteria; otherwise proceed with the warning logged.
 
-### Summary Presentation (>5 concerns)
+### Summary presentation (>5 concerns)
 
 ```
 Statistical Review Found {N} Concerns
@@ -74,9 +67,9 @@ How would you like to proceed?
 Enter choice [A/B/C/D/E]:
 ```
 
-## Concern Template
+---
 
-### Standard Format
+## Concern Template
 
 ```
 Statistical Concern {current} of {total}
@@ -99,10 +92,9 @@ Recommendation:
 Accept? [yes/no/skip/explain]
 ```
 
-Section paths use hierarchical notation to disambiguate duplicate headings:
-`"Analysis Steps > Step 4: Differential Expression"`
+Section paths use hierarchical notation to disambiguate duplicate headings: `"Analysis Steps > Step 4: Differential Expression"`.
 
-### Example Concern
+### Example concern
 
 ```
 Statistical Concern 1 of 7
@@ -133,96 +125,22 @@ Recommendation:
 Accept? [yes/no/skip/explain]
 ```
 
+---
+
 ## User Response Handling
 
-### Response: "yes"
+Each response records `user_decision` and `decision_timestamp` on the concern, appends it to the matching list in `session_state["corrections"]`, and moves to the next concern with the remaining count shown.
 
-```python
-def handle_yes(concern: dict, session_state: dict):
-    """User accepts correction."""
+- **yes** — decision "accepted".
+- **no** — decision "rejected". Ask for a brief reason (optional, encouraged) and store it as `rejection_reason`.
+- **skip** — decision "skipped", deferred rather than decided.
+- **explain** — set `explanation_requested`, then present statistical background, why it matters, alternative approaches, and references, and re-prompt with [yes/no/skip] only.
 
-    concern["user_decision"] = "accepted"
-    concern["decision_timestamp"] = datetime.now().isoformat()
-
-    session_state["corrections"]["accepted"].append(concern)
-
-    print(f"Correction accepted. ({remaining} remaining)")
-    return next_concern()
-```
-
-### Response: "no"
-
-```python
-def handle_no(concern: dict, session_state: dict):
-    """User rejects correction."""
-
-    # Ask for reason (optional but encouraged)
-    reason = AskUserQuestion(
-        "Briefly explain why (or press Enter to skip): "
-    )
-
-    concern["user_decision"] = "rejected"
-    concern["rejection_reason"] = reason if reason else None
-    concern["decision_timestamp"] = datetime.now().isoformat()
-
-    session_state["corrections"]["rejected"].append(concern)
-
-    print(f"Noted. ({remaining} remaining)")
-    return next_concern()
-```
-
-### Response: "skip"
-
-```python
-def handle_skip(concern: dict, session_state: dict):
-    """User defers decision."""
-
-    concern["user_decision"] = "skipped"
-    concern["decision_timestamp"] = datetime.now().isoformat()
-
-    session_state["corrections"]["skipped"].append(concern)
-
-    print(f"Skipped. ({remaining} remaining)")
-    return next_concern()
-```
-
-### Response: "explain"
-
-```python
-def handle_explain(concern: dict, session_state: dict):
-    """User requests more detail."""
-
-    concern["explanation_requested"] = True
-
-    # Generate expanded explanation
-    explanation = generate_explanation(concern)
-
-    print(f"""
-Extended Explanation:
-
-{explanation["statistical_background"]}
-
-Why this matters:
-{explanation["impact"]}
-
-Alternative approaches:
-{explanation["alternatives"]}
-
-References:
-{explanation["references"]}
-
-Accept? [yes/no/skip]
-""")
-
-    # Re-prompt (no second explain option)
-    return handle_response(get_user_input(["yes", "no", "skip"]))
-```
+---
 
 ## Batch Options
 
-### After 5 Concerns Reviewed
-
-If total concerns > 5 and user has reviewed 5, offer batch options:
+Once 5 concerns have been reviewed and more remain:
 
 ```
 You've reviewed 5 of {total} concerns.
@@ -242,40 +160,13 @@ Continue options:
 Enter choice [A/B/C/D/E]:
 ```
 
-### Batch Processing
+Batch decisions apply to every remaining concern: B accepts critical and skips the rest, C accepts all, D rejects all, E accepts critical and standard while skipping minor.
 
-```python
-def apply_batch_decision(decision: str, remaining: list):
-    """Apply batch decision to remaining concerns."""
-
-    if decision == "B":  # Accept critical only
-        for c in remaining:
-            if c["severity"] == "critical":
-                c["user_decision"] = "accepted"
-            else:
-                c["user_decision"] = "skipped"
-
-    elif decision == "C":  # Accept all
-        for c in remaining:
-            c["user_decision"] = "accepted"
-
-    elif decision == "D":  # Reject all
-        for c in remaining:
-            c["user_decision"] = "rejected"
-
-    elif decision == "E":  # Accept critical+standard
-        for c in remaining:
-            if c["severity"] in ["critical", "standard"]:
-                c["user_decision"] = "accepted"
-            else:
-                c["user_decision"] = "skipped"
-```
+---
 
 ## Rejection Handling
 
-### High Rejection Rate Detection
-
-If user rejects >= 80% of concerns:
+If the user rejects 80% or more of concerns:
 
 ```
 High Rejection Rate Detected
@@ -295,35 +186,11 @@ Would you like to:
 Enter choice [A/B/C]:
 ```
 
-### Recording Rejection Patterns
+Group rejections by category (multiple testing, test selection, assumption checking, effect size, other) with the user's stated reason, and store them in `session_state["rejection_patterns"]`.
 
-```python
-def log_rejection_pattern(session_state: dict):
-    """Log rejection patterns for future improvement."""
-
-    rejected = session_state["corrections"]["rejected"]
-
-    patterns = {
-        "multiple_testing": [],
-        "test_selection": [],
-        "assumption_checking": [],
-        "effect_size": [],
-        "other": []
-    }
-
-    for concern in rejected:
-        category = classify_concern(concern)
-        patterns[category].append({
-            "concern": concern["issue"],
-            "reason": concern.get("rejection_reason")
-        })
-
-    session_state["rejection_patterns"] = patterns
-```
+---
 
 ## Correction Application
-
-### Summary Before Application
 
 ```
 Interview Complete
@@ -343,49 +210,9 @@ Documents affected: {list}
 Apply all accepted corrections now? [yes/no]
 ```
 
-### Application Process
+Apply corrections grouped by document. For each one, locate the section by its hierarchical path and confirm `current_content` still appears in the file before replacing it — this guards against stale references from earlier edits. Replace the first occurrence only and prepend an HTML comment recording the issue: `<!-- CORRECTED: {issue} -->`. Report the count applied per document.
 
-```python
-def apply_corrections(session_state: dict):
-    """Apply accepted corrections to analysis documents."""
-
-    accepted = session_state["corrections"]["accepted"]
-
-    # Group by document
-    by_document = group_corrections_by_document(accepted)
-
-    for doc_path, corrections in by_document.items():
-        print(f"Updating {doc_path}...")
-
-        with open(doc_path) as f:
-            content = f.read()
-
-        for correction in corrections:
-            section_path = correction["section_path"]
-            code_block_index = correction.get("code_block_index")
-            current_content = correction["current_content"]
-            new_content = correction["recommendation"]
-
-            # Locate section by hierarchical path
-            # Verify current_content matches (guard against stale references)
-            if current_content in content:
-                content = content.replace(current_content, new_content, 1)
-                # Prepend correction comment
-                content = content.replace(
-                    new_content,
-                    f"<!-- CORRECTED: {correction['issue']} -->\n{new_content}",
-                    1
-                )
-
-        with open(doc_path, "w") as f:
-            f.write(content)
-
-        print(f"  Applied {len(corrections)} corrections")
-
-    print(f"\nTotal: {len(accepted)} corrections applied to {len(by_document)} documents")
-```
-
-### Correction Manifest
+### Correction manifest
 
 Save all decisions to `corrections-manifest.json`:
 
@@ -438,43 +265,19 @@ Save all decisions to `corrections-manifest.json`:
 }
 ```
 
-## Progress Indicators
+---
 
-### During Interview
+## Progress and Resume
 
-```
-Statistical Review Progress
-[=====>              ] 3/12 concerns reviewed
-Accepted: 2 | Rejected: 1 | Skipped: 0
-Estimated time remaining: ~8 minutes
-```
-
-### After Each Response
+Show progress after each response:
 
 ```
 Correction accepted. (9 remaining)
 [======>             ] 4/12 concerns reviewed
+Accepted: 2 | Rejected: 1 | Skipped: 0
 ```
 
-## Interview State Persistence
-
-If interview is interrupted, save state:
-
-```python
-def save_interview_progress(session_state: dict, current_index: int):
-    """Save interview progress for resume."""
-
-    session_state["interview_progress"] = {
-        "current_index": current_index,
-        "total_concerns": len(session_state["concerns"]),
-        "decisions_made": current_index,
-        "last_saved": datetime.now().isoformat()
-    }
-
-    checkpoint_phase(6, session_state, {})
-```
-
-Resume message:
+If the interview is interrupted, save `interview_progress` into session state with `current_index`, `total_concerns`, `decisions_made`, and `last_saved`, and checkpoint Phase 6. On resume:
 
 ```
 Resuming Statistical Review

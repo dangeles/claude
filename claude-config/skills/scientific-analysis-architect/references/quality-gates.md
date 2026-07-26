@@ -1,190 +1,65 @@
 # Quality Gates
 
-Definitions and criteria for all quality gates in the scientific-analysis-architect workflow.
+Criteria for the quality gates in the scientific-analysis-architect workflow, plus the runnable validators for the two document-structure gates.
 
-## Gate Definitions
+## Contents
 
-### Quality Gate 0: Initialization
-
-**Phase**: 0
-**Owner**: Orchestrator
-**Type**: Automated
-
-**Pass Criteria**:
-- [ ] Session directory created successfully
-- [ ] Session directory is writable (test file created and deleted)
-- [ ] Output directory exists and is writable
-- [ ] session-state.json initialized with valid schema
-
-**Validation Code**:
-```python
-def validate_gate_0(session_state: dict) -> bool:
-    """Validate initialization gate."""
-
-    # Check session directory
-    session_dir = session_state["config"]["session_directory"]
-    if not os.path.exists(session_dir):
-        return False, "Session directory does not exist"
-
-    # Write test
-    test_file = os.path.join(session_dir, ".write_test")
-    try:
-        with open(test_file, "w") as f:
-            f.write("test")
-        os.remove(test_file)
-    except Exception as e:
-        return False, f"Session directory not writable: {e}"
-
-    # Check output directory
-    output_dir = session_state["config"]["output_directory"]
-    if not os.path.isdir(output_dir):
-        return False, "Output directory does not exist"
-
-    return True, "Gate 0 passed"
-```
-
-**Fail Action**: Abort workflow with clear error message
+- Gate 0: Initialization
+- Gate 1: Research Structure
+- Gate 2: Chapter Plans
+- Gate 3: Structure Approval (user)
+- Gate 4: Notebook Approval (user)
+- Gate 5: Analysis Document Validation (validator)
+- Gate 6: Statistical Review (user)
+- Gate 7: Audience Document Validation (validator)
+- Pass/Fail Actions Summary
+- Minimum Thresholds
+- Bypassing Gates
 
 ---
 
-### Quality Gate 1: Research Structure
+## Gate 0: Initialization
 
-**Phase**: 1
-**Owner**: research-architect
-**Type**: Automated
+Phase 0, orchestrator, automated.
 
-**Pass Criteria**:
-- [ ] research-structure.md file exists
-- [ ] File is valid markdown
-- [ ] Contains 3-7 chapters (inclusive)
-- [ ] Each chapter has:
-  - [ ] Title (non-empty string)
-  - [ ] Goal (one of: atlas, hypothesis, mechanism)
-  - [ ] At least 1 analysis listed
-- [ ] Dependencies reference valid chapter numbers
-- [ ] No circular dependencies
+- Session directory created successfully and writable (test file created and deleted)
+- Output directory exists and is writable
+- `session-state.json` initialized with a valid schema
 
-**Validation Code**:
-```python
-def validate_gate_1(session_dir: str) -> tuple:
-    """Validate research structure gate."""
-
-    structure_path = os.path.join(session_dir, "research-structure.md")
-
-    # File exists
-    if not os.path.exists(structure_path):
-        return False, "research-structure.md not found"
-
-    # Parse structure
-    with open(structure_path) as f:
-        content = f.read()
-
-    chapters = parse_chapters(content)
-
-    # Chapter count
-    if not (3 <= len(chapters) <= 7):
-        return False, f"Invalid chapter count: {len(chapters)} (expected 3-7)"
-
-    # Validate each chapter
-    valid_goals = {"atlas", "hypothesis", "mechanism"}
-    for i, chapter in enumerate(chapters, 1):
-        if not chapter.get("title"):
-            return False, f"Chapter {i} missing title"
-        if chapter.get("goal") not in valid_goals:
-            return False, f"Chapter {i} invalid goal: {chapter.get('goal')}"
-        if not chapter.get("analyses"):
-            return False, f"Chapter {i} has no analyses"
-
-    # Check dependencies
-    chapter_nums = set(range(1, len(chapters) + 1))
-    for chapter in chapters:
-        for dep in chapter.get("dependencies", []):
-            if dep not in chapter_nums:
-                return False, f"Invalid dependency: Chapter {dep}"
-            if dep >= chapter["number"]:
-                return False, f"Circular/forward dependency: Chapter {chapter['number']} -> {dep}"
-
-    return True, f"Gate 1 passed: {len(chapters)} chapters validated"
-```
-
-**Fail Action**: Return to Phase 1 with specific feedback
+On failure: stop with a clear error message.
 
 ---
 
-### Quality Gate 2: Chapter Plans
+## Gate 1: Research Structure
 
-**Phase**: 2
-**Owner**: analysis-planner
-**Type**: Automated
+Phase 1, research-architect, automated.
 
-**Pass Criteria**:
-- [ ] All chapter{N}-notebook-plans.md files exist
-- [ ] Each chapter plan has:
-  - [ ] At least 1 analysis defined
-  - [ ] Statistical approach for each analysis
-  - [ ] No unresolved critical conflicts
-- [ ] Data flow is consistent:
-  - [ ] Outputs defined for each analysis
-  - [ ] Inputs available from upstream analyses or user data
+- `research-structure.md` exists and is valid markdown
+- Contains 3-7 chapters inclusive
+- Each chapter has a non-empty title, a goal from {atlas, hypothesis, mechanism}, and at least 1 analysis
+- Dependencies reference valid chapter numbers, all earlier than the referencing chapter (no cycles, no forward references)
 
-**Validation Code**:
-```python
-def validate_gate_2(session_dir: str, num_chapters: int) -> tuple:
-    """Validate chapter plans gate."""
-
-    plans = []
-    for i in range(1, num_chapters + 1):
-        plan_path = os.path.join(session_dir, f"chapter{i}-notebook-plans.md")
-
-        if not os.path.exists(plan_path):
-            return False, f"chapter{i}-notebook-plans.md not found"
-
-        with open(plan_path) as f:
-            plan = parse_chapter_plan(f.read())
-
-        # At least one analysis
-        if not plan.get("analyses"):
-            return False, f"Chapter {i} has no analyses"
-
-        # Statistical approach required
-        for analysis in plan["analyses"]:
-            if not analysis.get("statistical_approach"):
-                return False, f"Chapter {i} analysis {analysis['number']} missing statistical approach"
-
-        # Check for unresolved conflicts
-        if plan.get("unresolved_conflicts"):
-            return False, f"Chapter {i} has unresolved conflicts: {plan['unresolved_conflicts']}"
-
-        plans.append(plan)
-
-    # Validate data flow
-    available_outputs = set(["user_data"])
-    for plan in plans:
-        for analysis in plan["analyses"]:
-            # Check inputs available
-            for input_req in analysis.get("data_requirements", {}).get("inputs", []):
-                if input_req not in available_outputs:
-                    return False, f"Input not available: {input_req}"
-
-            # Add outputs to available
-            for output in analysis.get("data_requirements", {}).get("outputs", []):
-                available_outputs.add(output)
-
-    total_analyses = sum(len(p["analyses"]) for p in plans)
-    return True, f"Gate 2 passed: {total_analyses} analyses across {num_chapters} chapters"
-```
-
-**Fail Action**: Return to Phase 2 with specific feedback
+On failure: return to Phase 1 with the specific problem.
 
 ---
 
-### Quality Gate 3: Structure Approval (USER)
+## Gate 2: Chapter Plans
 
-**Phase**: 3
-**Owner**: User
-**Type**: Human judgment
+Phase 2, analysis-planner, automated.
 
-**Presentation**:
+- Every `chapter{N}-notebook-plans.md` exists
+- Each plan has at least 1 analysis, and every analysis has a statistical approach
+- No unresolved critical conflicts recorded in the plan
+- Data flow is consistent: every analysis input is either user data or an output produced upstream, and outputs are declared
+
+On failure: return to Phase 2 with the specific problem.
+
+---
+
+## Gate 3: Structure Approval (USER)
+
+Phase 3, human judgment.
+
 ```
 Structure Review Complete
 
@@ -202,26 +77,18 @@ Major Issues:
 Approve / Request changes / Reject? [A/c/r]
 ```
 
-**Pass Criteria**:
-- [ ] User explicitly approves (enters "A")
-- [ ] OR user requests changes and changes are implemented
+Passes when the user approves ("A"), or when they request changes and those changes are implemented.
 
-**Responses**:
-- **A (Approve)**: Record approval, proceed to Phase 4
-- **c (Changes)**: Gather feedback, re-run affected phases, return to gate
-- **r (Reject)**: Ask which phase to return to (1 or 2)
-
-**Fail Action**: Loop until approved or workflow aborted
+- **A (Approve)**: record approval, proceed to Phase 4
+- **c (Changes)**: gather feedback, re-run affected phases, return to this gate
+- **r (Reject)**: ask which phase to return to (1 or 2)
 
 ---
 
-### Quality Gate 4: Notebook Approval (USER)
+## Gate 4: Notebook Approval (USER)
 
-**Phase**: 4
-**Owner**: User
-**Type**: Human judgment
+Phase 4, human judgment.
 
-**Presentation**:
 ```
 Plan Review Complete
 
@@ -236,31 +103,20 @@ Critical Issues:
 Approve / Request changes / Reject? [A/c/r]
 ```
 
-**Pass Criteria**:
-- [ ] User explicitly approves (enters "A")
-- [ ] OR all critical issues addressed after changes
-
-**Responses**: Same as Gate 3
-
-**Fail Action**: Loop until approved or workflow aborted
+Passes when the user approves, or when all critical issues are addressed after changes. Responses are handled as in Gate 3.
 
 ---
 
-### Quality Gate 5: Analysis Document Validation
+## Gate 5: Analysis Document Validation
 
-**Phase**: 5
-**Owner**: Orchestrator + notebook-generator
-**Type**: Automated
+Phase 5, orchestrator plus notebook-generator, automated.
 
-**Pass Criteria**:
-- [ ] All expected analysis documents created
-- [ ] Each document has required sections (Goal, Statistical Approach, Analysis Steps, Expected Outputs)
-- [ ] Each document has at least one fenced code block
-- [ ] Balanced code fences in all documents
-- [ ] Master strategy overview exists with required sections
-- [ ] Backup copies exist in session directory (analyses/)
+- All expected analysis documents created
+- Each has the required sections: Goal, Statistical Approach, Analysis Steps, Expected Outputs
+- Each has at least one fenced code block, with balanced fences
+- Master strategy overview exists with its required sections
+- Backup copies exist in `{session_dir}/analyses/`
 
-**Validation Code**:
 ```python
 import os
 import re
@@ -351,79 +207,36 @@ def validate_gate_5(session_state: dict) -> tuple:
     return True, f"Gate 5 passed: {len(expected)} valid analysis documents + master overview"
 ```
 
-**Fail Action**:
-- If partial failure: Offer to proceed with available or retry failed
-- If total failure: Return to Phase 5 with error details
+On partial failure: offer to proceed with what exists or retry the failed chapters. On total failure: return to Phase 5 with the error details.
 
 ---
 
-### Quality Gate 6: Statistical Review (USER)
+## Gate 6: Statistical Review (USER)
 
-**Phase**: 6
-**Owner**: User
-**Type**: Human judgment (Interview mode)
+Phase 6, human judgment via interview mode.
 
-**Pass Criteria**:
-- [ ] All concerns reviewed (accepted, rejected, or skipped)
-- [ ] User confirmed correction application decision
-- [ ] If corrections applied: analysis documents re-validated
-- [ ] If corrections applied: master overview refreshed and validated
+- Every concern has a decision recorded (accepted, rejected, or skipped)
+- User confirmed the correction application decision
+- If corrections were applied: analysis documents re-validated with `validate_analysis_document`, and the master overview refreshed and re-validated
 
-**Validation Code**:
-```python
-def validate_gate_6(session_state: dict) -> tuple:
-    """Validate statistical review gate."""
-
-    corrections = session_state.get("corrections", {})
-
-    # All concerns have decisions
-    total = (
-        len(corrections.get("accepted", [])) +
-        len(corrections.get("rejected", [])) +
-        len(corrections.get("skipped", []))
-    )
-
-    expected = session_state.get("total_concerns", 0)
-    if total < expected:
-        return False, f"Not all concerns reviewed: {total}/{expected}"
-
-    # If corrections applied, verify analysis documents
-    if corrections.get("applied"):
-        for doc_path in session_state["outputs"]["analyses"]:
-            valid, msg = validate_analysis_document(doc_path)
-            if not valid:
-                return False, f"Corrected document invalid: {msg}"
-
-        # Verify overview was refreshed
-        overview_path = session_state["outputs"].get("strategy_overview")
-        if overview_path and not os.path.exists(overview_path):
-            return False, "Master overview not refreshed after corrections"
-
-    return True, "Gate 6 passed: Statistical review complete"
-```
-
-**Fail Action**: Resume interview from last concern
+On failure: resume the interview from the last concern.
 
 ---
 
-### Quality Gate 7: Audience Document Validation
+## Gate 7: Audience Document Validation
 
-**Phase**: 7
-**Owner**: Orchestrator
-**Type**: Automated
+Phase 7, orchestrator, automated.
 
-**Pass Criteria**:
-- [ ] `{output_dir}/researcher-plan.md` exists and is non-empty (> 500 bytes)
-- [ ] `{output_dir}/.research-architecture/architect-handoff.md` exists and is non-empty
-- [ ] `{output_dir}/.research-architecture/engineering-translation.md` exists and is non-empty
-- [ ] Researcher plan has required sections (case-insensitive): Research Overview, Research Questions, Expected Outcomes, Decision Points
-- [ ] Architect handoff has required sections: Design Rationale, Current State, Open Questions, Continuation Guidance
-- [ ] Engineering translation has required sections: System Overview, Pipeline Architecture, Data Specifications, Processing Stages, Resource Requirements, Dependencies
-- [ ] No fenced code blocks (```) in researcher-plan.md
-- [ ] Backup copies exist in `{session_dir}/audience-documents/`
-- [ ] All three documents include provenance metadata (HTML comments with session ID)
+- `{output_dir}/researcher-plan.md` exists and is non-empty (> 500 bytes)
+- `{output_dir}/.research-architecture/architect-handoff.md` exists and is non-empty
+- `{output_dir}/.research-architecture/engineering-translation.md` exists and is non-empty
+- Researcher plan has required sections (case-insensitive): Research Overview, Research Questions, Expected Outcomes, Decision Points
+- Architect handoff has required sections: Design Rationale, Current State, Open Questions, Continuation Guidance
+- Engineering translation has required sections: System Overview, Pipeline Architecture, Data Specifications, Processing Stages, Resource Requirements, Dependencies
+- No fenced code blocks (```) in `researcher-plan.md`
+- Backup copies exist in `{session_dir}/audience-documents/`
+- All three documents include provenance metadata (HTML comments with session ID)
 
-**Validation Code**:
 ```python
 import re
 import os
@@ -511,10 +324,7 @@ def validate_gate_7(output_dir: str, session_dir: str) -> tuple:
     return True, "Gate 7 passed: All audience documents validated"
 ```
 
-**Fail Action**:
-- If document generation fails: Retry failed documents (up to 2 attempts per document)
-- If backup fails but documents exist: Retry backup only, warn if still fails
-- If total failure: Proceed without audience documents, warn user, mark Phase 7 as "degraded"
+On failure: retry failed documents (up to 2 attempts each); if backups fail but documents exist, retry the backup only and warn if it still fails; on total failure, proceed without audience documents, warn the user, and mark Phase 7 "degraded".
 
 ---
 
@@ -533,8 +343,6 @@ def validate_gate_7(output_dir: str, session_dir: str) -> tuple:
 
 ## Minimum Thresholds
 
-These thresholds cannot be bypassed:
-
 | Threshold | Value | Rationale |
 |-----------|-------|-----------|
 | Minimum chapters | 3 | Ensures meaningful analysis structure |
@@ -543,90 +351,9 @@ These thresholds cannot be bypassed:
 | Statistical approach | Required | Core purpose of skill |
 | Markdown structure validation | Required | Ensures usable output |
 
-## Quality Gate Flow Diagram
-
-```
-Start
-  |
-  v
-[Gate 0] --FAIL--> Abort
-  |
-  PASS
-  |
-  v
-Phase 1
-  |
-  v
-[Gate 1] --FAIL--> Retry Phase 1
-  |
-  PASS
-  |
-  v
-Phase 2
-  |
-  v
-[Gate 2] --FAIL--> Retry Phase 2
-  |
-  PASS
-  |
-  v
-Phase 3
-  |
-  v
-[Gate 3: USER] --REJECT--> Return to Phase 1 or 2
-  |           --CHANGES--> Implement changes, re-check
-  |
-  APPROVE
-  |
-  v
-Phase 4
-  |
-  v
-[Gate 4: USER] --REJECT--> Return to earlier phase
-  |           --CHANGES--> Implement changes, re-check
-  |
-  APPROVE
-  |
-  v
-Phase 5
-  |
-  v
-[Gate 5] --PARTIAL--> Proceed with available / Retry failed
-  |      --TOTAL FAIL--> Retry Phase 5
-  |
-  PASS
-  |
-  v
-Phase 6
-  |
-  v
-[Gate 6: USER] --INCOMPLETE--> Resume interview
-  |
-  COMPLETE
-  |
-  v
-Phase 7
-  |
-  v
-[Gate 7] --PARTIAL--> Proceed with available documents, warn user
-  |      --TOTAL FAIL--> Proceed without audience documents (degraded)
-  |
-  PASS
-  |
-  v
-Workflow Complete
-```
-
 ## Bypassing Gates
 
-Gates 0, 1, 2, 5, and 7 cannot be bypassed (automated validation).
-
-Gates 3, 4, and 6 can be "bypassed" by user choice:
-- Gate 3: User can approve with known issues
-- Gate 4: User can approve with known issues
-- Gate 6: User can skip remaining concerns
-
-When a user bypasses a gate, a warning is logged:
+Gates 0, 1, 2, 5, and 7 are automated validation and are not bypassed. Gates 3, 4, and 6 are the user's: they can approve with known issues (3, 4) or skip remaining concerns (6). Log a bypass when it happens:
 
 ```json
 {

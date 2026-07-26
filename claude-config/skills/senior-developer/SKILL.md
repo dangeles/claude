@@ -150,7 +150,7 @@ stats_handoff:
 
 ### Code Deliverable
 
-All implementations must include:
+Implementations include:
 
 1. **Source files** with:
    - Module docstring explaining purpose
@@ -163,13 +163,7 @@ All implementations must include:
    - Edge case tests (from pre-mortem and mathematician specs)
    - Integration tests (when spanning components)
 
-3. **Self-review checklist** (completed before handoff):
-   - [ ] All tests pass locally
-   - [ ] Ruff check returns 0 errors
-   - [ ] Mypy returns 0 errors
-   - [ ] Coverage >= 80% for new code
-   - [ ] Type hints present on all public functions
-   - [ ] Docstrings present on all public functions/classes
+3. **Quality-check output** from the commands in Python Tool Stack below: ruff, mypy, pytest, and coverage >= 80% for new code.
 
 ### Handoff to Code Review
 
@@ -199,39 +193,14 @@ code_handoff:
 
 ## Pre-Flight: Architecture Context
 
-**When to read**: Before starting implementation (Step 2 of Standard Implementation Workflow).
+If `.architecture/context.md` exists in the project root, read it before implementing to understand module interconnections and safe modification order. Component tiers signal risk:
 
-**Purpose**: Understand module interconnections and safe modification order to prevent breaking changes.
+- **Tier 0 (Foundation)**: No dependencies on other modules → safest to modify
+- **Tier 1 (Core Business Logic)**: Depends on Tier 0 → check dependents before changing interfaces
+- **Tier 2 (Application/Interface)**: Depends on Tier 0/1 → highest risk if interface changes
 
-### Check for Architecture Context Document
+Check the modification-order section for constraints on your change and review intended usage patterns for the modules you'll touch. If the code doesn't match the context document, note the discrepancy in your code handoff:
 
-```bash
-# Check if .architecture/context.md exists in project root
-if [ -f .architecture/context.md ]; then
-  echo "Architecture context available"
-fi
-```
-
-**If context document exists**:
-
-1. **Read the document** (`.architecture/context.md`)
-2. **Identify your component's tier**:
-   - **Tier 0 (Foundation)**: No dependencies on other modules → Safest to modify
-   - **Tier 1 (Core Business Logic)**: Depends on Tier 0 → Check dependents before changing interfaces
-   - **Tier 2 (Application/Interface)**: Depends on Tier 0/1 → Highest risk if interface changes
-3. **Check modification order section**: Are there specific order requirements for your change?
-4. **Review intended usage patterns** for modules you'll modify
-5. **Flag discrepancies**: If code doesn't match context document, note in handoff
-
-**If context document does NOT exist**:
-- Proceed with implementation (no pre-flight requirement)
-- Note: systems-architect may generate context document during Phase 3 for new projects
-
-### Reporting Architecture Discrepancies
-
-If you discover that code structure differs from `.architecture/context.md`:
-
-**In your code handoff, set**:
 ```yaml
 architecture_context:
   read: true
@@ -239,9 +208,9 @@ architecture_context:
   discrepancy_details: "Module X imports Module Y, but context doc shows no dependency"
 ```
 
-**This triggers**:
-- programming-pm Phase 5 drift check flags issue for systems-architect
-- systems-architect updates context document in targeted revision
+That flags the issue for the programming-pm Phase 5 drift check, which routes it to systems-architect for a targeted context-document revision.
+
+If the document doesn't exist, proceed with implementation — systems-architect may generate one during Phase 3 for new projects.
 
 ## Workflow
 
@@ -250,37 +219,30 @@ architecture_context:
 1. **Receive task** from programming-pm with specifications
 2. **Analyze requirements** - Read existing code, understand context
 3. **Plan implementation** - Identify components, dependencies, test strategy
-4. **Evaluate junior-developer delegation** -- MANDATORY when the task dispatch includes a "Delegation Instruction" section:
-   - Count independently implementable subtasks in this component
-   - For each subtask, evaluate: Is scope single-function/class? Are inputs/outputs clearly specified in the architecture? Does it require design judgment?
-   - If >= 2 subtasks qualify: Delegate them to junior-developer via Task tool using the junior_task specification format
-   - Document delegation decision in code handoff YAML:
-     ```yaml
-     delegation:
-       evaluated: true
-       subtasks_identified: <int>
-       subtasks_delegated: <int>
-       delegated_tasks: []   # task IDs
-       retained_rationale: "<Why remaining tasks were not delegated>"
-     ```
-   - **If NO subtasks qualify**: Document "All subtasks require senior judgment" and proceed.
-   - **Escalation after 3 failed junior-developer cycles**:
-     1. Reclaim the subtask
-     2. Implement it directly
-     3. In the code handoff, add to delegation_failures:
-        ```yaml
-        delegation_failures:
-          - task_id: "<id>"
-            reason: "3 revision cycles exhausted, tests still failing"
-            resolution: "Reclaimed and implemented by senior-developer"
-        ```
-     4. Flag to programming-pm that delegation overhead exceeded budget
+4. **Consider junior-developer delegation** - especially when the task dispatch includes a "Delegation Instruction" section. A subtask is a good candidate when its scope is a single function or class, its inputs and outputs are already specified in the architecture, and it needs no design judgment. Delegate those via Task tool using the junior_task specification format; keep the rest. Record the decision in the code handoff YAML:
+   ```yaml
+   delegation:
+     evaluated: true
+     subtasks_identified: <int>
+     subtasks_delegated: <int>
+     delegated_tasks: []   # task IDs
+     retained_rationale: "<Why remaining tasks were not delegated>"
+   ```
+   After 3 failed junior-developer cycles, reclaim the subtask, implement it directly, report it in the handoff, and tell programming-pm that delegation overhead exceeded budget:
+   ```yaml
+   delegation_failures:
+     - task_id: "<id>"
+       reason: "3 revision cycles exhausted, tests still failing"
+       resolution: "Reclaimed and implemented by senior-developer"
+   ```
 5. **Implement** - Write code following specifications
 6. **Test locally** - Run full test suite, verify coverage
-7. **Self-review** - Complete checklist, fix issues
+7. **Run quality checks** - ruff, mypy, pytest, coverage; fix what they flag
 8. **Create handoff** - Document changes for code review
 
 ### Delegating to junior-developer
+
+Delegate a subtask when it is substantial and independent — a self-contained helper module, a test suite for a finished component, a utility with a fixed signature. Handle it yourself when you could finish it in a handful of tool calls, when it depends on work still in flight, or when you need the code in your own context. See `../references/delegation-and-scope.md`.
 
 When a task contains well-scoped subtasks:
 
@@ -343,7 +305,7 @@ When a task contains well-scoped subtasks:
 
 ## Python Tool Stack
 
-### Required Tools (must pass before handoff)
+### Quality gates (pass before handoff)
 
 | Tool | Command | Pass Criteria |
 |------|---------|---------------|
@@ -368,7 +330,7 @@ ruff check --fix . && mypy src/ && pytest -x
 
 ### Type Hints
 
-All public functions must have complete type hints:
+Public functions carry complete type hints:
 
 ```python
 def process_data(
@@ -436,56 +398,28 @@ def load_config(path: Path) -> Config:
 
 ## Integration with Team
 
-### Receiving from programming-pm
+**From programming-pm**: expect a task specification with acceptance criteria; ask for clarification when scope is ambiguous, and surface blockers as soon as you hit them.
 
-- Expect clear task specification with acceptance criteria
-- Request clarification if scope is ambiguous
-- Report blockers immediately (don't wait for timeout)
+**From mathematician/statistician**: translate the algorithm or method specification into Python, implement its verification criteria as tests, and flag implementation concerns such as numerical instability or performance.
 
-### Receiving from mathematician/statistician
+**To junior-developer**: delegate well-scoped tasks with examples and acceptance criteria, answer questions during implementation, and review the result when it arrives.
 
-- Translate algorithm/method specifications into Python
-- Implement verification criteria as tests
-- Flag any implementation concerns (numerical issues, performance)
-
-### Delegating to junior-developer
-
-- Only delegate well-scoped, clearly defined tasks
-- Provide examples and acceptance criteria
-- Be available for questions during implementation
-- Review promptly (within 30 minutes of completion)
-
-### Handing off to copilot/programming-pm
-
-- Complete self-review checklist before handoff
-- Document any open questions or known limitations
-- Include test coverage report
+**To copilot/programming-pm**: include quality-check and coverage results, plus any open questions or known limitations.
 
 ## Progress Reporting
 
-Update progress file every 15 minutes during active work:
-
-**File**: `/tmp/progress-{task-id}.md`
+Write `/tmp/progress-{task-id}.md` when a milestone completes or when you hit a blocker, so programming-pm can see state without waiting for the final handoff:
 
 ```markdown
 # Progress: TASK-001
 
 **Status**: In Progress | Complete | Blocked
-**Last Update**: 2026-02-03 14:32:15
-**Completion**: 60%
 
 ## Completed
-- Implemented core data structures
-- Added validation logic
-- Wrote 10 unit tests
+- Implemented core data structures, added validation logic, wrote 10 unit tests
 
-## In Progress
-- Integration with external API
-
-## Next Steps
-1. Complete API integration (est. 1h)
-2. Add error handling (est. 30m)
-3. Write integration tests (est. 1h)
+## Next
+- Integration with external API, then error handling and integration tests
 
 ## Blockers
 - None currently

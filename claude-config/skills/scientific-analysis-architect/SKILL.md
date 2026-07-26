@@ -8,45 +8,32 @@ tags: [scientific-analysis, multi-agent, markdown, research-planning, pseudocode
 
 # scientific-analysis-architect
 
-Multi-phase workflow for planning scientific research analyses producing markdown documents with pseudocode. Biology-agnostic design ensures agents request context via user prompts, never inject biological interpretation.
+Multi-phase workflow for planning scientific research analyses producing markdown documents with pseudocode. Biology-agnostic design: agents request context via user prompts and never inject biological interpretation.
 
-## Delegation Mandate
+## Delegation and scope
 
-You are an **orchestrator**. You coordinate specialists -- you do not perform specialist work yourself.
+You are the architect: you plan how specialists work together. Delegate specialist work when the subtask is substantial and independent — statistical design for a chapter, algorithm requirements, generating a chapter's analysis documents, statistical fact-checking of the finished set. Handle it directly when you could finish it in a handful of tool calls, when the work is sequential, or when you need the context in your own loop. See `../references/delegation-and-scope.md`.
 
-You MUST delegate all specialist work using the appropriate tool (see Tool Selection below). This means you do not design statistical approaches, do not analyze algorithm requirements, do not write analysis code, and do not create analysis document content. Those are specialist tasks.
+Work that stays with you either way:
 
-You are NOT a statistician. You do not design or validate statistical approaches.
-You are NOT a mathematician. You do not design algorithms or analyze computational requirements.
-You are NOT an analysis programmer. You do not write analysis code, data processing scripts, or analysis document content.
-You ARE the architect who plans how these specialists work together.
-
-**Orchestrator-owned tasks** (you DO perform these yourself):
 - Session setup, directory creation, state file management
-- Quality gate evaluation and validation commands (e.g., markdown structure checks, dependency verification)
-- User communication (summaries, approvals, status reports)
-- Workflow coordination (reading state, tracking progress, managing handoffs)
-- Pre-flight validation (checking dependencies, skill availability)
+- Quality gate evaluation and validation commands (markdown structure checks, dependency verification)
+- User communication: summaries, approvals, status
+- Workflow coordination: reading state, tracking progress, managing handoffs
 
-If a required specialist is unavailable, stop and inform the user. Do not attempt the specialist work yourself.
+If a required specialist is unavailable, stop and tell the user rather than doing the specialist work yourself.
 
-## Tool Selection
+### Tool selection
 
 | Situation | Tool | Reason |
 |-----------|------|--------|
-| Specialist doing independent work | **Task tool** | Separate context, parallel execution |
-| 2+ specialists working simultaneously | **Task tool** (multiple) | Only way to parallelize |
-| Loading domain knowledge for YOUR decisions | **Skill tool** | Shared context needed |
+| Specialist doing independent work | Task tool | Separate context, parallel execution |
+| 2+ specialists working simultaneously | Task tool (multiple) | Only way to parallelize |
+| Loading domain knowledge for your own decisions | Skill tool | Shared context needed |
 
-Default to Task tool when in doubt. Self-check: "Am I about to load specialist instructions into my context so I can do their work? If yes, use Task tool instead."
+### Progress tracking
 
-## State Anchoring
-
-Start every response with: "[Phase N/7 - {phase_name}] {brief status}"
-
-Before starting any phase (Phase 1 onward): Read `{session_dir}/session-state.json`. Confirm `current_phase` and `completed_phases` match expectations.
-
-After any user interaction: Answer the user, then re-anchor: "Returning to Phase N - {phase_name}. Next step: {action}."
+`{session_dir}/session-state.json` carries `current_phase` and `completed_phases`. Lead status updates with the phase you are in — "[Phase 4/7 - Plan Review]" — and after a user interaction, say which phase you are returning to.
 
 ## When to Use
 
@@ -64,182 +51,52 @@ After any user interaction: Answer the user, then re-anchor: "Returning to Phase
 
 ## Workflow Overview
 
-```
-User Request
-     |
-+----v--------------------+
-| Phase 0: Initialization | ~2 min
-| Session setup, validation|
-| - Output dir validation  |
-+----+--------------------+
-     |
-+----v--------------------+
-| Phase 1: Birds-Eye      | ~12 min
-| Planning                |
-| [research-architect]    |
-+----+--------------------+
-     |
-research-structure.md (3-7 chapters)
-     |
-+----v--------------------+
-| Phase 2: Subsection     | ~12 min
-| Planning                |
-| [analysis-planner]      |
-|   -> 3 consultants      |
-+----+--------------------+
-     |
-chapter{N}-notebook-plans.md
-     |
-+----v--------------------+
-| Phase 3: Structure      | ~5 min
-| Review                  |
-| [structure-reviewer]    |
-+----+--------------------+
-     |
-[USER APPROVAL GATE 1]
-     |
-+----v--------------------+
-| Phase 4: Plan           | ~10 min
-| Review (parallel)       |
-| [notebook-reviewer]     |
-+----+--------------------+
-     |
-[USER APPROVAL GATE 2]
-     |
-+----v--------------------+
-| Phase 5: Document       | ~10 min
-| Generation              |
-| Step 1: Master overview |
-| Step 2: Analysis docs   |
-| [orchestrator + notebook-generator]
-+----+--------------------+
-     |
-.md files with pseudocode +
-analysis-strategy-overview.md
-     |
-+----v--------------------+
-| Phase 6: Statistical    | ~10-20 min
-| Fact-Checking           |
-| [statistical-fact-checker]
-| INTERVIEW MODE          |
-+----+--------------------+
-     |
-Corrected analysis docs (final)
-+ Refreshed overview (if corrections applied)
-     |
-+----v--------------------+
-| Phase 7: Audience        | ~5 min
-| Document Generation      |
-| [orchestrator]           |
-+----+--------------------+
-     |
-researcher-plan.md +
-.research-architecture/
-  architect-handoff.md +
-  engineering-translation.md
-```
+| Phase | Owner | Deliverable |
+|-------|-------|-------------|
+| 0: Initialization | orchestrator | Session directory, validated output directory, `session-state.json` |
+| 1: Birds-eye planning | research-architect (Sonnet 4.6) | `research-structure.md` (3-7 chapters) |
+| 2: Subsection planning | analysis-planner (Sonnet 4.6) + 3 consultants | `chapter{N}-notebook-plans.md` |
+| 3: Structure review | structure-reviewer (Haiku) | `structure-review-report.md` -> user approval gate 1 |
+| 4: Plan review | notebook-reviewer (Sonnet 4.6), parallel | `notebook-review-report.md` -> user approval gate 2 |
+| 5: Document generation | orchestrator + notebook-generator | `analysis-strategy-overview.md` + `.md` analysis documents with pseudocode |
+| 6: Statistical fact-checking | statistical-fact-checker (Sonnet 4.6) | Corrected analysis documents, refreshed overview |
+| 7: Audience documents | orchestrator | `researcher-plan.md` + `.research-architecture/{architect-handoff,engineering-translation}.md` |
 
 **Estimated Runtime**: 61-81 minutes for 3 chapters
 
 ## Phase 0: Initialization
 
-**Owner**: Orchestrator
-**Duration**: 2-5 minutes
-**Checkpoint**: Never (automatic)
+Create the session directory — primary `{output_directory}/.scientific-analysis-session/`, fallback `/tmp/scientific-analysis-architect-session-{YYYYMMDD}-{HHMMSS}-{PID}/`. Check the output directory exists and is writable with a write test, and offer alternatives if it is not. Initialize `session-state.json` with status "initialized".
 
-1. **Create session directory**:
-   - Primary: `{output_directory}/.scientific-analysis-session/`
-   - Fallback: `/tmp/scientific-analysis-architect-session-{YYYYMMDD}-{HHMMSS}-{PID}/`
-
-2. **Validate output directory**:
-   - Check exists and writable
-   - Perform write test
-   - If fails, offer alternatives
-
-3. **Initialize session state**:
-   - Create `session-state.json`
-   - Set status: "initialized"
-
-4. **Archival Compliance Check**:
-   After session setup, follow the archival compliance check pattern:
-   a. Read the reference document: `~/.claude/skills/archive-workflow/references/archival-compliance-check.md`
-   b. If file not found, use graceful degradation (log warning, proceed without archival check)
-   c. Apply the 5-step pattern to all file creation operations
-   - Store guidelines in session state (`session-state.json`)
-   - When creating analysis documents and analysis directories, validate proposed
-     paths against archival conventions
-   - Pass archival_context to all downstream agent dispatches
+Then read `~/.claude/skills/archive-workflow/references/archival-compliance-check.md` and apply its 5-step pattern to file creation; if that file is missing, log a warning and proceed without the archival check. Store the guidelines in `session-state.json`, validate proposed analysis document and directory paths against them, and pass `archival_context` to all downstream agent dispatches.
 
 **Quality Gate 0**: Session directory created, output directory validated.
 
-**Phase Transition**: Phase 0 complete -> Announce to user -> PROCEED to Phase 1: Birds-Eye Planning
-
 ## Phase 1: Birds-Eye Planning
 
-If resuming from a previous session: Read `{session_dir}/session-state.json` to confirm Phase 0 is complete.
+Owner: research-architect (Sonnet 4.6).
 
-**Owner**: research-architect (Sonnet 4.6)
-**Duration**: ~12 minutes
-**Timeout**: 15 minutes
+Ask the user to describe their dataset and research goals. If the answer signals uncertainty ("not sure", "maybe"), fan out to analysis-brainstormer and method-brainstormer (Haiku 4.5) and present their suggestions before continuing. Then generate `{session_dir}/research-structure.md` with 3-7 chapters, each carrying a goal and its analyses.
 
-1. Ask user: "Please describe your dataset and research goals"
-2. If uncertainty detected ("not sure", "maybe"):
-   - Fan-out to analysis-brainstormer and method-brainstormer (Haiku 4.5)
-   - Present brainstorming suggestions
-3. Generate research-structure.md with 3-7 chapters
-
-**Biology-Agnostic Behavior**:
-- Agents ASK: "What biological questions are you trying to answer?"
-- Agents DO NOT inject: "You should look at cell types"
-
-**Output**: `{session_dir}/research-structure.md`
+Biology-agnostic behavior: agents ask "What biological questions are you trying to answer?" rather than asserting "You should look at cell types".
 
 **Quality Gate 1**: Structure has 3-7 chapters, each with goal and analyses.
 
-**Phase Transition**: Phase 1 complete -> Announce to user -> PROCEED to Phase 2: Subsection Planning
-
 ## Phase 2: Subsection Planning
 
-Before starting Phase 2: Read `{session_dir}/session-state.json`. Confirm Phases 0-1 are complete.
+Owner: analysis-planner (Sonnet 4.6).
 
-**Owner**: analysis-planner (Sonnet 4.6)
-**Duration**: ~12 minutes for 3 chapters
-**Timeout**: 20 minutes total
+For each chapter, fan out to the expert panel in parallel (all Haiku): statistician-consultant for statistical approach validation, mathematician-consultant for algorithm requirements, programmer-consultant for data requirements. Aggregate their recommendations into `{session_dir}/chapter{N}-notebook-plans.md`, and put any consultant disagreement to the user rather than picking silently.
 
-For each chapter:
-1. Fan-out to expert panel (parallel, all Haiku):
-   - statistician-consultant: Statistical approach validation
-   - mathematician-consultant: Algorithm requirements
-   - programmer-consultant: Data requirements
-
-2. Fan-in: Aggregate recommendations
-3. If consultants disagree, present conflict to user
-4. Generate chapter{N}-notebook-plans.md
-
-**Consolidated Escalation** (if parallel failures):
-- Wait for all retries before escalating
-- Single prompt with all failures
-- Statistician is critical; others are optional
-
-**Output**: `{session_dir}/chapter{N}-notebook-plans.md` (one per chapter)
+On parallel failures, wait for all retries and escalate once with all failures in a single prompt. The statistician is critical; the other two are optional.
 
 **Quality Gate 2**: All chapters have analysis plans, no unresolved conflicts.
 
-**Phase Transition**: Phase 2 complete -> Announce to user -> PROCEED to Phase 3: Structure Review
-
 ## Phase 3: Structure Review
 
-Before starting Phase 3: Read `{session_dir}/session-state.json`. Confirm Phases 0-2 are complete.
+Owner: structure-reviewer (Haiku).
 
-**Owner**: structure-reviewer (Haiku)
-**Duration**: ~5 minutes
-**Timeout**: 10 minutes
-
-1. Review research-structure.md and all chapter plans
-2. Check for missing dependencies, redundancies, logical issues
-3. Generate structure-review-report.md
-
-**Output**: `{session_dir}/structure-review-report.md`
+Review `research-structure.md` and all chapter plans for missing dependencies, redundancies, and logical issues, and write `{session_dir}/structure-review-report.md`.
 
 **USER APPROVAL GATE 1**:
 ```
@@ -253,21 +110,11 @@ Summary:
 Approve / Request changes / Reject? [A/c/r]
 ```
 
-**Phase Transition**: Phase 3 complete (user approved) -> PROCEED to Phase 4: Plan Review
-
 ## Phase 4: Plan Review
 
-Before starting Phase 4: Read `{session_dir}/session-state.json`. Confirm Phases 0-3 are complete.
+Owner: notebook-reviewer (Sonnet 4.6), one per chapter in parallel.
 
-**Owner**: notebook-reviewer (Sonnet 4.6)
-**Duration**: ~10 minutes
-**Timeout**: 15 minutes total
-
-1. Fan-out: One reviewer per chapter (parallel)
-2. Check pseudocode completeness, statistical correctness, data flow
-3. Fan-in: Aggregate review reports
-
-**Output**: `{session_dir}/notebook-review-report.md`
+Reviewers check pseudocode completeness, statistical correctness, and data flow. Aggregate into `{session_dir}/notebook-review-report.md`.
 
 **USER APPROVAL GATE 2**:
 ```
@@ -280,88 +127,42 @@ Per-Chapter Summary:
 Approve / Request changes / Reject? [A/c/r]
 ```
 
-**Phase Transition**: Phase 4 complete (user approved) -> PROCEED to Phase 5: Document Generation
-
 ## Phase 5: Document Generation
 
-Before starting Phase 5: Read `{session_dir}/session-state.json`. Confirm Phases 0-4 are complete.
+### Step 1: Master strategy overview (orchestrator)
 
-**Owner**: Orchestrator (Step 1) + notebook-generator (Step 2)
-**Duration**: ~10 minutes
-**Timeout**: 20 minutes total
+Read `research-structure.md` and every `chapter{N}-notebook-plans.md`, then write `analysis-strategy-overview.md` to both `{output_dir}/` and `{session_dir}/`. It contains: project objective, dataset summary, Strategy at a Glance table (chapter, title, goal, analyses, key method), chapter summaries, data flow between chapters (text diagram), consolidated methods table with justification, required libraries, execution order with dependency notes, and assumptions and limitations.
 
-**Step 1: Generate Master Strategy Overview** (Orchestrator-owned)
+This document synthesizes already-approved content; it does not introduce new analyses or methods. Keep it to 1-3 pages with 2-4 sentence chapter summaries (what and why, not how). For <= 4 chapters, omit Execution Order if the flow is linear; for >= 6 chapters, include a dependency graph.
 
-Synthesize the approved research structure and chapter plans into a single overview document:
-- Read `research-structure.md` and all `chapter{N}-notebook-plans.md` files
-- Generate `analysis-strategy-overview.md` containing:
-  - Project objective (from research structure)
-  - Dataset summary
-  - Strategy at a Glance table (chapter, title, goal, analyses, key method)
-  - Chapter summaries (2-4 sentences each)
-  - Data flow between chapters (text-based diagram)
-  - Consolidated methods table (unique methods with justification)
-  - Required libraries
-  - Execution order with dependency notes
-  - Assumptions and limitations
-- Write to both `{output_dir}/analysis-strategy-overview.md` and `{session_dir}/analysis-strategy-overview.md`
+### Step 2: Analysis documents (notebook-generator)
 
-This document synthesizes already-approved content. It does NOT introduce new analyses or methods.
+Fan out one generator per chapter in parallel. Each produces `.md` files mixing prose with fenced pseudocode, written to both the output directory and the session directory as backup. Every analysis document uses these section headings, which the Gate 5 validator matches on:
 
-Template guidelines:
-- Total length: 1-3 pages (concise, not comprehensive)
-- Chapter summaries: 2-4 sentences each (what and why, not how)
-- For projects with <= 4 chapters: omit Execution Order if linear
-- For projects with >= 6 chapters: include a dependency graph
+- `## Goal`: what this analysis achieves
+- `## Statistical Approach`: method, justification, assumptions, corrections
+- `## Prerequisites`: input data, required libraries, upstream dependencies
+- `## Analysis Steps`: numbered steps with prose plus fenced Python pseudocode blocks
+- `## Expected Outputs`: output files/objects, format, characteristics
+- `## Notes and Caveats`: assumptions, limitations, alternatives
 
-**Step 2: Generate Analysis Documents** (notebook-generator)
+Code block rules: triple backticks with the `python` language identifier, never nested fences. If pseudocode needs triple-quoted strings, use single-quoted triple quotes inside comments; for multi-line string literals use comment notation instead.
 
-1. Fan-out: One generator per chapter (parallel)
-2. Create .md files with hybrid prose + fenced pseudocode blocks
-3. Each analysis document follows this structure:
-   - `## Goal`: What this analysis achieves
-   - `## Statistical Approach`: Method, justification, assumptions, corrections
-   - `## Prerequisites`: Input data, required libraries, upstream dependencies
-   - `## Analysis Steps`: Numbered steps with prose + fenced Python pseudocode blocks
-   - `## Expected Outputs`: Output files/objects, format, characteristics
-   - `## Notes and Caveats`: Assumptions, limitations, alternatives
-4. Write to both output directory and session directory (backup)
-5. Fan-in: Verify all documents created
-
-**Code Block Formatting Rules**:
-- Use triple backticks with `python` language identifier
-- Never nest fenced code blocks
-- If pseudocode contains triple-quoted strings (docstrings), use single-quoted triple quotes inside comments
-- For multi-line string literals, use comment notation instead
-
-**Partial Completion Handling**:
-- If some chapters fail, offer to proceed with available
-- Enable per-chapter regeneration later
+If some chapters fail, offer to proceed with what is available and allow per-chapter regeneration later.
 
 **Output**:
 - `{output_dir}/chapter{N}_{slug}/analysis{N}_{M}_{slug}.md`
 - `{output_dir}/analysis-strategy-overview.md`
-- `{session_dir}/analyses/` (backup)
-- `{session_dir}/analysis-strategy-overview.md` (backup)
+- `{session_dir}/analyses/` and `{session_dir}/analysis-strategy-overview.md` (backups)
 
-**Quality Gate 5**: All analysis documents have required sections (Goal, Statistical Approach, Analysis Steps, Expected Outputs), at least one fenced code block each, balanced code fences. Master strategy overview exists with required sections.
-
-**Phase Transition**: Phase 5 complete -> Quality Gate 5 -> PROCEED to Phase 6: Statistical Fact-Checking
+**Quality Gate 5**: Every analysis document has the required sections (Goal, Statistical Approach, Analysis Steps, Expected Outputs), at least one fenced code block, and balanced fences. Master strategy overview exists with required sections. Run the validator in `references/quality-gates.md`.
 
 ## Phase 6: Statistical Fact-Checking
 
-Before starting Phase 6: Read `{session_dir}/session-state.json`. Confirm Phases 0-5 are complete.
+Owner: statistical-fact-checker (Sonnet 4.6). Full protocol: `references/interview-protocol.md`.
 
-**Owner**: statistical-fact-checker (Sonnet 4.6)
-**Duration**: ~10-20 minutes
-**Timeout**: 30 minutes
+**INTERVIEW MODE**: with <= 5 concerns, present them one at a time; with more, present a summary first and offer batch options.
 
-**INTERVIEW MODE**:
-
-If <= 5 concerns: Present one at a time
-If > 5 concerns: Present summary first, offer batch options
-
-**Concern Format**:
 ```
 Statistical Concern {N} of {total}
 
@@ -378,15 +179,10 @@ Recommendation: {recommended_fix}
 Accept? [yes/no/skip/explain]
 ```
 
-Section paths use hierarchical notation: `"Analysis Steps > Step 3: Normalization"` to disambiguate duplicate headings.
+Section paths use hierarchical notation — `"Analysis Steps > Step 3: Normalization"` — to disambiguate duplicate headings.
 
-**Batch Options** (after 5 concerns):
-- Continue one-by-one
-- Accept all remaining
-- Reject all remaining
-- Accept critical/standard, skip minor
+Batch options after 5 concerns: continue one-by-one, accept all remaining, reject all remaining, or accept critical/standard and skip minor. Then:
 
-**After Interview**:
 ```
 Summary:
 - {X} accepted, {Y} rejected, {Z} skipped
@@ -394,83 +190,52 @@ Summary:
 Apply corrections? [yes/no]
 ```
 
-**Post-Phase 6 Refresh**: If any corrections were applied during the interview, regenerate the master strategy overview document (`analysis-strategy-overview.md`) to reflect corrected methods and approaches. The orchestrator performs this refresh since it synthesizes already-corrected content. Re-validate the overview against Gate 5 criteria.
+If corrections were applied, regenerate `analysis-strategy-overview.md` so the methods and approaches match the corrected documents, and re-validate it against Gate 5.
 
 **Output**:
 - `{session_dir}/statistical-review-report.md`
 - `{session_dir}/corrections-manifest.json`
-- Updated .md analysis documents (if corrections applied)
-- Refreshed `analysis-strategy-overview.md` (if corrections applied)
+- Updated `.md` analysis documents and refreshed `analysis-strategy-overview.md` (if corrections applied)
 
-### Post-Workflow: Git Strategy Advisory (Optional)
+### Post-workflow: git strategy advisory (optional)
 
-After Phase 6 completes and all analysis documents are finalized, you MAY invoke
-`git-strategy-advisor` via Task tool in post-work mode to recommend how to handle
-the generated files in version control:
+Once analysis documents are finalized you can invoke `git-strategy-advisor` via Task tool in post-work mode:
 
-**Invocation** (via Task tool):
 ```
 Use git-strategy-advisor to determine git strategy for completed work.
 
 mode: post-work
 ```
 
-The advisor analyzes the generated analysis documents and overview file, then
-recommends branch strategy, branch naming, push timing, and PR creation based on
-the actual scope of output.
-
-**Response handling**: Read the advisor's `summary` field. Include in the completion
-summary for user action.
-
-**Confidence handling**: If the advisor returns confidence "none" or "low", silently
-skip the git strategy section.
-
-**Note**: git-strategy-advisor analyzes changes within the current git repository only.
-If output files are written outside the repository, the advisor will not detect them.
-
-This is **advisory only**. If `git-strategy-advisor` is not available or returns an
-error, skip this step. scientific-analysis-architect does not have built-in git logic;
-include the advisor's recommendation in the completion summary for user action.
+Read the advisor's `summary` field into the completion summary. Skip the section silently if confidence is "none" or "low", if the advisor is unavailable or errors, or if output files were written outside the current git repository (the advisor only sees changes inside it). This skill has no built-in git logic of its own.
 
 ## Phase 7: Audience Document Generation
 
-Before starting Phase 7: Read `{session_dir}/session-state.json`. Confirm Phases 0-6 are complete.
+Owner: orchestrator.
 
-**Owner**: Orchestrator
-**Duration**: ~5 minutes
-**Timeout**: 15 minutes
+Three audience-targeted documents, all synthesized from already-approved and fact-checked material — no new analyses or methods.
 
-This phase generates three audience-targeted documents from the finalized analysis artifacts. All content is synthesized from already-approved and fact-checked materials. No new analyses or methods are introduced.
-
-**Input artifacts** (read by orchestrator, tiered):
+**Input artifacts**, tiered:
 - Tier 1 (always read): `analysis-strategy-overview.md`, `research-structure.md`, `session-state.json`
 - Tier 2 (per-chapter): `chapter{N}-notebook-plans.md`
-- Tier 3 (selective, engineering translation only): Individual analysis documents (read per-chapter as needed)
+- Tier 3 (selective, engineering translation only): individual analysis documents, read per-chapter as needed
 - Tier 4 (if exists): `statistical-review-report.md`, `corrections-manifest.json`, review reports
 
-**Content Sourcing Protocol**: Generate documents one at a time. For the researcher plan and architect handoff, use Tier 1 and Tier 2 sources. For the engineering translation, read Tier 3 sources per-chapter rather than loading all at once.
+Generate documents one at a time. The researcher plan and architect handoff draw on Tier 1 and Tier 2; the engineering translation reads Tier 3 per-chapter rather than loading everything at once.
 
-### Steps
+Before generating, confirm the Tier 1 artifacts exist and are non-empty, and if `corrections-manifest.json` exists with accepted corrections, that `analysis-strategy-overview.md` was modified after it. Missing critical artifacts means stopping with a clear error.
 
-1. **Pre-flight validation**: Verify all Tier 1 input artifacts exist and are non-empty. If `corrections-manifest.json` exists with accepted corrections, verify `analysis-strategy-overview.md` was modified after it. If critical artifacts are missing, abort with a clear error.
+Then create `{output_dir}/.research-architecture/` if absent and write:
 
-2. **Create directory**: Create `{output_dir}/.research-architecture/` if it does not exist.
+- `{output_dir}/researcher-plan.md` — see [audience-document-templates.md](references/audience-document-templates.md) Template A
+- `{output_dir}/.research-architecture/architect-handoff.md` — Template B
+- `{output_dir}/.research-architecture/engineering-translation.md` — Template C
 
-3. **Generate researcher plan**: Write `{output_dir}/researcher-plan.md` -- see [audience-document-templates.md](references/audience-document-templates.md) Template A.
+Copy all three to `{session_dir}/audience-documents/`, then update session state: `current_phase: 7`, add `7` to `completed_phases`, record paths in `outputs.audience_documents`, set `status: "completed"`.
 
-4. **Generate architect handoff**: Write `{output_dir}/.research-architecture/architect-handoff.md` -- see Template B.
+On resume, skip regenerating any audience document that already exists and passes section validation.
 
-5. **Generate engineering translation**: Write `{output_dir}/.research-architecture/engineering-translation.md` -- see Template C.
-
-6. **Create backup copies**: Copy all three documents to `{session_dir}/audience-documents/`.
-
-7. **Update session state**: Set `current_phase: 7`, add `7` to `completed_phases`, record paths in `outputs.audience_documents`, set `status: "completed"`.
-
-**On resume**: Before regenerating, check which audience documents already exist and pass section validation. Skip re-generation for valid documents.
-
-**Quality Gate 7**: All 3 audience documents exist, each has required sections, backups exist. See [quality-gates.md](references/quality-gates.md).
-
-**Phase Transition**: Phase 7 complete -> Quality Gate 7 -> Announce deliverables -> Workflow Complete
+**Quality Gate 7**: All 3 audience documents exist with their required sections, and backups exist. Validator: [quality-gates.md](references/quality-gates.md).
 
 **Completion Announcement**:
 ```
@@ -523,53 +288,23 @@ Workflow complete.
 
 ### Resume Protocol
 
-On skill invocation:
-1. Check for existing sessions (output_dir first, then /tmp)
-2. If found and < 72 hours old:
-   ```
-   Found incomplete session from {timestamp}
-   Project: {research_goals}
-   Status: Phase {N}
+On invocation, check for existing sessions (output_dir first, then /tmp). If one is found and is less than 72 hours old:
 
-   Resume? [yes/no]
-   ```
-3. If yes: Load state, continue from current phase
-4. If no: Archive old session, start new
+```
+Found incomplete session from {timestamp}
+Project: {research_goals}
+Status: Phase {N}
 
-### Interrupt Handling
+Resume? [yes/no]
+```
 
-On Ctrl+C:
-1. Save current state with status: "interrupted"
-2. Print: "Session saved. Resume with: /scientific-analysis-architect"
+On yes, load state and continue from the current phase; on no, archive the old session and start fresh. On Ctrl+C, save state with status "interrupted" and print "Session saved. Resume with: /scientific-analysis-architect".
 
 ## Error Handling
 
-See [error-handling.md](references/error-handling.md) for complete specification.
+Full specification: [error-handling.md](references/error-handling.md).
 
-### Timeout Configuration
-
-| Phase | Timeout | Exceeded Action |
-|-------|---------|-----------------|
-| 0 | 5 min | Abort |
-| 1 | 15 min | Escalate to user |
-| 2 | 20 min | Proceed with available consultants |
-| 3 | 10 min | Escalate to user |
-| 4 | 15 min | Proceed with available reviews |
-| 5 | 20 min | Proceed with partial, offer retry |
-| 6 | 30 min | Pass with uncertainty note |
-| 7 | 15 min | Proceed with available documents, warn user |
-
-### Retry Protocol
-
-- First failure: Wait 30s, retry automatically
-- Second failure: Ask user (proceed without or abort)
-- Maximum 2 retries per agent
-
-### Circuit Breaker
-
-- Open after 2 consecutive failures per agent
-- Action: Escalate to user
-- Reset: On successful execution
+Retry a failed agent once. If it fails again, ask the user whether to proceed without it or abort — with the caveat that Phase 2's statistician is critical while the mathematician and programmer consultants are optional. When a phase stalls, prefer proceeding with the partial results you have and telling the user what is missing over blocking: Phase 2 can proceed with available consultants, Phase 4 with available reviews, Phase 5 with partial generation plus a retry offer, Phase 7 with available documents plus a warning. A Phase 0 failure is fatal.
 
 ## Quality Gates Summary
 
@@ -601,6 +336,7 @@ See [error-handling.md](references/error-handling.md) for complete specification
 - [session-schema.md](references/session-schema.md)
 - [error-handling.md](references/error-handling.md)
 - [quality-gates.md](references/quality-gates.md)
+- [../references/delegation-and-scope.md](../references/delegation-and-scope.md)
 
 ## Examples
 

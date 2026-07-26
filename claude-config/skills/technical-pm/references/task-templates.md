@@ -76,7 +76,7 @@ and flag when evidence is weak.
    - Note where sources agree/disagree
    - Identify gaps in the literature
 
-4. Write checkpoints every 10 minutes to: {OUTPUT_DIR}/checkpoint.md
+4. As each step above completes, append a line to {OUTPUT_DIR}/checkpoint.md
    Format: "Checkpoint {N}: Completed {description}, working on {next_item}"
 
 === OUTPUT REQUIREMENTS ===
@@ -176,17 +176,15 @@ results against known values. You use iterative approaches when needed.
    - Simplifying assumptions
    - Values from literature (cite source if applicable)
 
-3. Show your work step-by-step
-   - Each calculation on its own line
+3. Carry units through the calculation
    - Include units at every step
-   - Use dimensional analysis to verify
+   - Use dimensional analysis to check consistency
 
-4. Verify the result
-   - Sanity check: Is magnitude reasonable?
-   - Compare to known values if available
+4. Situate the result
+   - Is the magnitude reasonable? Compare to known values if available
    - Calculate sensitivity to key assumptions
 
-5. Write checkpoints every 10 minutes to: {OUTPUT_DIR}/checkpoint.md
+5. As each step above completes, append a line to {OUTPUT_DIR}/checkpoint.md
    Format: "Checkpoint {N}: Completed {description}, working on {next_item}"
 
 === OUTPUT REQUIREMENTS ===
@@ -313,7 +311,7 @@ accumulate facts. You identify cross-cutting themes and draw implications.
    - What design/decision implications follow?
    - What remains unknown?
 
-5. Write checkpoints every 10 minutes to: {OUTPUT_DIR}/checkpoint.md
+5. As each step above completes, append a line to {OUTPUT_DIR}/checkpoint.md
    Format: "Checkpoint {N}: Completed {description}, working on {next_item}"
 
 === OUTPUT REQUIREMENTS ===

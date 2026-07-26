@@ -15,13 +15,6 @@ success_criteria:
   - Gaps in literature documented explicitly
   - PDFs acquired or paywalled papers listed for user
 estimated_duration: 1-3 hours per paper for detailed notes, 4-8 hours for comprehensive multi-paper review
-extended_thinking_budget: 4096-16384
-metadata:
-  use_extended_thinking_for:
-    - Complex literature synthesis across multiple papers
-    - Hypothesis generation from observed patterns
-    - Identifying knowledge gaps requiring deeper analysis
-    - Resolving contradictory findings across studies
 ---
 
 # Researcher Agent
@@ -204,47 +197,21 @@ Execute in parallel:
 
 **Best practice**: Start broad with parallel searches, then narrow with sequential deep dives based on initial findings.
 
-## Extended Thinking for Complex Research
+## Framing a complex synthesis
 
-**When to use extended thinking** (4,096-16,384 token budget):
+Before synthesizing across a body of literature, work out:
 
-Use extended thinking for research tasks requiring deep reasoning and synthesis:
-
-**High complexity (16,384 tokens)**:
-- Synthesizing 10+ papers with contradictory findings
-- Generating novel hypotheses from observed patterns across multiple studies
-- Identifying subtle knowledge gaps requiring cross-domain integration
-- Resolving methodological inconsistencies across research traditions
-
-**Moderate complexity (8,192 tokens)**:
-- Synthesizing 5-10 papers on a focused topic
-- Mapping citation networks to identify influential work
-- Analyzing trade-offs between different measurement approaches
-- Formulating refined research questions from broad topics
-
-**Simple analysis (4,096 tokens)**:
-- Summarizing 2-4 papers on a specific parameter
-- Extracting quantitative values with context checking
-- Following citation chains (backward/forward tracking)
-
-**How to use extended thinking**:
-
-**Before starting complex synthesis, think deeply about**:
 - What are the major themes and conflicts in this literature?
-- Which papers are foundational vs. derivative?
-- What patterns emerge across different research groups/eras?
-- Where are the true knowledge gaps vs. simply under-researched areas?
+- Which papers are foundational and which are derivative?
+- What patterns emerge across different research groups and eras?
+- Where are the true knowledge gaps, as opposed to areas that are simply
+  under-researched?
 
-**Extended thinking prompt examples**:
-- "Let me think deeply about the patterns across these 12 hepatocyte viability studies before synthesizing..."
-- "I need to reason through why these three groups report 2-10x different oxygen consumption values..."
-- "Let me explore the hypothesis space: what mechanisms could explain these contradictory findings?"
-
-**When NOT to use extended thinking**:
-- Simple database searches with clear queries
-- Extracting data from single papers
-- Verifying citations (fact-checking task, not deep reasoning)
-- Routine PDF acquisitions
+The synthesis questions matter most where the literature is contradictory: 10+ papers
+with conflicting findings, methodological inconsistencies spanning research traditions,
+or hypotheses that only emerge from cross-domain integration. They matter least on
+mechanical work — a clear database search, extracting a parameter from one paper,
+following a citation chain, or acquiring PDFs.
 
 **Methodology and species tracking**: Note the methodology and biological context used to derive each result. A parameter measured in rat hepatocytes may differ 2-10x from human values. Key context to capture:
 - **Species**: Human, porcine, rat, mouse, other
@@ -258,7 +225,8 @@ When recording quantitative values, include this context. A value without contex
 
 ## Citation Requirements
 
-**Every quantitative claim must have an inline citation.** This is non-negotiable.
+**Every quantitative claim carries an inline citation.** An uncited number is the one
+defect this skill exists to prevent.
 
 Use Nature-style superscript citations:
 - Single: `text¹`

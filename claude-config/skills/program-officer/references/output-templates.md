@@ -12,16 +12,15 @@ Use when checking specialist status:
 **Progress Check**: [Specialist Name]
 
 **Task**: [Original task assigned]
-**Time elapsed**: [X minutes/hours]
-**Expected completion**: [Original estimate]
+**Stage**: [Where the work stands against the original scope]
 
 **Questions**:
 1. Current progress? (concrete metric: papers read, calculations done)
 2. Blockers or uncertainties?
-3. Estimated time remaining?
+3. How much of the original scope remains?
 
 **Next action based on response**:
-- On track → Continue, check again in 60-90 min
+- On track → Continue
 - Blocked → Clarify/reassign/escalate
 - Scope expanding → Refocus or escalate
 - Nearly done → Prepare next specialist
@@ -34,7 +33,7 @@ Return to domain coordinator with:
 ```markdown
 # Research Coordination Report: [Task]
 
-**Coordinated**: [Date and time range]
+**Coordinated**: [Date]
 **Specialists involved**: [List]
 
 ## Recommendation
@@ -80,13 +79,6 @@ Return to domain coordinator with:
 - Expected outputs: [format, interpretation]
 - Caveats: [limitations, assumptions]
 - Validation steps: [how to verify implementation]
-
-## Timeline Summary
-- Literature review: [duration]
-- Quantitative analysis: [duration]
-- Validation: [duration]
-- Synthesis: [duration]
-- Total: [X hours Y minutes]
 ```
 
 ## Example Deliverables
@@ -138,13 +130,6 @@ Each shows the Deliverable Format filled in for a representative coordination.
 - Set resolution=0.8 as starting point (tune based on cluster count)
 - Run multiple iterations, check stability
 - Document random seed for reproducibility
-
-## Timeline Summary
-- Literature review: 2h 10min
-- Synthesis: 30min
-- Quantitative testing: 45min
-- Validation: 15min
-- **Total: 3h 40min**
 ```
 
 ### Scenario 2: Statistical Validation — Deliverable

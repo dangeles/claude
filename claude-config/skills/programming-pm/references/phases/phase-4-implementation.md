@@ -4,37 +4,45 @@ This reference holds the complete implementation walkthrough for Phase 4 of the
 programming-pm workflow. SKILL.md keeps the phase summary, gate criteria, and a
 pointer here. Read this file when you are actively executing Phase 4.
 
-Before starting Phase 4: Read `~/.claude/programming-pm-sessions/{workflow-id}/state.yaml`. Confirm Phases 0-3 are complete.
+## Contents
+
+- Step 0: Architecture Implementability Check
+- Step 1: Task Decomposition
+- Step 1b: Junior-Developer Evaluation
+- Step 2: Wave-Based Parallel Execution (and Wave-Based Specialist Launch)
+- Step 3: Completion Tracking
+- Step 4: Quality Gate 4a - Specialist Completion Check (and the Phase 4 → 5 handoff validation script)
 
 **Objective**: Implement architecture with specialist agents in parallel.
 
 **Mode-based execution**:
 - **SIMPLE**: Sequential execution (one specialist at a time)
-- **STANDARD/EXTENDED**: Wave-based parallel execution (waves at T=0s, T=30s, T=60s)
+- **STANDARD/EXTENDED**: Wave-based parallel execution
 
 **Steps**:
 
-## Step 0: Architecture Pre-flight Validation
+## Step 0: Architecture Implementability Check
 
 **Skip condition**: SIMPLE mode projects with <= 1 component skip Step 0 and proceed directly to Step 1.
 
-Before any task decomposition, validate the architecture handoff for implementability.
+Before task decomposition, confirm the architecture handoff is implementable.
 
-**Owner**: programming-pm dispatches to senior-developer via Task tool.
+**Owner**: programming-pm. Read the handoff and check it yourself when it is small and the
+components are straightforward. Dispatch senior-developer via Task tool (using the
+"Dispatch to senior-developer (Phase 4 Step 0 Pre-flight)" template) when the architecture
+is large, the dependency graph is non-obvious, or an initial read surfaces substantive gaps.
 
-**Context size check**: Before filling the dispatch:
-- If architecture handoff YAML is <= 200 lines: paste verbatim
-- If > 200 lines: pass file path and instruct senior-developer to read it directly
+**Context size check**: When dispatching, if the architecture handoff YAML is <= 200 lines
+paste it verbatim; if > 200 lines pass the file path and instruct senior-developer to read
+it directly.
 
-**Dispatch** (using template below): Send architecture handoff + requirements summary to senior-developer for pre-flight review.
-
-**senior-developer validates**:
+**What to validate**:
 1. All component interfaces are fully specified (inputs have types, outputs have types)
 2. Component dependencies are traversable without cycles (check by tracing dependency chains)
 3. Technology choices are recognizable and compatible
 4. Implementation order in the handoff is internally consistent
 
-**senior-developer returns** a validation report (write to `{SESSION_DIR}/deliverables/phase4-preflight.yaml`):
+**Output** — a validation report at `{SESSION_DIR}/deliverables/phase4-preflight.yaml`:
 ```yaml
 preflight_validation:
   status: "PASS" | "FAIL" | "PASS_WITH_WARNINGS"
@@ -53,7 +61,7 @@ preflight_validation:
 3. Re-run Step 0 (max 2 escalation cycles)
 4. If still FAIL after 2 cycles: present to user for override (proceed with warnings, or abort)
 
-**Timeout**: 15 minutes. If Step 0 Task tool invocation fails or times out: log "Step 0 pre-flight unavailable" and proceed to Step 1 with a warning.
+If a dispatched Step 0 check fails to return, log "Step 0 pre-flight unavailable" and proceed to Step 1 with a warning.
 
 ## Step 1: Task Decomposition
 
@@ -144,11 +152,11 @@ task:
     tier: 0  # 0=foundation, 1=core, 2=application (extracted from context doc)
 ```
 
-## Step 1b: Junior-Developer Evaluation (Mandatory for STANDARD/EXTENDED mode; optional for SIMPLE mode unless task count >= 6)
+## Step 1b: Junior-Developer Evaluation (STANDARD/EXTENDED mode; SIMPLE mode only when task count >= 6)
 
-The grep-based assignment in Step 1a is a first-pass heuristic. Step 1b is a mandatory second-pass evaluation that reads and may update `task-assignments.txt`. Even if Step 1a assigned no tasks to junior-developer, Step 1b may reassign some.
+The grep-based assignment in Step 1a is a first-pass heuristic. Step 1b is a second-pass evaluation that reads and may update `task-assignments.txt`. Even if Step 1a assigned no tasks to junior-developer, Step 1b may reassign some.
 
-**Evaluation criteria** -- evaluate junior-developer for a task if ANY of these are true:
+**Evaluation criteria** -- consider junior-developer for a task if any of these are true:
 1. Total task count >= 4 (any mode) or >= 6 (SIMPLE mode only)
 2. The task has ALL of the following:
    - Single function or single class scope
@@ -190,36 +198,17 @@ jq '.junior_developer_evaluation = {"evaluated": true, "total_tasks": '$TOTAL', 
 
 ## Step 2: Wave-Based Parallel Execution
 
-**SIMPLE mode**: Skip waves, execute sequentially.
+**SIMPLE mode** (`$PROGRAMMING_PM_MODE` = SIMPLE): skip waves. Walk
+`$SESSION_DIR/task-assignments.txt` and dispatch one specialist at a time, recording each
+deliverable before moving to the next task.
 
-**STANDARD/EXTENDED mode**: Execute in waves with stagger.
-
-```bash
-# Check execution mode
-if [ "$PROGRAMMING_PM_MODE" = "SIMPLE" ]; then
-  echo "SIMPLE mode: Sequential execution"
-
-  # Execute tasks one at a time
-  while IFS='|' read -r TASK_ID COMPONENT SPECIALIST DEPS; do
-    echo "Executing $TASK_ID ($COMPONENT) with $SPECIALIST..."
-
-    # Invoke specialist (synchronous)
-    # Record start time for timeout monitoring
-    START_TIME=$(date +%s)
-
-    # ... invoke specialist ...
-
-    # Wait for completion
-  done < "$SESSION_DIR/task-assignments.txt"
-
-else
-  echo "STANDARD/EXTENDED mode: Wave-based parallel execution"
-fi
-```
+**STANDARD/EXTENDED mode**: launch in waves as below.
 
 ## Wave-Based Specialist Launch
 
-Launch specialists in three waves to respect dependency ordering. Track all running agents to prevent double-launches.
+Launch specialists in three waves to respect dependency ordering. Track launched tasks in
+`running-agents.txt` to prevent double-launches, and send the agents of a single wave in one
+message so they run concurrently.
 
 **Wave 1 (immediate)** -- Launch specialists whose output feeds other tasks:
 
@@ -251,46 +240,38 @@ For each independent task not already launched in Wave 1:
   Write output to: `{session_dir}/deliverables/{task_id}-implementation/`
 Skip any task already tracked in running-agents (prevents double-launch).
 
-**Wave 3 -- Bounded dependency retry protocol**:
+**Wave 3 -- Bounded dependency pass**:
+
+Run this pass after each batch of specialists returns, since a returning specialist may have
+unblocked a pending task. It is bounded: a task still blocked after 3 passes escalates.
 
 ```bash
-MAX_WAVE3_RETRIES=3
-WAVE3_RETRY_INTERVAL=120  # seconds
+MAX_WAVE3_PASSES=3
+WAVE3_PASS=$(( $(cat "$SESSION_DIR/wave3-pass-count.txt" 2>/dev/null || echo 0) + 1 ))
+echo "$WAVE3_PASS" > "$SESSION_DIR/wave3-pass-count.txt"
 
-# For each Wave 3 task with unsatisfied dependencies
 for TASK_ID in $(cat "$SESSION_DIR/wave3-pending.txt" 2>/dev/null); do
-  RETRY_COUNT=0
-  DEPS_SATISFIED=false
+  # Read dependencies for this task
+  DEPS=$(grep "^$TASK_ID|" "$SESSION_DIR/task-assignments.txt" | cut -d'|' -f4 | tr ',' ' ')
+  ALL_DEPS_MET=true
+  MISSING_DEP=""
 
-  while [ "$RETRY_COUNT" -lt "$MAX_WAVE3_RETRIES" ] && [ "$DEPS_SATISFIED" = false ]; do
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    MISSING_DEP=""
-
-    # Read dependencies for this task
-    DEPS=$(grep "^$TASK_ID|" "$SESSION_DIR/task-assignments.txt" | cut -d'|' -f4 | tr ',' ' ')
-    ALL_DEPS_MET=true
-
-    for DEP in $DEPS; do
-      # Use ls glob (not [ -f glob ]) for safe wildcard existence check
-      if ! ls "${SESSION_DIR}/deliverables/${DEP}-"* > /dev/null 2>&1; then
-        ALL_DEPS_MET=false
-        MISSING_DEP="$DEP"
-        break
-      fi
-    done
-
-    if [ "$ALL_DEPS_MET" = true ]; then
-      DEPS_SATISFIED=true
-      # Launch specialist via Task tool dispatch
-    else
-      echo "  Wave 3: $TASK_ID retry $RETRY_COUNT/$MAX_WAVE3_RETRIES (waiting on: $MISSING_DEP)"
-      sleep "$WAVE3_RETRY_INTERVAL"
+  for DEP in $DEPS; do
+    # Use ls glob (not [ -f glob ]) for safe wildcard existence check
+    if ! ls "${SESSION_DIR}/deliverables/${DEP}-"* > /dev/null 2>&1; then
+      ALL_DEPS_MET=false
+      MISSING_DEP="$DEP"
+      break
     fi
   done
 
-  if [ "$DEPS_SATISFIED" = false ]; then
-    echo "  ESCALATION: $TASK_ID — dependencies unresolved after $MAX_WAVE3_RETRIES retries"
+  if [ "$ALL_DEPS_MET" = true ]; then
+    echo "  Wave 3: $TASK_ID dependencies met — launch specialist via Task tool dispatch"
+  elif [ "$WAVE3_PASS" -ge "$MAX_WAVE3_PASSES" ]; then
+    echo "  ESCALATION: $TASK_ID — dependencies unresolved after $MAX_WAVE3_PASSES passes"
     echo "$TASK_ID|ESCALATED|$(date -u +%Y-%m-%dT%H:%M:%SZ)|missing:$MISSING_DEP" >> "$SESSION_DIR/escalations.txt"
+  else
+    echo "  Wave 3: $TASK_ID still blocked on $MISSING_DEP (pass $WAVE3_PASS/$MAX_WAVE3_PASSES)"
   fi
 done
 
@@ -303,89 +284,22 @@ if [ -f "$SESSION_DIR/escalations.txt" ] && [ -s "$SESSION_DIR/escalations.txt" 
 fi
 ```
 
-Monitor all agents via output file existence. When all non-escalated tasks show deliverables, proceed to quality gate.
+## Step 3: Completion Tracking
 
-## Step 3: Progress Monitoring
+Specialists return their results to you directly, so tracking is event-driven — there is no
+background poll to run. As each specialist returns:
 
-Monitor specialist outputs using file-based tracking:
+1. Append `{TASK_ID}|COMPLETED|<UTC timestamp>` to `$SESSION_DIR/task-status.txt` and drop the
+   task from `$SESSION_DIR/running-agents.txt`.
+2. Confirm the expected deliverable exists under `$SESSION_DIR/deliverables/` (Gate 4b expects
+   >100 words).
+3. Re-run the Wave 3 dependency pass above and launch anything it unblocked.
 
-```bash
-# Progress monitoring loop
-echo "Monitoring specialist progress..."
+If a specialist returns without a usable deliverable or reports that it is blocked, apply the
+intervention options from timeout-config.md — narrow the scope, substitute a specialist, or
+escalate to the user — rather than relaunching it unchanged.
 
-TIMEOUT_THRESHOLD=7200  # 2 hours (STANDARD mode)
-if [ "$PROGRAMMING_PM_MODE" = "EXTENDED" ]; then
-  TIMEOUT_THRESHOLD=14400  # 4 hours (EXTENDED mode)
-fi
-
-# Derive cycle count from TIMEOUT_THRESHOLD (single source of truth for timeout duration)
-MAX_MONITORING_CYCLES=$(( TIMEOUT_THRESHOLD / 60 ))  # TIMEOUT_THRESHOLD defined in timeout-config.md
-MONITORING_CYCLE=0
-
-while [ "$MONITORING_CYCLE" -lt "$MAX_MONITORING_CYCLES" ]; do
-  MONITORING_CYCLE=$((MONITORING_CYCLE + 1))
-
-  # Check running agents
-  RUNNING_COUNT=$(wc -l < "$SESSION_DIR/running-agents.txt" 2>/dev/null || echo 0)
-
-  if [ "$RUNNING_COUNT" -eq 0 ]; then
-    echo "✅ All specialists completed"
-    break
-  fi
-
-  # Check each running agent
-  while IFS='|' read -r TASK_ID AGENT_PID; do
-    # Check if process still running
-    if ! ps -p "$AGENT_PID" > /dev/null 2>&1; then
-      echo "  $TASK_ID completed (PID $AGENT_PID exited)"
-
-      # Mark as completed
-      echo "$TASK_ID|COMPLETED|$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$SESSION_DIR/task-status.txt"
-
-      # Remove from running list
-      grep -v "^$TASK_ID|" "$SESSION_DIR/running-agents.txt" > "$SESSION_DIR/running-agents.txt.tmp"
-      mv "$SESSION_DIR/running-agents.txt.tmp" "$SESSION_DIR/running-agents.txt"
-    else
-      # Check for timeout
-      START_TIME=$(grep "^$TASK_ID|" "$SESSION_DIR/task-start-times.txt" | cut -d'|' -f2)
-      CURRENT_TIME=$(date +%s)
-      ELAPSED=$((CURRENT_TIME - START_TIME))
-
-      if [ "$ELAPSED" -gt "$TIMEOUT_THRESHOLD" ]; then
-        echo "  ⚠️  $TASK_ID TIMEOUT (elapsed: ${ELAPSED}s, threshold: ${TIMEOUT_THRESHOLD}s)"
-
-        # Timeout intervention (see timeout-config.md)
-        # Option: Extend deadline, narrow scope, substitute specialist, or escalate
-      fi
-    fi
-  done < "$SESSION_DIR/running-agents.txt"
-
-  # Check progress file outputs (must be >100 words)
-  for TASK_ID in $(awk -F'|' '{print $1}' "$SESSION_DIR/task-assignments.txt"); do
-    PROGRESS_FILE="/tmp/progress-${TASK_ID}.md"
-
-    if [ -f "$PROGRESS_FILE" ]; then
-      WORD_COUNT=$(wc -w < "$PROGRESS_FILE")
-
-      if [ "$WORD_COUNT" -ge 100 ]; then
-        echo "  $TASK_ID progress OK ($WORD_COUNT words)"
-      else
-        echo "  $TASK_ID progress insufficient ($WORD_COUNT words, min 100)"
-      fi
-    fi
-  done
-
-  # Sleep before next check
-  sleep 60  # Check every minute
-done
-
-# Hard abort if loop exhausted with tasks still running
-if [ "${RUNNING_COUNT:-0}" -gt 0 ]; then
-  echo "HARD ABORT: Monitoring exhausted ($MAX_MONITORING_CYCLES cycles × 60s = $TIMEOUT_THRESHOLD s)"
-  echo "Still running: $RUNNING_COUNT task(s)"
-  echo "Options: (A) Proceed with completed tasks  (B) Extend monitoring (+60 cycles)  (C) Abort workflow"
-fi
-```
+When every non-escalated task has a deliverable, proceed to Step 4.
 
 ## Step 4: Quality Gate 4a - Specialist Completion Check
 
