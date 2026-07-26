@@ -124,7 +124,7 @@ rather than pasted into each.
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- 73b9866: refactor(skills): retune 55 skills for Claude Opus 5
 
 ## Next Steps
 
