@@ -4,10 +4,10 @@
     "superpowers@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0",
-        "version": "5.1.0",
+        "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0",
+        "version": "6.2.0",
         "installedAt": "2026-01-21T16:45:02.765Z",
-        "lastUpdated": "2026-05-04T22:27:33.564Z",
+        "lastUpdated": "2026-07-24T19:07:51.012Z",
         "gitCommitSha": "a01a135fe185559ff9dc84dd70d6e9bb57d92bdf"
       }
     ],
@@ -17,7 +17,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/frontend-design/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T17:58:40.499Z",
-        "lastUpdated": "2026-04-17T22:57:27.405Z",
+        "lastUpdated": "2026-07-26T19:26:05.668Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
@@ -27,7 +27,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/commit-commands/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T18:27:31.572Z",
-        "lastUpdated": "2026-04-17T22:57:27.405Z",
+        "lastUpdated": "2026-07-26T19:26:05.667Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
@@ -37,7 +37,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/pr-review-toolkit/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T18:27:48.191Z",
-        "lastUpdated": "2026-04-17T22:57:27.408Z",
+        "lastUpdated": "2026-07-26T19:26:05.667Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
@@ -47,7 +47,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/code-review/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T18:27:59.144Z",
-        "lastUpdated": "2026-04-17T22:57:27.405Z",
+        "lastUpdated": "2026-07-26T19:26:05.667Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
@@ -67,7 +67,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/feature-dev/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T18:28:19.142Z",
-        "lastUpdated": "2026-04-17T22:57:27.404Z",
+        "lastUpdated": "2026-07-26T19:26:05.668Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
@@ -77,7 +77,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/plugin-dev/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T18:28:28.484Z",
-        "lastUpdated": "2026-04-17T22:57:27.404Z",
+        "lastUpdated": "2026-07-26T19:26:05.666Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
@@ -87,7 +87,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T18:36:02.937Z",
-        "lastUpdated": "2026-04-17T22:57:27.403Z",
+        "lastUpdated": "2026-07-26T19:26:05.665Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
@@ -107,7 +107,7 @@
         "installPath": "/Users/davidangelesalbores/.claude/plugins/cache/claude-plugins-official/hookify/unknown",
         "version": "unknown",
         "installedAt": "2026-03-01T18:36:14.804Z",
-        "lastUpdated": "2026-04-17T22:57:27.405Z",
+        "lastUpdated": "2026-07-26T19:26:05.666Z",
         "gitCommitSha": "55b58ec6e5649104f926ba7558b567dc8d33c5ff"
       }
     ],
