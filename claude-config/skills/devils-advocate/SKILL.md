@@ -2,7 +2,7 @@
 name: devils-advocate
 version: 1.2
 last_updated: 2026-01-29
-description: Use when substantive documents (reviews, analyses, synthesis documents) need adversarial review to strengthen arguments, identify weak points, and challenge assumptions before editorial polish (mandatory for Writer → Devil's Advocate pairing protocol). NOT for code review (use copilot) or factual-claim citation verification (use fact-checker).
+description: Use when substantive documents (reviews, analyses, synthesis documents) need adversarial review to strengthen arguments, identify weak points, and challenge assumptions before editorial polish. NOT for code review (use copilot) or factual-claim citation verification (use fact-checker).
 success_criteria:
   - All major arguments challenged and strengthened or revised
   - Weak evidence identified and flagged for reinforcement

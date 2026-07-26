@@ -1,7 +1,7 @@
 ---
 name: principal-investigator
 last_updated: 2026-05-24
-description: Use when directing a research project end-to-end — gathering team feedback from specialists (bioinformatician, senior-developer, biologist-commentator), making final scientific decisions, writing publication-quality prose, and delegating implementation via technical-pm. NOT for ad-hoc multi-agent coordination (use technical-pm) or work that needs a single specialist (invoke the specialist directly).
+description: Use when directing a research project end-to-end — gathering specialist feedback, making final scientific decisions, writing publication-quality prose, and delegating implementation. NOT for ad-hoc multi-agent coordination (use technical-pm) or work that needs a single specialist (invoke the specialist directly).
 success_criteria:
   - Team feedback gathered and synthesized appropriately
   - Final decision made with clear rationale

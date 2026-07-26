@@ -2,7 +2,7 @@
 name: completion-verifier
 version: 1.0
 last_updated: 2026-07-26
-description: "Use BEFORE marking any task complete, before user handoffs, or at quality checkpoints — verifies requirements satisfied, edge cases tested, tests pass, no regressions, deliverables ready. Triggers on 'are we done', 'is this complete', 'verify completion', 'ready to ship', 'ready to merge', 'is this ready', 'mark done'. NOT for general code review (use copilot) or pre-PR comprehensive review (use /pr-review-toolkit:review-pr)."
+description: "Use BEFORE marking any task complete, before user handoffs, or at quality checkpoints — verifies requirements satisfied, edge cases tested, tests pass, no regressions, deliverables ready. Triggers on 'are we done', 'is this complete', 'ready to ship'. NOT for general code review (use copilot) or pre-PR comprehensive review (use /pr-review-toolkit:review-pr)."
 success_criteria:
   - All stated requirements verified as satisfied
   - Edge cases systematically identified and tested

@@ -2,14 +2,11 @@
 name: patent-review
 last_updated: 2026-05-24
 description: >
-  This skill should be used when the user asks to "review this patent", "check the claims",
-  "patent draft review", "is this claim accurate", "what's missing from this patent", or
-  when a user pastes a patent draft or provides a .docx file path with patent content.
-  Use this skill whenever a scientist needs to review a patent draft written by a lawyer —
-  to check technical accuracy, identify gaps in claim coverage, or propose revised or new
-  claim language. This is a multi-phase interactive workflow: ingest → triage → section-by-section
-  review → structured report. Do not use this skill for legal advice, filing assistance, or
-  non-scientific patent tasks.
+  Use when a scientist needs to review a patent draft written by a lawyer — checking technical
+  accuracy, identifying gaps in claim coverage, or proposing revised or new claim language.
+  Triggers on "review this patent", "check the claims", "is this claim accurate", or a pasted
+  patent draft or .docx path. Not for legal advice, filing assistance, or non-scientific
+  patent tasks.
 ---
 
 # Patent Review

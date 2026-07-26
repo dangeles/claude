@@ -2,7 +2,7 @@
 name: plotting-advisor
 version: 1.0
 last_updated: 2026-05-24
-description: "Use BEFORE writing any Python plotting code (matplotlib, seaborn, plotly) — recommends chart type, color palette, axis treatment, and accessibility choices using Tufte, Cleveland, Wong, and Wilke principles. Returns a structured checklist + a paste-ready decision card. Also lints existing figures on request. Triggers on 'plot', 'chart', 'visualize', 'graph', 'figure', 'heatmap', 'histogram', 'scatter', 'bar plot', or any mention of matplotlib/seaborn/plotly."
+description: "Use BEFORE writing any Python plotting code (matplotlib, seaborn, plotly) — recommends chart type, color palette, axis treatment, and accessibility choices using Tufte, Cleveland, Wong, and Wilke principles. Also lints existing figures on request. Triggers on 'plot', 'chart', 'figure', 'heatmap', or any mention of matplotlib/seaborn/plotly."
 prerequisites:
   - Data shape known (variable types, n)
   - Plotting intent stated (compare, distribution, trend, composition, relation)

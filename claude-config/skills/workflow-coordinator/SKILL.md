@@ -1,7 +1,7 @@
 ---
 name: workflow-coordinator
 last_updated: 2026-05-24
-description: Use when coordinating handoffs between workflows (e.g., skill-editor to programming-pm). Provides universal handoff schema v3.0, validation rules, distributed tracing conventions, and workflow discovery via frontmatter metadata.
+description: Use when coordinating handoffs between workflows (e.g., skill-editor to programming-pm). Provides the universal handoff schema, validation rules, and workflow discovery conventions.
 
 handoff:
   accepts_from:

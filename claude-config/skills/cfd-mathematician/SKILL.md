@@ -2,11 +2,10 @@
 name: cfd-mathematician
 last_updated: 2026-05-24
 description: >
-  Use when invoked by cfd-bioreactor orchestrator to provide rigorous mathematical
-  analysis of FEM variational formulations, function space selection, stability conditions
-  (inf-sup, Lax-Milgram), convergence rate estimation, and dimensionless number analysis
-  for bioreactor CFD simulations. Produces mathematical specifications that the orchestrator
-  translates into FEniCSx code.
+  Use when invoked by cfd-bioreactor orchestrator to provide rigorous mathematical analysis of
+  FEM variational formulations, function space selection, stability conditions (inf-sup,
+  Lax-Milgram), convergence rate estimation, and dimensionless number analysis for bioreactor
+  CFD simulations.
 
 # v2.0 orchestrator handoff metadata
 handoff:

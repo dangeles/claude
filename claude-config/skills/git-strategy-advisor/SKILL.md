@@ -2,16 +2,13 @@
 name: git-strategy-advisor
 last_updated: 2026-05-24
 description: >-
-  Use BEFORE starting a non-trivial feature OR after implementation when integration
-  strategy is non-obvious — should this be a branch or direct commit? When to push?
-  PR or direct merge? Triggers on "how should I structure this?", "branch or commit?",
-  "ready to ship". Recommends staging ONLY files modified during the current session;
-  the session-scope-guard PreToolUse hook enforces this structurally at commit time
-  (independent of this skill). NOT for routine single-commit fixes (just commit
+  Use BEFORE starting a non-trivial feature, or after implementation when integration strategy
+  is non-obvious — branch or direct commit? When to push? PR or direct merge? Triggers on
+  "branch or commit?", "ready to ship". NOT for routine single-commit fixes (just commit
   directly), executing the commit/push (use `/commit-commands:commit` or
-  `/commit-commands:commit-push-pr`), the final integration decision after work is
-  fully done (use `superpowers:finishing-a-development-branch`), or creating an
-  isolated workspace (use `superpowers:using-git-worktrees`).
+  `/commit-commands:commit-push-pr`), the final integration decision after work is fully done
+  (use `superpowers:finishing-a-development-branch`), or creating an isolated workspace (use
+  `superpowers:using-git-worktrees`).
 ---
 
 # Git Strategy Advisor

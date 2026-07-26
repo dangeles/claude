@@ -2,9 +2,8 @@
 name: latex-document-manager
 last_updated: 2026-05-24
 description: >
-  Use when user asks to examine, edit, proofread, or compile LaTeX documents.
-  Triggers on mentions of .tex files, pdflatex, xelatex, lualatex, latexmk,
-  bibtex, biblatex, CV updates, or LaTeX paper editing on macOS.
+  Use when the user asks to examine, edit, proofread, or compile LaTeX documents. Triggers on
+  .tex files, latexmk, bibtex/biblatex, CV updates, or LaTeX paper editing.
 
 # Handoff metadata (custom extension -- see workflow-coordinator/references/frontmatter-metadata-standard.md)
 handoff:

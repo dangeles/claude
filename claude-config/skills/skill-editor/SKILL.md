@@ -2,13 +2,10 @@
 name: skill-editor
 last_updated: 2026-05-24
 description: >
-  This skill should be used when creating, modifying, or refactoring any Claude Code skill in
-  this repository. It is the default entry point for all skill work — new skills from scratch,
-  targeted edits, refactoring, and quality review alike. Trigger on "create a skill", "add a
-  skill", "build a skill for", "make a skill that", "edit the X skill", "modify a skill",
-  "refactor a skill", "improve the X skill", or any time a user wants to add or change a skill
-  in this repository. Always prefer this over skill-creator or plugin-dev:skill-development for
-  skills that belong in claude-config/.
+  Use when creating, modifying, or refactoring any Claude Code skill in this repository — the
+  default entry point for new skills, targeted edits, refactoring, and quality review alike.
+  Triggers on "create a skill", "edit the X skill", "refactor a skill". Always prefer this
+  over skill-creator or plugin-dev:skill-development for skills that belong in claude-config/.
 
 # Handoff metadata (custom extension -- see workflow-coordinator/references/frontmatter-metadata-standard.md)
 handoff:

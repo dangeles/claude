@@ -3,9 +3,8 @@ name: essay-pipeline
 version: 1.0
 last_updated: 2026-05-24
 description: >
-  Use when collaboratively writing a science blog essay through interactive
-  thesis development, essay structuring, argument development, and paragraph
-  writing with tiered fact-checking and voice matching.
+  Use when collaboratively writing a science blog essay — thesis development, structuring,
+  argument development, and paragraph writing with fact-checking and voice matching.
 handoff:
   accepts_from:
     - "*"

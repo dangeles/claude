@@ -1,7 +1,7 @@
 ---
 name: archive-workflow
 last_updated: 2026-05-24
-description: Use when organizing projects - detecting clutter, enforcing naming conventions, structuring directories, managing gitignore, or assessing project expandability. Triggers on project organization requests, file naming audits, or gitignore maintenance needs.
+description: Use when organizing projects — detecting clutter, enforcing naming conventions, structuring directories, managing gitignore, or assessing project expandability.
 ---
 
 # archive-workflow

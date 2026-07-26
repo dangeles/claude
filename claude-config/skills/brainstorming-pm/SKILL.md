@@ -1,10 +1,8 @@
 ---
 name: brainstorming-pm
 description: >
-  Use when orchestrating multi-perspective brainstorming sessions requiring
-  parallel agent execution, confidence-weighted synthesis, and optional
-  workflow handoff. Coordinates 5 parallel perspective agents through a
-  4-stage pipeline (framing, diverging, converging, output).
+  Use when orchestrating multi-perspective brainstorming sessions requiring parallel agent
+  execution, confidence-weighted synthesis, and optional workflow handoff.
 version: 1.0.0
 last_updated: 2026-06-09
 tags: [orchestrator, brainstorming, multi-agent, synthesis, parallel]

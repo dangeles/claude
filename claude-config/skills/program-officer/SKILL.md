@@ -1,7 +1,7 @@
 ---
 name: program-officer
 last_updated: 2026-06-09
-description: Use when coordinating complex research tasks that need ADAPTIVE multi-source integration with checkpoints and validation — sequencing researcher, calculator, synthesizer, and fact-checker with progress monitoring and confidence-rated recommendations. NOT for fixed automated research chains (use research-pipeline) or generic custom-sequence orchestration (use technical-pm).
+description: Use when coordinating complex research tasks that need ADAPTIVE multi-source integration with checkpoints and validation. NOT for fixed automated research chains (use research-pipeline) or generic custom-sequence orchestration (use technical-pm).
 success_criteria:
   - Research task completed with all specialists coordinated
   - Dependencies executed in correct order
