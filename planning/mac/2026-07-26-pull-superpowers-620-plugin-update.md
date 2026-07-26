@@ -74,7 +74,7 @@ knowing: the tracked pin records *which* version is installed, not its contents.
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- a3903f9: chore(plugins): pull superpowers 6.2.0 version pin
 
 ## Next Steps
 
