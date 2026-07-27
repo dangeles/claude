@@ -22,5 +22,8 @@ jobs:
       - name: Validate config (frontmatter + JSON gates)
         run: ./sync-config.py validate --verbose
 
+      # Bare `pytest` (no path) so bundled skill script tests are collected too --
+      # `pytest tests/` silently skipped the 42 tests under
+      # claude-config/skills/plotting-advisor/scripts/tests/.
       - name: Run test suite
-        run: python -m pytest tests/ -v
+        run: python -m pytest -v
