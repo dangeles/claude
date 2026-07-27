@@ -71,8 +71,7 @@ workflows:
     handoff:
       accepts_from: ["*"]
       provides_to:
-        - "senior-developer"
-        - "junior-developer"
+        - "python-developer"
         - "systems-architect"
       schema_version: "3.0"
       schema_type: "universal"

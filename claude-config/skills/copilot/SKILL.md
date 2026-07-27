@@ -1,7 +1,7 @@
 ---
 name: copilot
 last_updated: 2026-05-24
-description: Use when reviewing code INLINE during development (real-time second opinion on correctness, bugs, edge cases) in an adversarial but collaborative manner. NOT for pre-PR comprehensive review (use /pr-review-toolkit:review-pr), post-PR automation (use /code-review), or formal review of junior-developer outputs (use senior-developer).
+description: Use when reviewing code INLINE during development (real-time second opinion on correctness, bugs, edge cases) in an adversarial but collaborative manner. NOT for pre-PR comprehensive review (use /pr-review-toolkit:review-pr) or post-PR automation (use /code-review).
 success_criteria:
   - All critical bugs identified and documented
   - Edge cases systematically checked
@@ -13,15 +13,15 @@ metadata:
     skill-author: David Angeles Albores
     category: bioinformatics-workflow
     workflow: [notebook-analysis, software-development]
-    integrates-with: [bioinformatician, senior-developer]
+    integrates-with: [bioinformatician, python-developer]
 allowed-tools: [Read, Edit]
 handoff:
   accepts_from:
     - programming-pm
-    - senior-developer
+    - python-developer
   provides_to:
     - programming-pm
-    - senior-developer
+    - python-developer
   schema_version: "3.0"
   schema_type: universal
 ---

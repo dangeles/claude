@@ -104,8 +104,7 @@ session_handoff:
 All downstream agents receive session context via handoffs:
 - `requirements-analyst`: Uses session dir for intermediate files
 - `systems-architect`: Uses archival guidelines for component naming
-- `senior-developer`: Uses git workflow, code style, testing conventions
-- `junior-developer`: Same as senior-developer (enforced by review)
+- `python-developer`: Uses git workflow, code style, testing conventions
 - `mathematician`: Uses code directories for model output location
 - `statistician`: Uses code directories for analysis output location
 - `copilot`: Uses archival guidelines for code review criteria
@@ -226,7 +225,7 @@ architecture_handoff:
 ## mathematician -> developer
 
 **Producer**: mathematician
-**Consumer**: senior-developer
+**Consumer**: python-developer
 
 ```yaml
 math_handoff:
@@ -282,7 +281,7 @@ math_handoff:
 ## statistician -> developer
 
 **Producer**: statistician
-**Consumer**: senior-developer
+**Consumer**: python-developer
 
 ```yaml
 stats_handoff:
@@ -342,8 +341,8 @@ stats_handoff:
 
 ## developer -> code_review
 
-**Producer**: senior-developer or junior-developer
-**Consumer**: senior-developer (review) and programming-pm
+**Producer**: python-developer
+**Consumer**: copilot (review) and programming-pm
 
 ```yaml
 code_handoff:
@@ -398,7 +397,7 @@ code_handoff:
 
 ## code_review -> merge
 
-**Producer**: senior-developer (reviewer)
+**Producer**: copilot (reviewer)
 **Consumer**: programming-pm (for gate decision)
 
 ```yaml
@@ -646,13 +645,6 @@ specialist_return:
     blockers: []
     questions: []
     assumptions_made: []
-
-  # OPTIONAL -- Include ONLY when producer is senior-developer. Omit entirely for other specialists.
-  delegation:
-    evaluated_for_junior: boolean
-    tasks_delegated: int
-    delegation_rationale: string
-    delegation_failures: []  # populated if any junior-developer tasks failed after 3 cycles
 ```
 
 ### Session Cleanup

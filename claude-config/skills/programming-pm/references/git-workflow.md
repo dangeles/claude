@@ -165,8 +165,8 @@ EOF
 ### PR Review Process
 
 1. **Automated checks run** (CI if configured)
-2. **Request review** from senior-developer
-3. **Address feedback** (max 3 revision cycles)
+2. **Request review** from copilot
+3. **Address feedback**
 4. **Approve and merge** (squash commit)
 5. **Delete branch**
 

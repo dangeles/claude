@@ -7,9 +7,8 @@ Templates for invoking each specialist via the Task tool. Fill all `{placeholder
 - Content gate for Phase 1 handoff
 - Paste verbatim discipline
 - Template: Dispatch to systems-architect (Phase 3)
-- Template: Dispatch to senior-developer (Phase 4)
-- Template: Dispatch to senior-developer (Phase 4 Step 0 Pre-flight)
-- Template: Dispatch to junior-developer (Phase 4)
+- Template: Dispatch to python-developer (Phase 4)
+- Template: Dispatch to python-developer (Phase 4 Step 0 Pre-flight)
 - Template: Dispatch to copilot (Phase 5)
 - Template: Dispatch to mathematician (Phase 4)
 - Template: Dispatch to statistician (Phase 4)
@@ -59,15 +58,16 @@ Your architecture handoff YAML includes: `producer: "systems-architect"`
 
 ---
 
-## Template: Dispatch to senior-developer (Phase 4)
+## Template: Dispatch to python-developer (Phase 4)
 
 ```
-Use the senior-developer skill to implement the following component.
+Use the python-developer skill to implement the following component.
 
 ## Task Assignment
 - Task ID: {task_id}
 - Component: {component_name}
 - Description: {component_description}
+- Scope: {single function | single module | multi-file component}
 
 ## Architecture Specification
 {paste verbatim relevant component spec from Phase 3 handoff}
@@ -90,19 +90,14 @@ Use the senior-developer skill to implement the following component.
 - Implementation files in: {output directory}
 - Test files in: {test directory}
 - Code handoff YAML at: {SESSION_DIR}/handoffs/phase4-code-handoff-{task_id}.yaml
-
-## Delegation Instruction
-If this task contains multiple independently implementable subtasks, consider whether any
-are suitable for junior-developer delegation (see your Delegation Evaluation step).
-Document your delegation decision in your code handoff either way.
 ```
 
 ---
 
-## Template: Dispatch to senior-developer (Phase 4 Step 0 Pre-flight)
+## Template: Dispatch to python-developer (Phase 4 Step 0 Pre-flight)
 
 ```
-Use the senior-developer skill to validate the architecture handoff for implementability.
+Use the python-developer skill to validate the architecture handoff for implementability.
 This is PRE-FLIGHT VALIDATION only — do not implement anything.
 
 ## Validation Task
@@ -126,30 +121,6 @@ Write validation report to: {SESSION_DIR}/deliverables/phase4-preflight.yaml
 status: PASS | FAIL | PASS_WITH_WARNINGS
 For each gap: component name, issue, severity (BLOCKING or WARNING)
 Recommendations for resolving BLOCKING issues.
-```
-
----
-
-## Template: Dispatch to junior-developer (Phase 4)
-
-```
-Use the junior-developer skill to implement the following well-scoped task.
-
-## Task Specification
-{paste junior_task YAML from senior-developer decomposition}
-
-## Archival Context
-{paste archival_context block}
-
-## Review Process
-- Submit deliverable for senior-developer review
-- Maximum 3 revision cycles
-- Escalate if blocked after 3 cycles (senior-developer will reclaim and implement)
-
-## Output Location
-- Code: {output path}
-- Tests: {test path}
-- Deliverable YAML: {SESSION_DIR}/deliverables/{task_id}-junior-deliverable.yaml
 ```
 
 ---
@@ -210,7 +181,7 @@ Use the mathematician skill to design the algorithm for the following component.
 1. Algorithm specification with pseudocode
 2. Complexity analysis (time and space)
 3. Numerical stability assessment
-4. Implementation guidance for senior-developer
+4. Implementation guidance for python-developer
 5. Math handoff YAML at: {SESSION_DIR}/handoffs/phase4-math-handoff-{task_id}.yaml
 ```
 
@@ -230,6 +201,6 @@ Use the statistician skill to design the statistical approach for the following 
 ## Expected Deliverables
 1. Method selection with rationale
 2. Validation criteria and diagnostic checks
-3. Implementation guidance for senior-developer
+3. Implementation guidance for python-developer
 4. Stats handoff YAML at: {SESSION_DIR}/handoffs/phase4-stats-handoff-{task_id}.yaml
 ```

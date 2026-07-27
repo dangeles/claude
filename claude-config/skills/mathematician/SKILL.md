@@ -30,7 +30,7 @@ The mathematician skill provides mathematical expertise for software projects re
 ## When NOT to Use This Skill
 
 - **Statistical analysis**: Use statistician (hypothesis testing, MCMC, confidence intervals)
-- **Code implementation**: Use senior-developer or junior-developer
+- **Code implementation**: Use python-developer
 - **Architecture decisions**: Use systems-architect
 - **Simple operations** not requiring analysis (CRUD, I/O)
 
@@ -47,7 +47,7 @@ The mathematician skill provides mathematical expertise for software projects re
 
 ### What mathematician does NOT do
 
-- Implement code (senior-developer responsibility)
+- Implement code (python-developer responsibility)
 - Statistical validation (statistician responsibility)
 - Make scope decisions (programming-pm responsibility)
 - System architecture (systems-architect responsibility)
@@ -169,7 +169,7 @@ math_handoff:
 
 ### Standard Algorithm Design Workflow
 
-A design request runs from the programming-pm requirements to a specification handed to senior-developer. Pin down the constraints first: input size bounds, time and space budgets, numerical precision needs, and which libraries are available. Identify the problem class (sorting, searching, optimization, and so on), review the standard algorithms for that class against those constraints, and select or design accordingly. Complete the design with a complexity analysis and, where floating-point arithmetic is involved, a numerical stability assessment. Document it as pseudocode plus verification criteria and edge cases.
+A design request runs from the programming-pm requirements to a specification handed to python-developer. Pin down the constraints first: input size bounds, time and space budgets, numerical precision needs, and which libraries are available. Identify the problem class (sorting, searching, optimization, and so on), review the standard algorithms for that class against those constraints, and select or design accordingly. Complete the design with a complexity analysis and, where floating-point arithmetic is involved, a numerical stability assessment. Document it as pseudocode plus verification criteria and edge cases.
 
 ### Complexity Analysis Protocol
 

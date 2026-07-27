@@ -73,7 +73,7 @@ skill-editor (trace_id: 550e8400-...)
 programming-pm (trace_id: 550e8400-...)  <-- same trace_id
     | handoff
     v
-senior-developer (trace_id: 550e8400-...) <-- same trace_id
+python-developer (trace_id: 550e8400-...) <-- same trace_id
     |
     v
 Complete
@@ -269,7 +269,7 @@ programming-pm
     | validation: PASSED
     | latency: 156 ms
     v
-senior-developer
+python-developer
     | schema: 1.2 (internal)
     | validation: PASSED
     | latency: 89 ms

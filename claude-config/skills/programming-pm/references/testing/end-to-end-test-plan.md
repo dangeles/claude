@@ -94,7 +94,7 @@ This document outlines the end-to-end testing strategy for the programming-pm wo
 
 7. **Verify Phase 4 (Implementation - Sequential)**:
    - [ ] SIMPLE mode: Sequential execution confirmed
-   - [ ] Task decomposition: 1 task assigned to senior-developer
+   - [ ] Task decomposition: 1 task assigned to python-developer
    - [ ] NO parallel waves (SIMPLE mode characteristic)
    - [ ] specialist completes implementation
    - [ ] code-handoff.yaml created and validated
@@ -166,7 +166,7 @@ This document outlines the end-to-end testing strategy for the programming-pm wo
    - [ ] STANDARD mode: Wave-based execution confirmed
    - [ ] Task decomposition: 3 tasks (one per component)
    - [ ] **Wave 1 (T=0s)**: No critical specialists (no math/stats)
-   - [ ] **Wave 2 (T=30s)**: 3 senior-developer agents launched in parallel
+   - [ ] **Wave 2 (T=30s)**: 3 python-developer agents launched in parallel
    - [ ] **Wave 3 (T=60s)**: Dependent tasks (if any)
    - [ ] Progress monitoring active (checking every 60s)
    - [ ] All specialists complete
@@ -222,7 +222,7 @@ This document outlines the end-to-end testing strategy for the programming-pm wo
    - [ ] EXTENDED mode: Wave-based execution confirmed
    - [ ] Task decomposition: 4 tasks
    - [ ] **Wave 1 (T=0s)**: mathematician AND statistician launched in parallel (CRITICAL TEST)
-   - [ ] **Wave 2 (T=30s)**: 2 senior-developer agents for independent tasks
+   - [ ] **Wave 2 (T=30s)**: 2 python-developer agents for independent tasks
    - [ ] **Wave 3 (T=60s)**: Dependent tasks
    - [ ] Extended timeouts active (4 hours vs. 2 hours for STANDARD)
    - [ ] All specialists complete
@@ -231,7 +231,7 @@ This document outlines the end-to-end testing strategy for the programming-pm wo
    - [ ] Quality Gate 4b passes
 
 6. **Verify Phase 5**:
-   - [ ] EXTENDED mode: senior-developer reviews ALL code (including senior outputs)
+   - [ ] EXTENDED mode: copilot reviews ALL code
    - [ ] Extended review process
 
 7. **Verify Phase 6**: (same as Scenario 1)

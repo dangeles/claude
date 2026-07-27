@@ -179,28 +179,6 @@ Code has issues that must be addressed before merge.
 
 ---
 
-## Revision Cycle Protocol
-
-### Maximum Cycles
-
-- **junior-developer code**: 3 revision cycles maximum
-- **senior-developer code**: 2 revision cycles maximum
-
-After maximum cycles exceeded:
-1. Escalate to programming-pm
-2. Document blocking issues
-3. Consider task redefinition
-
-### Revision Tracking
-
-| Revision | Changes Made | Reviewer | Status |
-|----------|--------------|----------|--------|
-| 1 | Initial submission | | CHANGES_REQUESTED |
-| 2 | Addressed feedback | | CHANGES_REQUESTED |
-| 3 | Final changes | | APPROVED / ESCALATE |
-
----
-
 ## Code Review Best Practices
 
 ### For Reviewers
@@ -252,7 +230,7 @@ When deadline pressure requires merging code that doesn't fully pass review:
 
 ## Quality Gate 4 Summary
 
-**Type**: Human judgment (senior-developer review)
+**Type**: Human judgment (copilot review plus programming-pm judgment)
 
 **Prerequisites**:
 - All automated checks pass
@@ -264,7 +242,6 @@ When deadline pressure requires merging code that doesn't fully pass review:
 
 **Fail Action**:
 - Return to developer with specific feedback
-- Track revision count
 
 **Override**:
 - programming-pm can approve with TECH_DEBT tag

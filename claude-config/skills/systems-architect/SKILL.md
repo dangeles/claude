@@ -2,7 +2,7 @@
 name: systems-architect
 version: 1.1
 last_updated: 2026-01-29
-description: Use when designing software architecture, defining data structures, planning scalability, or making technical design decisions for complex Python systems — including bioinformatics pipelines, services, libraries, or analysis frameworks. NOT for single-component design within an existing architecture or routine class layout (use senior-developer).
+description: Use when designing software architecture, defining data structures, planning scalability, or making technical design decisions for complex Python systems — including bioinformatics pipelines, services, libraries, or analysis frameworks. NOT for single-component design within an existing architecture or routine class layout (use python-developer).
 success_criteria:
   - Architecture addresses all functional requirements
   - Scalability considerations documented and planned
@@ -15,15 +15,14 @@ metadata:
     skill-author: David Angeles Albores
     category: bioinformatics-workflow
     workflow: software-development
-    integrates-with: [bioinformatician, biologist-commentator, senior-developer]
+    integrates-with: [bioinformatician, biologist-commentator, python-developer]
 allowed-tools: [Read, Write, Bash]
 handoff:
   accepts_from:
     - programming-pm
   provides_to:
     - programming-pm
-    - senior-developer
-    - junior-developer
+    - python-developer
   schema_version: "3.0"
   schema_type: universal
 ---
@@ -98,7 +97,7 @@ The Architecture Context Document (`.architecture/context.md`) is a **persistent
 **Lifecycle**:
 - **Created**: During Phase 3 (Architecture Design) of programming-pm workflow
 - **Updated**: When architectural changes occur (new modules, dependency changes, interface modifications)
-- **Read**: By senior-developer and junior-developer before starting implementation (pre-flight step)
+- **Read**: By python-developer before starting implementation (pre-flight step)
 
 **Template and protocols**: See `references/architecture-context-template.md` for:
 - Four-section template (Module Interconnections, Usage Patterns, Modification Order, Streaming Strategies)

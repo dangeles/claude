@@ -50,7 +50,7 @@ Successfully implemented all 5 Priority 1 recommendations to bring programming-p
 **Components**:
 - **Wave-based execution**:
   - **Wave 1 (T=0s)**: Critical analysis specialists (mathematician, statistician)
-  - **Wave 2 (T=30s)**: Implementation specialists (senior-developer, junior-developer) for independent tasks
+  - **Wave 2 (T=30s)**: Implementation specialists (python-developer) for independent tasks
   - **Wave 3 (T=60s)**: Dependent tasks (after Wave 2 completes)
 
 - **Mode-based branching**:

@@ -2,7 +2,7 @@
 
 **Version**: 3.0.0
 **Last Updated**: 2026-06-09
-**Total Skills**: 55 (53 active + 2 deprecated tombstones)
+**Total Skills**: 54 (52 active + 2 deprecated tombstones)
 **Platform**: Claude Code on Fable 5 / Opus 4.8
 
 ## Overview
@@ -94,8 +94,7 @@ primary home.
 | Skill | Use when… |
 |-------|-----------|
 | **systems-architect** | Designing software architecture, data structures, scalability for complex Python systems. |
-| **senior-developer** | Implementing production-quality Python with component-level decisions and formal review of junior outputs. |
-| **junior-developer** | Implementing well-scoped Python tasks with unit tests for senior-developer review. |
+| **python-developer** | Implementing Python — well-scoped tasks through production-quality components, with tests and documentation. |
 | **copilot** | Inline code review during development — real-time, adversarial-but-collaborative second opinion. |
 | **completion-verifier** | Before marking a task complete or handing off — verifying requirements, edge cases, tests, no regressions. |
 | **edge-case-analyst** | BEFORE implementation — identifying failure scenarios while planning features. |
@@ -149,7 +148,7 @@ primary home.
 
 | Skill | Replaced by |
 |-------|-------------|
-| **software-developer** | `senior-developer` (deprecated 2026-05-12) |
+| **software-developer** | `python-developer` (deprecated 2026-05-12) |
 | **parallel-coordinator** | `superpowers:dispatching-parallel-agents` (deprecated 2026-06-09) |
 
 ---

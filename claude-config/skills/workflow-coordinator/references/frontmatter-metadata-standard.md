@@ -160,8 +160,7 @@ handoff:
   accepts_from:
     - "*"
   provides_to:
-    - senior-developer
-    - junior-developer
+    - python-developer
     - systems-architect
     - requirements-analyst
     - mathematician

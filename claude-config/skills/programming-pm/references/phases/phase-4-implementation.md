@@ -8,7 +8,6 @@ pointer here. Read this file when you are actively executing Phase 4.
 
 - Step 0: Architecture Implementability Check
 - Step 1: Task Decomposition
-- Step 1b: Junior-Developer Evaluation
 - Step 2: Wave-Based Parallel Execution (and Wave-Based Specialist Launch)
 - Step 3: Completion Tracking
 - Step 4: Quality Gate 4a - Specialist Completion Check (and the Phase 4 → 5 handoff validation script)
@@ -28,12 +27,12 @@ pointer here. Read this file when you are actively executing Phase 4.
 Before task decomposition, confirm the architecture handoff is implementable.
 
 **Owner**: programming-pm. Read the handoff and check it yourself when it is small and the
-components are straightforward. Dispatch senior-developer via Task tool (using the
-"Dispatch to senior-developer (Phase 4 Step 0 Pre-flight)" template) when the architecture
+components are straightforward. Dispatch python-developer via Task tool (using the
+"Dispatch to python-developer (Phase 4 Step 0 Pre-flight)" template) when the architecture
 is large, the dependency graph is non-obvious, or an initial read surfaces substantive gaps.
 
 **Context size check**: When dispatching, if the architecture handoff YAML is <= 200 lines
-paste it verbatim; if > 200 lines pass the file path and instruct senior-developer to read
+paste it verbatim; if > 200 lines pass the file path and instruct python-developer to read
 it directly.
 
 **What to validate**:
@@ -83,7 +82,7 @@ if command -v yq &> /dev/null; then
     COMPONENT_DESC=$(yq eval ".handoff.components[$i].responsibility" "$ARCHITECTURE_FILE")
     DEPENDENCIES=$(yq eval ".handoff.components[$i].dependencies[]" "$ARCHITECTURE_FILE" 2>/dev/null || echo "")
 
-    SPECIALIST="senior-developer"  # default
+    SPECIALIST="python-developer"  # default
 
     # PRIMARY SIGNAL: Explicit specialist flags from architecture handoff (v1.4+)
     REQUIRES_MATH=$(yq eval ".handoff.components[$i].specialist_flags.requires_mathematician // \"null\"" "$ARCHITECTURE_FILE" 2>/dev/null | tr '[:upper:]' '[:lower:]')
@@ -113,13 +112,6 @@ if command -v yq &> /dev/null; then
       fi
     fi
 
-    # Junior-developer assignment (keyword-based, independent of specialist flags)
-    if [ "$SPECIALIST" = "senior-developer" ]; then
-      if echo "$COMPONENT_DESC" | grep -qiE "simple|utility|helper|wrapper|validation|config|parser|formatter|converter|serializer|loader|constants|enum|data[._-]class|type[._-]definition|test[._-]fixture|test[._-]helper|boilerplate|scaffold"; then
-        SPECIALIST="junior-developer"
-      fi
-    fi
-
     # Record task assignment
     TASK_ID="TASK-$(printf "%03d" $((i + 1)))"
     echo "$TASK_ID|$COMPONENT_NAME|$SPECIALIST|$DEPENDENCIES" >> "$SESSION_DIR/task-assignments.txt"
@@ -133,8 +125,7 @@ fi
 - **Algorithm design** → `mathematician`
 - **Statistical methods** → `statistician`
 - **Notebook/Jupyter creation** → `notebook-writer`
-- **Complex implementation** → `senior-developer`
-- **Routine implementation** → `junior-developer` (supervised by senior)
+- **Implementation (routine through complex)** → `python-developer`; convey the size of the task in its description rather than by choosing a different specialist
 
 **Task assignment format**:
 ```yaml
@@ -151,50 +142,6 @@ task:
     component: "module_name"  # Component/module being implemented
     tier: 0  # 0=foundation, 1=core, 2=application (extracted from context doc)
 ```
-
-## Step 1b: Junior-Developer Evaluation (STANDARD/EXTENDED mode; SIMPLE mode only when task count >= 6)
-
-The grep-based assignment in Step 1a is a first-pass heuristic. Step 1b is a second-pass evaluation that reads and may update `task-assignments.txt`. Even if Step 1a assigned no tasks to junior-developer, Step 1b may reassign some.
-
-**Evaluation criteria** -- consider junior-developer for a task if any of these are true:
-1. Total task count >= 4 (any mode) or >= 6 (SIMPLE mode only)
-2. The task has ALL of the following:
-   - Single function or single class scope
-   - Clear input/output specification derivable from the architecture handoff
-   - No cross-module dependencies
-   - Does not require design judgment or architectural decisions
-3. Architecture identifies utility modules, helper functions, data validation, configuration handling, or test fixtures
-4. The task is test-writing separate from implementation logic
-
-**Process**:
-1. Count total tasks from `task-assignments.txt`
-2. For each task currently assigned to senior-developer, evaluate against criteria above
-3. If any tasks qualify AND junior-developer skill is available (`~/.claude/skills/junior-developer/SKILL.md` exists): reassign in `task-assignments.txt`
-4. If any tasks qualify BUT junior-developer is unavailable: document "junior-developer skill not available, all tasks retained by senior-developer"
-5. Document the evaluation in session state:
-
-```json
-{
-  "junior_developer_evaluation": {
-    "evaluated": true,
-    "total_tasks": "<int>",
-    "tasks_evaluated_for_junior": "<int>",
-    "tasks_reassigned_to_junior": "<int>",
-    "reassigned_tasks": [],
-    "rationale": "<Why tasks were or were not reassigned>"
-  }
-}
-```
-
-Use jq to write this to session state:
-```bash
-jq '.junior_developer_evaluation = {"evaluated": true, "total_tasks": '$TOTAL', "tasks_evaluated_for_junior": '$EVALUATED', "tasks_reassigned_to_junior": '$REASSIGNED', "reassigned_tasks": [], "rationale": "'"$RATIONALE"'"}' \
-  "${SESSION_DIR}/session-state.json" > "${SESSION_DIR}/session-state.json.tmp" && \
-  mv "${SESSION_DIR}/session-state.json.tmp" "${SESSION_DIR}/session-state.json"
-```
-
-**If NO tasks qualify**: Document "No tasks suitable for junior-developer: all require senior judgment" and proceed.
-**SIMPLE mode**: Skip this evaluation unless task count >= 6.
 
 ## Step 2: Wave-Based Parallel Execution
 
@@ -234,7 +181,7 @@ These launch first because implementation specialists may depend on their output
 
 Identify tasks with no dependencies (or dependencies already satisfied from prior phases).
 For each independent task not already launched in Wave 1:
-  Launch senior-developer or junior-developer via Task tool (per task assignment).
+  Launch python-developer via Task tool (per task assignment).
   Description: "{Specialist}: Implement {component_name}"
   Prompt: Include architecture spec, coding standards, test requirements, and output path.
   Write output to: `{session_dir}/deliverables/{task_id}-implementation/`
@@ -310,7 +257,7 @@ echo "Quality Gate 4a: Specialist Completion Check"
 
 # Count critical vs. implementation specialists
 CRITICAL_COUNT=$(grep -cE "mathematician|statistician" "$SESSION_DIR/task-assignments.txt" || echo 0)
-IMPL_COUNT=$(grep -cE "senior-developer|junior-developer" "$SESSION_DIR/task-assignments.txt" || echo 0)
+IMPL_COUNT=$(grep -c "python-developer" "$SESSION_DIR/task-assignments.txt" || echo 0)
 TOTAL_COUNT=$((CRITICAL_COUNT + IMPL_COUNT))
 
 # Count completed tasks

@@ -1,7 +1,7 @@
 ---
 name: bioinformatician
 last_updated: 2026-06-09
-description: Use when implementing data analysis pipelines, statistical tests, or bioinformatics workflows in code (Python/R), particularly for genomics, transcriptomics, proteomics, or other -omics data. NOT for non-omics Python implementation (use senior-developer), pure statistical method selection without bioinformatics context (use statistician), or biological-validity questions about an existing analysis (use biologist-commentator).
+description: Use when implementing data analysis pipelines, statistical tests, or bioinformatics workflows in code (Python/R), particularly for genomics, transcriptomics, proteomics, or other -omics data. NOT for non-omics Python implementation (use python-developer), pure statistical method selection without bioinformatics context (use statistician), or biological-validity questions about an existing analysis (use biologist-commentator).
 success_criteria:
   - Notebook runs end-to-end without errors
   - All visualizations properly labeled with units and legends

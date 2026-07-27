@@ -491,7 +491,7 @@ After mode selection, the workflow branches:
 - **Include**: All phases + Phase 2.5 (extended pre-mortem)
 - **Specialist invocation**: Wave-based parallel with extended timeouts
 - **Quality gates**: Full checks + additional architectural review
-- **Code review**: senior-developer reviews ALL code (including senior-developer outputs)
+- **Code review**: copilot reviews ALL code
 - **Estimated duration**: 8-12 hours
 
 ---

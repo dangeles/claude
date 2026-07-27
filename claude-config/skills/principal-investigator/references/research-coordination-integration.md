@@ -9,7 +9,7 @@ How principal-investigator skill integrates with research coordination skills (p
 - **bioinformatician**: Data analysis implementation
 - **copilot**: Code review
 - **systems-architect**: Software architecture
-- **senior-developer**: Production code
+- **python-developer**: Production code
 - **biologist-commentator**: Biological validation
 
 **Location**: `repos/gpcr_exploration/.claude/skills/`

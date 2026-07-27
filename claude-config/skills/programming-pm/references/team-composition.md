@@ -13,7 +13,7 @@ These skills are always included in every programming-pm project.
 | programming-pm | Orchestrator | All | Coordination, quality gates, state management |
 | requirements-analyst | Requirements | 1 | Scope definition, success criteria |
 | systems-architect | Architecture | 3 | System design, component boundaries |
-| senior-developer | Implementation | 4-5 | Production code, integration tests, code review |
+| python-developer | Implementation | 4-5 | Production code, unit and integration tests |
 | copilot | Review Support | 5 | Code review assistance |
 
 ---
@@ -21,23 +21,6 @@ These skills are always included in every programming-pm project.
 ## Optional Specialists
 
 Include these specialists based on project characteristics.
-
-### junior-developer
-
-**Include when**:
-- Project has >3 independent implementation tasks
-- Tasks can be decomposed into well-scoped units
-- Routine implementations following established patterns
-
-**Example triggers**:
-- "Create multiple utility functions"
-- "Implement CRUD operations for several models"
-- "Add unit tests for existing code"
-
-**Do NOT include when**:
-- All tasks require senior judgment
-- Project is small (<1 week effort)
-- Tight deadline without time for review cycles
 
 ### mathematician
 
@@ -95,7 +78,7 @@ Include these specialists based on project characteristics.
 - Project output is Python scripts, not notebooks
 - "Visualization" or "interactive" appears without notebook context
 - Simple data processing without exploratory analysis
-- Production code (use senior-developer)
+- Production code (use python-developer)
 
 ---
 
@@ -107,10 +90,6 @@ START
   ├── Is this a software development project?
   │     ├── NO → Use technical-pm instead
   │     └── YES → Include default team
-  │
-  ├── Does project have >3 decomposable tasks?
-  │     ├── NO → senior-developer handles all
-  │     └── YES → Include junior-developer
   │
   ├── Does project involve algorithm design?
   │     ├── NO → Continue
@@ -142,33 +121,31 @@ Responsibility assignment for common deliverables.
 
 ### Project Deliverables
 
-| Deliverable | programming-pm | senior-developer | junior-developer | mathematician | statistician | notebook-writer |
-|-------------|----------------|------------------|------------------|---------------|--------------|-----------------|
-| Requirements approval | A | C | - | C | C | - |
-| Pre-mortem facilitation | R/A | C | I | C | C | - |
-| Architecture design | C | C | - | C | C | - |
-| Algorithm specification | C | C | - | R/A | C | - |
-| Statistical specification | C | C | - | C | R/A | - |
-| Implementation (complex) | I | R/A | C | C | C | - |
-| Implementation (routine) | I | A | R | - | - | - |
-| Notebook creation | I | C | - | - | - | R/A |
-| Code review (junior) | - | R/A | I | - | - | - |
-| Code review (senior) | I | I | - | C | C | C |
-| Unit tests | I | A | R | - | - | - |
-| Integration tests | A | R | C | C | C | - |
-| PR creation | I | R | - | - | - | - |
-| PR merge decision | A | R | - | - | - | - |
+| Deliverable | programming-pm | python-developer | mathematician | statistician | notebook-writer |
+|-------------|----------------|------------------|---------------|--------------|-----------------|
+| Requirements approval | A | C | C | C | - |
+| Pre-mortem facilitation | R/A | C | C | C | - |
+| Architecture design | C | C | C | C | - |
+| Algorithm specification | C | C | R/A | C | - |
+| Statistical specification | C | C | C | R/A | - |
+| Implementation | I | R/A | C | C | - |
+| Notebook creation | I | C | - | - | R/A |
+| Code review | I | I | C | C | C |
+| Unit tests | I | R/A | - | - | - |
+| Integration tests | A | R | C | C | - |
+| PR creation | I | R | - | - | - |
+| PR merge decision | A | R | - | - | - |
 
 ### Phase Involvement
 
-| Phase | programming-pm | senior-developer | junior-developer | mathematician | statistician | notebook-writer |
-|-------|----------------|------------------|------------------|---------------|--------------|-----------------|
-| 1. Requirements | A | C | I | C | C | - |
-| 2. Pre-mortem | R/A | C | I | C | C | - |
-| 3. Architecture | C | C | I | C | C | - |
-| 4. Implementation | I | R/A | R | R | R | R |
-| 5. Code Review | A | R | I | C | C | C |
-| 6. VCS Integration | A | R | I | - | - | - |
+| Phase | programming-pm | python-developer | mathematician | statistician | notebook-writer |
+|-------|----------------|------------------|---------------|--------------|-----------------|
+| 1. Requirements | A | C | C | C | - |
+| 2. Pre-mortem | R/A | C | C | C | - |
+| 3. Architecture | C | C | C | C | - |
+| 4. Implementation | I | R/A | R | R | R |
+| 5. Code Review | A | R | C | C | C |
+| 6. VCS Integration | A | R | - | - | - |
 
 ---
 
@@ -191,15 +168,12 @@ programming-pm --include mathematician --include statistician "Complex simulatio
 ```bash
 # Exclude auto-detected specialist
 programming-pm --exclude statistician "Data pipeline without statistical validation"
-
-# Exclude junior-developer (senior handles all)
-programming-pm --exclude junior-developer "Time-critical security fix"
 ```
 
 ### Minimal Team
 
 ```bash
-# Only PM + senior-developer
+# Only PM + python-developer
 programming-pm --minimal "Simple CRUD API"
 
 # Minimal plus one specialist
@@ -213,21 +187,19 @@ programming-pm --minimal --include mathematician "Simple algorithm implementatio
 ### Small Project (1-2 weeks)
 
 - programming-pm
-- senior-developer
+- python-developer
 - (Optional) 1 specialist if domain-specific
 
 ### Medium Project (2-4 weeks)
 
 - programming-pm
-- senior-developer
-- junior-developer (if >3 tasks)
+- python-developer
 - (Optional) 1-2 specialists as needed
 
 ### Large Project (>4 weeks)
 
 - programming-pm
-- senior-developer
-- junior-developer
+- python-developer
 - Specialists as needed
 - Consider breaking into phases with checkpoints
 
@@ -235,10 +207,10 @@ programming-pm --minimal --include mathematician "Simple algorithm implementatio
 
 ## Specialist Coordination Patterns
 
-### mathematician + senior-developer
+### mathematician + python-developer
 
 ```
-mathematician → Algorithm Specification → senior-developer
+mathematician → Algorithm Specification → python-developer
                       │
                       ├── Pseudocode
                       ├── Complexity analysis
@@ -246,10 +218,10 @@ mathematician → Algorithm Specification → senior-developer
                       └── Implementation guidance
 ```
 
-### statistician + senior-developer
+### statistician + python-developer
 
 ```
-statistician → Statistical Specification → senior-developer
+statistician → Statistical Specification → python-developer
                       │
                       ├── Method selection
                       ├── Validation criteria
@@ -260,33 +232,19 @@ statistician → Statistical Specification → senior-developer
 ### mathematician + statistician (both needed)
 
 ```
-mathematician ─┬─→ Algorithm Specification ─┬─→ senior-developer
+mathematician ─┬─→ Algorithm Specification ─┬─→ python-developer
                │                            │
 statistician ──┴─→ Statistical Specification ┘
 
 Note: Each provides separate specification
-      senior-developer integrates both
+      python-developer integrates both
       programming-pm coordinates handoffs
 ```
 
-### senior-developer + junior-developer
+### notebook-writer + python-developer
 
 ```
-senior-developer ──→ Task Decomposition ──→ junior-developer
-                            │                      │
-                            │                      ↓
-                            │              Implementation
-                            │                      │
-                            └──── Code Review ←────┘
-                                      │
-                                      ↓
-                               Integration
-```
-
-### notebook-writer + senior-developer
-
-```
-senior-developer --> Implementation Code --> notebook-writer
+python-developer --> Implementation Code --> notebook-writer
                           |                       |
                           |                       v
                           |              Notebook (Jupytext .md)
@@ -297,12 +255,12 @@ senior-developer --> Implementation Code --> notebook-writer
                           +---- Integration <-----+
 ```
 
-**Execution order**: senior-developer FIRST when notebooks depend on implementation code. Parallel when notebooks are standalone analysis.
+**Execution order**: python-developer FIRST when notebooks depend on implementation code. Parallel when notebooks are standalone analysis.
 
 **Interface contract**:
 - Architecture handoff MUST specify the API that notebooks will consume
-- notebook-writer receives senior-developer's code handoff before creating dependent notebooks
-- notebook-writer adapts to senior-developer's actual API (not the other way around)
+- notebook-writer receives python-developer's code handoff before creating dependent notebooks
+- notebook-writer adapts to python-developer's actual API (not the other way around)
 
 ---
 
@@ -342,7 +300,7 @@ senior-developer --> Implementation Code --> notebook-writer
 
 **Team**:
 - programming-pm (orchestration)
-- senior-developer (implementation)
+- python-developer (implementation)
 
 **Rationale**: Standard CRUD operations, no algorithm or statistics
 
@@ -355,7 +313,7 @@ senior-developer --> Implementation Code --> notebook-writer
 **Team**:
 - programming-pm (orchestration)
 - mathematician (algorithm design)
-- senior-developer (implementation)
+- python-developer (implementation)
 
 **Rationale**: Complexity analysis needed, but no statistics
 
@@ -369,7 +327,7 @@ senior-developer --> Implementation Code --> notebook-writer
 - programming-pm (orchestration)
 - mathematician (numerical methods)
 - statistician (convergence validation)
-- senior-developer (implementation)
+- python-developer (implementation)
 
 **Rationale**: Both algorithm design and statistical validation needed
 
@@ -381,8 +339,7 @@ senior-developer --> Implementation Code --> notebook-writer
 
 **Team**:
 - programming-pm (orchestration)
-- senior-developer (complex transformations)
-- junior-developer (routine transformations)
+- python-developer (transformations)
 
 **Rationale**: Many decomposable tasks, no specialized math/stats
 
@@ -394,10 +351,10 @@ senior-developer --> Implementation Code --> notebook-writer
 
 **Team**:
 - programming-pm (orchestration)
-- senior-developer (data processing pipeline)
+- python-developer (data processing pipeline)
 - notebook-writer (analysis notebooks)
 
-**Rationale**: Notebook creation and formatting expertise needed for reproducible analysis deliverables. senior-developer builds the data processing modules; notebook-writer creates Jupytext notebooks that import and use those modules for interactive exploration.
+**Rationale**: Notebook creation and formatting expertise needed for reproducible analysis deliverables. python-developer builds the data processing modules; notebook-writer creates Jupytext notebooks that import and use those modules for interactive exploration.
 
 ---
 
@@ -407,12 +364,12 @@ Before starting a project, programming-pm validates team composition:
 
 ```bash
 # Check required skills exist
-for skill in requirements-analyst systems-architect senior-developer copilot; do
+for skill in requirements-analyst systems-architect python-developer copilot; do
   [ -f ~/.claude/skills/$skill/SKILL.md ] || echo "ABORT: Missing $skill"
 done
 
 # Check optional specialists exist (warn if missing)
-for skill in mathematician statistician junior-developer notebook-writer; do
+for skill in mathematician statistician notebook-writer; do
   [ -f ~/.claude/skills/$skill/SKILL.md ] || [ -f ~/.claude/skills/$skill/skill.md ] || echo "WARN: $skill not available"
 done
 ```

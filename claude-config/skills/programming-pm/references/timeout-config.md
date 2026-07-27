@@ -85,18 +85,17 @@ Default timeouts for specialist tasks.
 
 | Specialist | Default Timeout | Warning Threshold | Exceeded Action |
 |------------|-----------------|-------------------|-----------------|
-| mathematician | 60 min | 45 min | Substitute with senior-developer |
+| mathematician | 60 min | 45 min | Substitute with python-developer |
 | statistician | 60 min | 45 min | Proceed without validation (flag) |
-| senior-developer | 120 min/task | 90 min | Break task smaller |
-| junior-developer | 90 min/task | 60 min | Senior-developer intervention |
+| python-developer | 120 min/task | 90 min | Break task smaller |
 | copilot | 30 min | 20 min | Skip assistance, manual review |
-| notebook-writer | 60 min | 45 min | Substitute with senior-developer |
+| notebook-writer | 60 min | 45 min | Substitute with python-developer |
 
 ### Specialist-Specific Notes
 
 **mathematician**:
 - If timing out, problem may be too complex
-- Substitution: senior-developer implements with "unverified complexity" flag
+- Substitution: python-developer implements with "unverified complexity" flag
 - Document for future review
 
 **statistician**:
@@ -104,19 +103,15 @@ Default timeouts for specialist tasks.
 - Flag output as "statistical validation pending"
 - Schedule follow-up validation
 
-**senior-developer**:
+**python-developer**:
 - Most common timeout scenario
 - Usually indicates task scope too broad
 - Break into smaller tasks, reassign
-
-**junior-developer**:
-- Expected to complete faster with supervision
-- Timeout triggers senior-developer takeover
 - Document for retrospective (was task too complex?)
 
 **notebook-writer**:
 - If timing out, notebook structure may be too complex for automated creation
-- Substitution: senior-developer creates basic notebook structure without specialized formatting, reproducibility standards, or Jupytext configuration
+- Substitution: python-developer creates basic notebook structure without specialized formatting, reproducibility standards, or Jupytext configuration
 - Flag output as "notebook quality unverified"
 - Document for follow-up: notebook-writer can review and enhance post-deadline
 
@@ -221,7 +216,7 @@ Present to user with context:
    - Mark deferred items for follow-up
 
 3. **Substitute Specialist**
-   - Replace with alternative (e.g., senior-developer for mathematician)
+   - Replace with alternative (e.g., python-developer for mathematician)
    - May result in lower quality output
 
 4. **Escalate to User**
@@ -388,7 +383,7 @@ workflow:
       phase_3: 180  # complex architecture
     specialists:
       mathematician: 90  # complex algorithm
-      senior_developer: 180  # large component
+      python_developer: 180  # large component
     global: 168  # 7 days for large project
 ```
 

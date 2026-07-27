@@ -19,7 +19,7 @@ metadata:
   skill-author: Claude Code Best Practices 2026
   category: debugging-troubleshooting
   workflow: [software-development, bioinformatics-workflow, general-purpose]
-  integrates-with: [copilot, senior-developer, bioinformatician, systems-architect]
+  integrates-with: [copilot, python-developer, bioinformatician, systems-architect]
 ---
 
 # Systematic Troubleshooter
@@ -158,7 +158,7 @@ Which approach should I take?"
 | Fix needs code review | **copilot** — adversarial review for edge cases and regressions |
 | Bug requires domain expertise | **bioinformatician** or **biologist-commentator** (e.g. RNA-seq normalization) |
 | Root cause suggests architectural issue | **systems-architect** — current architecture can't meet the requirement |
-| Fix is a complex implementation | **software-developer** / **senior-developer** |
+| Fix is a complex implementation | **python-developer** |
 | Debugging scope has outgrown the task | **technical-pm** — re-prioritize against other work |
 
 ## Outputs

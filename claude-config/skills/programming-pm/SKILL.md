@@ -1,15 +1,14 @@
 ---
 name: programming-pm
 last_updated: 2026-06-09
-description: Use when coordinating Python software development across multiple specialists with quality gates. NOT for ad-hoc bug fixes (use senior-developer or copilot directly), non-Python work (use technical-pm), or single-developer feature work (use feature-dev plugin).
+description: Use when coordinating Python software development across multiple specialists with quality gates. NOT for ad-hoc bug fixes (use python-developer or copilot directly), non-Python work (use technical-pm), or single-developer feature work (use feature-dev plugin).
 
 # v3.0 universal handoff metadata (see workflow-coordinator/references/frontmatter-metadata-standard.md)
 handoff:
   accepts_from:
     - "*"
   provides_to:
-    - senior-developer
-    - junior-developer
+    - python-developer
     - systems-architect
     - requirements-analyst
     - mathematician
@@ -50,7 +49,7 @@ A hub-and-spoke orchestrator for software development projects that coordinates 
 
 ## Orchestration and Delegation
 
-Specialists own their domains: `systems-architect` for architecture, `mathematician` for algorithm design and complexity, `statistician` for statistical methods and Monte Carlo/MCMC validation, `senior-developer` and `junior-developer` for implementation, `copilot` for review support, `notebook-writer` for notebooks, `requirements-analyst` for scoping.
+Specialists own their domains: `systems-architect` for architecture, `mathematician` for algorithm design and complexity, `statistician` for statistical methods and Monte Carlo/MCMC validation, `python-developer` for implementation, `copilot` for review support, `notebook-writer` for notebooks, `requirements-analyst` for scoping.
 
 Delegate specialist work when the subtask is substantial and independent — designing a multi-component architecture, implementing a component with its tests, designing a numerical algorithm, validating an MCMC implementation, reviewing a sizeable diff. Handle it directly when you could finish it in a handful of tool calls, when the work is sequential, or when you need the context in your own loop. See `../references/delegation-and-scope.md`.
 
@@ -70,7 +69,7 @@ The bash blocks in this skill and its references are orchestration infrastructur
 
 ## Dispatch Templates
 
-Templates for each specialist invocation live in `references/dispatch-templates.md` (systems-architect Phase 3; senior-developer Phase 4 and Phase 4 Step 0 pre-flight; junior-developer Phase 4; copilot Phase 5; mathematician Phase 4; statistician Phase 4). Read that file when filling a dispatch payload.
+Templates for each specialist invocation live in `references/dispatch-templates.md` (systems-architect Phase 3; python-developer Phase 4 and Phase 4 Step 0 pre-flight; copilot Phase 5; mathematician Phase 4; statistician Phase 4). Read that file when filling a dispatch payload.
 
 **Content gate before dispatching Phase 1 requirements**: `requirements.problem_statement` is non-empty (> 50 characters) and `requirements.success_criteria` has at least 1 entry. If either fails, return to Phase 1 for clarification instead of dispatching.
 
@@ -88,13 +87,13 @@ While parallel agents are running, maintain a status board (Agent | Task | Runni
 
 ## When to Use This Skill
 
-Multi-component Python projects requiring architecture design and implementation; algorithm-heavy projects needing mathematician input for complexity analysis; statistical software requiring validation of Monte Carlo, MCMC, or bootstrap implementations; team projects where work can be decomposed across senior and junior developers; projects requiring formal quality gates (code review, testing, pre-mortem risk assessment).
+Multi-component Python projects requiring architecture design and implementation; algorithm-heavy projects needing mathematician input for complexity analysis; statistical software requiring validation of Monte Carlo, MCMC, or bootstrap implementations; projects where implementation can be decomposed into independent parallel tasks; projects requiring formal quality gates (code review, testing, pre-mortem risk assessment).
 
 ## When NOT to Use This Skill
 
 - **Simple scripts**: single-file Python scripts (<100 lines) — use copilot directly
 - **Non-Python projects**: this skill is Python-first — use technical-pm
-- **Bug fixes**: small changes to existing code — use senior-developer or copilot
+- **Bug fixes**: small changes to existing code — use python-developer or copilot
 - **Research coordination**: literature reviews — use lit-pm
 - **General feature work (non-bioinformatics)**: features not requiring the bioinformatics specialist team — use `feature-dev` for a lighter workflow (explore → clarify → architect → implement → review)
 - **technical-pm instead**: coordinating research, writing, or analysis rather than code; tasks involving researcher, synthesizer, calculator rather than developers; flexible milestone tracking without quality gates; code is incidental rather than the primary deliverable
@@ -105,10 +104,10 @@ The workflow needs `requirements-analyst` (Phase 1), `systems-architect` (Phase 
 
 Optional specialists degrade gracefully — inform the user, then:
 
-- `edge-case-analyst` (Phase 2 pre-mortem): delegate a simplified pre-mortem to senior-developer via Task tool. Alternatives: skip the pre-mortem, install edge-case-analyst, or have the user run it manually.
-- `mathematician`: delegate algorithm design to senior-developer; flag output "designed without specialist mathematician review."
-- `statistician`: delegate statistical work to senior-developer; flag "unvalidated -- no specialist statistician review."
-- `notebook-writer`: delegate to senior-developer with best-effort formatting; flag "created without notebook-writer specialized formatting."
+- `edge-case-analyst` (Phase 2 pre-mortem): delegate a simplified pre-mortem to python-developer via Task tool. Alternatives: skip the pre-mortem, install edge-case-analyst, or have the user run it manually.
+- `mathematician`: delegate algorithm design to python-developer; flag output "designed without specialist mathematician review."
+- `statistician`: delegate statistical work to python-developer; flag "unvalidated -- no specialist statistician review."
+- `notebook-writer`: delegate to python-developer with best-effort formatting; flag "created without notebook-writer specialized formatting."
 
 Skill presence, when you need to check it, is `~/.claude/skills/{name}/SKILL.md` (some skills use lowercase `skill.md`).
 
@@ -234,7 +233,7 @@ On session resume: list sessions in `~/.claude/programming-pm-sessions/`, read t
 
 **Objective**: Identify risks before implementation begins using prospective hindsight.
 
-**Steps**: Invoke `edge-case-analyst` (or delegate a simplified pre-mortem to senior-developer via Task tool), using the template in `assets/pre-mortem-template.md`. Document risks with likelihood, impact, and mitigation.
+**Steps**: Invoke `edge-case-analyst` (or delegate a simplified pre-mortem to python-developer via Task tool), using the template in `assets/pre-mortem-template.md`. Document risks with likelihood, impact, and mitigation.
 
 **Quality Gate 2: Pre-Mortem Completion**:
 - Type: Automated (checklist validation)
@@ -299,9 +298,8 @@ See `systems-architect/references/architecture-context-template.md` for template
 
 | Step | Purpose |
 |------|---------|
-| **0. Implementability check** | Confirm the architecture handoff is implementable: interfaces typed, dependencies acyclic, tech choices compatible, order consistent. Read the handoff yourself when it is small; dispatch senior-developer via Task tool when it is large or the gaps look substantive. FAIL → escalate to Phase 3 (max 2 cycles). SIMPLE mode with <=1 component skips this step. |
-| **1. Task decomposition** | Parse architecture handoff into tasks; assign each to a specialist. Primary signal = `specialist_flags` (v1.4+ handoffs); fallback = keyword heuristic. Algorithm→mathematician, stats→statistician, notebook→notebook-writer, routine→junior-developer, else senior-developer. |
-| **1b. Junior-developer evaluation** | Second pass (STANDARD/EXTENDED; SIMPLE only if task count >=6). Reassign single-scope, no-design-judgment tasks to junior-developer if available; document the decision in session state. |
+| **0. Implementability check** | Confirm the architecture handoff is implementable: interfaces typed, dependencies acyclic, tech choices compatible, order consistent. Read the handoff yourself when it is small; dispatch python-developer via Task tool when it is large or the gaps look substantive. FAIL → escalate to Phase 3 (max 2 cycles). SIMPLE mode with <=1 component skips this step. |
+| **1. Task decomposition** | Parse architecture handoff into tasks; assign each to a specialist. Primary signal = `specialist_flags` (v1.4+ handoffs); fallback = keyword heuristic. Algorithm→mathematician, stats→statistician, notebook→notebook-writer, else python-developer. State each task's scope in its dispatch description. |
 | **2. Wave-based execution** | SIMPLE = sequential. STANDARD/EXTENDED = three waves: Wave 1 launches math/stats (feed other tasks), Wave 2 launches independent implementation tasks, Wave 3 launches dependency-blocked tasks once their inputs land (bounded, then escalates). |
 | **3. Completion tracking** | Record each specialist's deliverable as it returns; escalate tasks whose dependencies never resolve. |
 | **4. Gate 4a completion check** | PASS at 100%; CONDITIONAL PASS at 75%+ only if all critical (math/stats) specialists completed; FAIL below 75%. |
@@ -316,7 +314,7 @@ See `systems-architect/references/architecture-context-template.md` for template
 - Pass Condition: All criteria checked OR 75%+ with critical specialists complete
 - Fail Action: Retry incomplete tasks or escalate to user
 
-**Full implementation detail** (Step 0 dispatch and FAIL escalation, Step 1 yq task-decomposition with specialist-flag normalization and keyword fallback, Step 1b junior-developer evaluation JSON, Step 2 wave-launch protocol and Wave-3 bounded retry, Step 4a completion decision table, and the Phase 4→5 handoff-validation script): see `references/phases/phase-4-implementation.md`.
+**Full implementation detail** (Step 0 dispatch and FAIL escalation, Step 1 yq task-decomposition with specialist-flag normalization and keyword fallback, Step 2 wave-launch protocol and Wave-3 bounded retry, Step 4a completion decision table, and the Phase 4→5 handoff-validation script): see `references/phases/phase-4-implementation.md`.
 
 **Phase Transition**: Phase 4 complete -> Quality Gate 4 -> PROCEED to Phase 5: Code Review and Testing
 
@@ -329,7 +327,7 @@ See `systems-architect/references/architecture-context-template.md` for template
 2. **Review the implementation.** Dispatch `copilot` via Task tool using the "Dispatch to copilot" template when a context-isolated adversarial pass adds something — several components changed, subtle numerics, security-sensitive input handling, or automated checks that passed but left you unsure. For small diffs, read the changed files and review them yourself. Record which route you took in session state.
 3. **If copilot ran**: read `{SESSION_DIR}/deliverables/copilot-review.md`. If the file is absent, use copilot's Task tool return value as the review. A review without a `VERDICT:` line is incomplete — ask for the verdict.
 4. **Act on findings by severity**:
-   - CRITICAL: return to senior-developer with the copilot feedback for fixes
+   - CRITICAL: return to python-developer with the copilot feedback for fixes
    - MAJOR: present to the user, who decides between fixing and documented tech debt
    - MINOR/GOOD: proceed
    Re-review after CRITICAL fixes when the fix itself was substantial. If CRITICAL issues persist, present them to the user rather than looping further.
@@ -352,7 +350,7 @@ If `.architecture/context.md` exists, check whether implementation introduced st
 This is a lightweight check. Fundamental architectural changes (a new module changing dependency-graph topology) are logged as "architectural drift requiring future Phase 3 review" rather than triggering heavyweight updates within Phase 5.
 
 **Quality Gate 4: Code Review Approval**:
-- Type: Human judgment (senior-developer + copilot review)
+- Type: Human judgment (programming-pm + copilot review)
 - Automated checks (all pass):
   - [ ] `ruff check .` returns 0 errors
   - [ ] Type checking passes: `mypy --strict src/` or `pyright src/` returns 0 errors (warnings acceptable)
@@ -361,7 +359,7 @@ This is a lightweight check. Fundamental architectural changes (a new module cha
   - [ ] Review performed and recorded (copilot review document, or documented inline review)
   - [ ] No CRITICAL issues remain unaddressed
   - [ ] MAJOR issues addressed or documented as accepted tech debt
-  - Override: programming-pm can approve with a "tech debt" tag if the deadline is critical; if copilot was invoked and unreachable, document "copilot unavailable" in session state and proceed with senior-developer review only, reporting this to the user
+  - Override: programming-pm can approve with a "tech debt" tag if the deadline is critical; if copilot was invoked and unreachable, document "copilot unavailable" in session state and proceed with a documented inline review only, reporting this to the user
 - Human review:
   - [ ] Code matches requirements specification
   - [ ] Edge cases from pre-mortem are handled
@@ -429,15 +427,15 @@ When a quality gate fails:
 
 ## Exception Handling
 
-**Specialist stalls or returns incomplete work**: diagnose from the specialist's output and progress file, then present options to the user — extend, narrow the scope, substitute a specialist (e.g. senior-developer for mathematician), or escalate for guidance. Apply the choice and log it to `exceptions-log.md`. Per-phase and per-specialist duration expectations and the intervention schema: `references/timeout-config.md`.
+**Specialist stalls or returns incomplete work**: diagnose from the specialist's output and progress file, then present options to the user — extend, narrow the scope, substitute a specialist (e.g. python-developer for mathematician), or escalate for guidance. Apply the choice and log it to `exceptions-log.md`. Per-phase and per-specialist duration expectations and the intervention schema: `references/timeout-config.md`.
 
 **Circuit breaker**: after 3 consecutive failures of the same type, stop retrying, present the failure summary, and require an explicit user decision — retry with changes, skip the component, or abort the workflow.
 
 ## Role Conflict Resolution
 
-Authority by domain: architecture decisions (Phase 3) rest with systems-architect; algorithm design with mathematician; statistical methods with statistician; implementation decisions (Phase 4) with senior-developer within the architecture constraints.
+Authority by domain: architecture decisions (Phase 3) rest with systems-architect; algorithm design with mathematician; statistical methods with statistician; implementation decisions (Phase 4) with python-developer within the architecture constraints.
 
-When specialists return contradictory recommendations, classify the conflict. Minor conflicts (implementation detail) are senior-developer's call. Major conflicts (an architecture change is required) go to the user with both positions and their rationales, the available options including any hybrid, and your own recommendation. Document the resolution in the architecture spec.
+When specialists return contradictory recommendations, classify the conflict. Minor conflicts (implementation detail) are python-developer's call. Major conflicts (an architecture change is required) go to the user with both positions and their rationales, the available options including any hybrid, and your own recommendation. Document the resolution in the architecture spec.
 
 ## Team Composition
 
@@ -446,10 +444,10 @@ When specialists return contradictory recommendations, classify the conflict. Mi
 | programming-pm | Orchestrator | All |
 | requirements-analyst | Requirements scoping | 1 |
 | systems-architect | Architecture design | 3 |
-| senior-developer | Implementation | 4-5 |
+| python-developer | Implementation | 4-5 |
 | copilot | Code review support | 5 |
 
-The table above is the **default team** — always included. For optional specialists (mathematician, statistician, notebook-writer, junior-developer) with their inclusion criteria, the team-selection decision tree, the RACI matrix, team-size guidelines, and `--include`/`--exclude`/`--minimal` override flags, see `references/team-composition.md`.
+The table above is the **default team** — always included. For optional specialists (mathematician, statistician, notebook-writer) with their inclusion criteria, the team-selection decision tree, the RACI matrix, team-size guidelines, and `--include`/`--exclude`/`--minimal` override flags, see `references/team-composition.md`.
 
 ## Handoff Format
 
@@ -494,4 +492,4 @@ handoff:
 
 This skill invokes but does not modify `requirements-analyst` (Phase 1), `systems-architect` (Phase 3), `copilot` (Phase 5), and `edge-case-analyst` (Phase 2 pre-mortem, optional).
 
-It coordinates `senior-developer` (Phase 4-5 implementation and review), `junior-developer` (Phase 4 routine implementation, supervised), `mathematician` (Phase 4 algorithm design), `statistician` (Phase 4 statistical validation), and `notebook-writer` (Phase 4 notebook creation, Phase 5 notebook review).
+It coordinates `python-developer` (Phase 4-5 implementation and fixes), `mathematician` (Phase 4 algorithm design), `statistician` (Phase 4 statistical validation), and `notebook-writer` (Phase 4 notebook creation, Phase 5 notebook review).

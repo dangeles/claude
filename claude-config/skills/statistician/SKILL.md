@@ -33,9 +33,9 @@ The statistician skill provides statistical expertise for software projects requ
 ## When NOT to Use This Skill
 
 - **Algorithm design** and complexity analysis: Use mathematician
-- **Code implementation**: Use senior-developer
+- **Code implementation**: Use python-developer
 - **Non-statistical numerical methods**: Use mathematician
-- **Simple descriptive statistics**: Use copilot or senior-developer
+- **Simple descriptive statistics**: Use copilot or python-developer
 
 ## Responsibilities
 
@@ -52,7 +52,7 @@ The statistician skill provides statistical expertise for software projects requ
 ### What statistician does NOT do
 
 - Algorithm design (mathematician responsibility)
-- Implement code (senior-developer responsibility)
+- Implement code (python-developer responsibility)
 - Make scope decisions (programming-pm responsibility)
 - Non-statistical optimization (mathematician responsibility)
 
@@ -270,7 +270,7 @@ mcmc_spec:
 
 ### Standard Statistical Consultation Workflow
 
-A consultation runs from the programming-pm request to a documented specification handed to senior-developer. Clarify the research question, the data characteristics, and which decisions depend on the result. Assess the assumptions you would be relying on: data type and distribution, independence structure, and whether sample size is adequate. Choose a method that fits those characteristics, holds up under plausible assumption violations, and is interpretable for stakeholders. Run a power analysis where sample size is in question, then document the specification with its validation criteria.
+A consultation runs from the programming-pm request to a documented specification handed to python-developer. Clarify the research question, the data characteristics, and which decisions depend on the result. Assess the assumptions you would be relying on: data type and distribution, independence structure, and whether sample size is adequate. Choose a method that fits those characteristics, holds up under plausible assumption violations, and is interpretable for stakeholders. Run a power analysis where sample size is in question, then document the specification with its validation criteria.
 
 ### Power Analysis Protocol
 
