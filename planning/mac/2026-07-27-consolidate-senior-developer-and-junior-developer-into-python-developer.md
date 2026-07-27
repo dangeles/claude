@@ -107,7 +107,7 @@ became `scoped_task` with the old name kept as an accepted alias.
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- fbd1130: refactor(skills): merge senior/junior-developer into python-developer
 
 ## Next Steps
 
