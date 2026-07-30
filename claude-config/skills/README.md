@@ -61,6 +61,7 @@ primary home.
 
 | Skill | Use when… |
 |-------|-----------|
+| **paper-reader** | Reading one or a few papers for what they mean biologically — claim vs. evidence, not statistics extraction. Full texts read in subagents. |
 | **researcher** | Comprehensive literature research sourcing quantitative parameters from primary literature with citations and context. |
 | **literature-researcher** | Deep review-discovery and targeted section research (15–30 papers/section) with convergence tracking (dispatched by lit-pm). |
 | **lit-synthesizer** | Synthesizing a literature review into publication-quality prose with authority to restructure (dispatched by lit-pm). |

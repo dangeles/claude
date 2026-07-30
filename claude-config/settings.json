@@ -53,6 +53,15 @@
             "command": "$HOME/.claude/hooks/secret-leak-guard.py"
           }
         ]
+      },
+      {
+        "matcher": "Read|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/paper-context-guard.py"
+          }
+        ]
       }
     ],
     "PostToolUse": [
