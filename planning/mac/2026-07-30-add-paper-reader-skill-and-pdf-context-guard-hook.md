@@ -87,7 +87,7 @@ Hook design notes worth keeping:
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- `51ed992`: feat(skills): add paper-reader and a main-thread paper context guard
 
 ## Next Steps
 
