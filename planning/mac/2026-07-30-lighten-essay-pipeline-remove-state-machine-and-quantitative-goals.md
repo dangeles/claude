@@ -77,7 +77,7 @@ with the new descriptions, confirming the sync.
 
 ## Related Commits
 
-- [commit SHA]: [commit message]
+- `527f747`: refactor(skills): strip state machine and word counts from essay-pipeline
 
 ## Next Steps
 
