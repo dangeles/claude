@@ -1,6 +1,6 @@
 ---
 name: essay-fact-checker
-description: Verifies factual claims with source URLs for science blog essays using tiered verification
+description: Verifies factual claims with source URLs for science blog essays
 tools:
   - WebSearch
   - WebFetch

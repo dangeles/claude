@@ -6,7 +6,7 @@ description: >
   Use when factual claims in a science blog essay need verification with source
   URLs, or when proactive research enrichment would strengthen an argument.
 success_criteria:
-  - All factual claims receive a verification status (verified, unverified, partial, contested, deferred)
+  - Every claim sent comes back with a verification status
   - Verified claims include at least one source URL
   - Source URLs are accessible and support the claim
   - Contradictory sources are reported with both sides
@@ -22,11 +22,11 @@ Announce: "I'm using the essay-fact-checker skill for claim verification."
 
 You ONLY verify factual claims and provide source URLs. You do NOT write prose, develop arguments, structure essays, or evaluate voice consistency. You receive claims from the essay-pipeline orchestrator and return structured verification results.
 
-## Tiered Verification System
+## What you do
 
-### Tier 1: Inline Verification (Default)
+### Verification (the default)
 
-Standard claim-by-claim verification. Used for every factual claim during Stages 3 and 4.
+Claim-by-claim verification of the factual claims the orchestrator sends you.
 
 **Process:**
 1. Receive claim text and context
@@ -46,9 +46,9 @@ Standard claim-by-claim verification. Used for every factual claim during Stages
 - `interpretive`: Interpretive or analytical claim; not subject to factual verification
 - `policy`: Policy position or value judgment; not subject to factual verification
 
-### Tier 2: Proactive Research Enrichment
+### Research enrichment (on request)
 
-Search for data, statistics, examples, or studies that could strengthen an argument. Used during Stage 3 when the orchestrator requests enrichment.
+Search for data, statistics, examples, or studies that could strengthen an argument, when the orchestrator asks for it.
 
 **Process:**
 1. Receive argument context and enrichment request
@@ -58,16 +58,11 @@ Search for data, statistics, examples, or studies that could strengthen an argum
 
 **Output clearly labeled as "enrichment, not required" -- the user decides whether to incorporate.**
 
-### Tier 3: Deep Research Escalation
+### Escalation
 
-When a topic requires literature-level research beyond what WebSearch can provide.
-
-**Process:**
-1. Assess the depth of research needed
-2. Report that Tier 3 research is needed with a description of what to investigate
-3. The orchestrator handles the escalation (handoff to literature-researcher or user decision)
-
-**You do NOT perform Tier 3 research yourself. You identify the need and report it.**
+When a topic needs literature-level research beyond what WebSearch can reach, say so and
+describe what should be investigated. The orchestrator decides whether to hand off to
+`literature-researcher`. You don't do that depth of research yourself.
 
 ## Input Format
 
@@ -77,11 +72,9 @@ You receive claims as a structured list. Each claim includes:
 claims:
   - claim_text: "Off-target editing rates dropped from ~5% to <0.1% between 2015-2024"
     context: "Section 3: The Delivery Problem - historical argument about precision improvement"
-    tier: 1
     existing_sources: []
   - claim_text: "Only 3 of 15 CRISPR clinical trials met primary endpoints by 2024"
     context: "Section 3: The Delivery Problem - clinical outcomes data"
-    tier: 1
     existing_sources:
       - url: "https://doi.org/10.1038/example"
         title: "Nature Medicine 2024 Review"
@@ -111,7 +104,7 @@ results:
     suggested_revision: "4 of 17 CRISPR clinical trials had met their primary endpoints by early 2024"
 ```
 
-For enrichment (Tier 2):
+For enrichment requests:
 
 ```yaml
 enrichments:
@@ -186,7 +179,7 @@ Before verifying, classify each claim:
 
 | Category | Action | Example |
 |----------|--------|---------|
-| Factual | Verify (Tier 1) | "Off-target rates dropped 50-fold" |
+| Factual | Verify | "Off-target rates dropped 50-fold" |
 | Interpretive | Skip verification | "This represents a paradigm shift" |
 | Personal | Exempt | "In my experience working with CRISPR..." |
 | Policy | Exempt | "We should increase funding for delivery research" |
