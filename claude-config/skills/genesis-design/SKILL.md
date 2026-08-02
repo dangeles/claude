@@ -7,9 +7,12 @@ description: >
   genesis.bio — or when a design question needs the house answer: colour,
   contrast, type scale, layout, focus rings, chart palettes, alt text, voice.
   Triggers on CSS work in ~/repos/white_papers, ~/repos/papers or ~/repos/kol,
-  on any tokens.css or Genesis stylesheet, and on "what colour should", "is
-  this accessible", "how many series", "which font size", "what is the focus
-  ring". NOT for non-Genesis web work, and NOT for editing the guidelines
+  on any tokens.css or Genesis stylesheet, on greenfield work for a Genesis
+  surface ("build a landing page for", "new page on genesis.bio", "a deck
+  for"), and on "what colour should", "is this accessible", "how many
+  series", "which font size", "what is the focus ring". Pair it with
+  frontend-design, which builds the interface while this supplies the house
+  rules. NOT for non-Genesis web work, and NOT for editing the guidelines
   repository itself (that has its own CLAUDE.md).
 categories:
   - design-system
@@ -17,6 +20,7 @@ categories:
 handoff:
   accepts_from:
     - web-presence-manager
+    - frontend-design
 ---
 
 # Genesis design system
@@ -135,8 +139,9 @@ findings; open a guideline only when a finding needs its reasoning. For a narrow
 - **Non-Genesis web work.** A generic React app is not a Genesis surface.
 - **Editing `~/repos/aesthetic_and_web_guidelines` itself** — it has its own CLAUDE.md and a
   stricter contract, including a pre-commit checker you must not bypass.
-- **Chart form.** Chart type, encoding and axis treatment stay with `plotting-advisor`. What
-  comes from here is the palette, the four-series limit, `genesis.mplstyle` and
-  `genesis_palette.py`.
+- **Chart form.** Chart type, encoding and axis treatment stay with `plotting-advisor` for
+  Python figures and `dataviz` for everything else. What comes from here is the palette,
+  the four-series limit, FIG-01…FIG-04, `genesis.mplstyle` and `genesis_palette.py` — so
+  where their palette guidance and ours disagree on a Genesis surface, ours wins.
 - **Scientific content.** That is `essay-pipeline`, `latex-document-manager` or
   `papers-library`.

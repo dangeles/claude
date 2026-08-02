@@ -122,6 +122,31 @@ Three smaller review findings, all fixed:
 - `bb4582d`: feat(config): add genesis-design skill, token guard hook, and /genesis-check
 - `92d883e`: feat(config): register genesis-token-guard on Write and Edit
 
+## Follow-up, same day
+
+Two routing gaps closed after the initial ship, both surfaced by the question "what skill
+would be used to design websites, then?" — which the original set answered badly.
+
+**`frontend-design` handoff.** `genesis-design` supplies constraints and never builds
+anything; `frontend-design` (a claude-plugins-official plugin skill) is what actually
+generates interface code. They only compose if something invokes both, and nothing did:
+`accepts_from` listed only `web-presence-manager`, and the token-guard hook cannot help with
+greenfield work because there is no file to write yet. So "build genesis.bio a new landing
+page" would have reached `frontend-design` alone and missed the house rules entirely. Added
+`frontend-design` to `accepts_from`, and — since a handoff declaration alone does not affect
+triggering — named greenfield phrasings in the description.
+
+**`dataviz` boundary.** The adversarial reviewer reported that `dataviz` "does not exist",
+and the initial skill dropped it from the chart boundary on that basis. The claim was half
+right: it is not in `claude-config/`, not in `~/.claude/skills/`, and not on disk anywhere —
+it ships bundled with the CLI rather than being installed — but it is loaded and available,
+and its palette guidance genuinely overlaps FIG-01…FIG-04. Restored to the boundary
+alongside `plotting-advisor`, with precedence stated: on a Genesis surface, ours wins.
+
+The general lesson, worth more than either fix: an agent verifying a negative by searching
+the filesystem will report "does not exist" for anything the harness provides without
+installing it. Absence from disk is not absence from the session.
+
 ## Next Steps
 
 - **Correct long-term intervention, out of scope here**: generalise
