@@ -119,8 +119,8 @@ Three smaller review findings, all fixed:
 ## Related Commits
 
 - `70be339`: fix(sync): exclude session-state/ from project config sync
-- `48ee7ab`: feat(config): add genesis-design skill, token guard hook, and /genesis-check
-- `d18e1d2`: feat(config): register genesis-token-guard on Write and Edit
+- `bb4582d`: feat(config): add genesis-design skill, token guard hook, and /genesis-check
+- `92d883e`: feat(config): register genesis-token-guard on Write and Edit
 
 ## Next Steps
 
