@@ -51,6 +51,7 @@ exclusions:
   - "tasks/"                     # Task tracking
   - "todos/"                     # Todo items
   - "session-env/"               # Session environment
+  - "session-state/"             # Per-session hook markers (session-start-context.py) — ephemeral
   - "shell-snapshots/"           # Shell state
   - "stats-cache.json"           # Usage statistics
   - "statsig/"                   # Analytics
