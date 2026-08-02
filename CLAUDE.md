@@ -1,6 +1,6 @@
 # Claude Code config repo
 
-Source of truth for global `~/.claude/` configuration: 55 skills, custom agents, hooks, plugin enable flags. Synced via `sync-config.py`.
+Source of truth for global `~/.claude/` configuration: 58 skills, custom agents, hooks, slash commands, plugin enable flags. Synced via `sync-config.py`.
 
 ## Core invariant
 
@@ -34,6 +34,8 @@ If push refuses, fix the source, don't bypass.
 |---|---|
 | `claude-config/skills/` | All skills (synced bidirectionally with `~/.claude/skills/`) |
 | `claude-config/agents/` | Custom agents (synced with `~/.claude/agents/`) |
+| `claude-config/commands/` | Slash commands (synced with `~/.claude/commands/`) |
+| `claude-config/hooks/` | Hook scripts; exec bit is preserved on push |
 | `claude-config/settings.json` | Plugin enable/disable flags |
 | `claude-config/plugins/installed_plugins.json` | Plugin version pinning |
 | `claude-config/skills/CHANGELOG.md` | Skill-level change history |

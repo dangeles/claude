@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _hook_lib import iter_tool_uses, report  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 GATED_PATH_PATTERN = re.compile(
-    r"claude-config/(?:skills/|agents/|hooks/|settings\.json|plugins/)"
+    r"claude-config/(?:skills/|agents/|hooks/|commands/|settings\.json|plugins/)"
 )
 PLANNING_ENTRY_PATTERN = re.compile(r"planning/[^/]+/.+\.md$")
 EXPECTED_REPO_BASENAME = "claude"

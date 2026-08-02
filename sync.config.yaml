@@ -39,6 +39,9 @@ sync_rules:
     - path: "hooks/"
       description: "PreToolUse/PostToolUse hook scripts (executable)"
 
+    - path: "commands/"
+      description: "Slash commands"
+
 # Exclusions (machine-specific/temporary)
 exclusions:
   - "settings.local.json"        # Machine-specific permissions
