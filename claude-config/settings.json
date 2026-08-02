@@ -29,6 +29,10 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/skill-frontmatter-validator.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/genesis-token-guard.py"
           }
         ]
       },
@@ -42,6 +46,10 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/skill-frontmatter-validator.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/genesis-token-guard.py"
           }
         ]
       },
