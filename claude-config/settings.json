@@ -81,6 +81,15 @@
             "command": "$HOME/.claude/hooks/scratch-redirect-suggest.py"
           }
         ]
+      },
+      {
+        "matcher": "Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/read-burst-nudge.py"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -107,6 +116,10 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/claude-md-improver-suggest.py"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/context-budget-warn.py"
           }
         ]
       }

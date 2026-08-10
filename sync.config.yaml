@@ -27,6 +27,9 @@ sync_rules:
     - path: "settings.json"
       description: "Plugin enable/disable flags"
 
+    - path: "CLAUDE.md"
+      description: "User-level working policy (loaded in every session, every repo)"
+
     - path: "plugins/installed_plugins.json"
       description: "Plugin versions for reproducibility"
 
