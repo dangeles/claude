@@ -110,7 +110,7 @@ both bypasses, `git commit` staged-path checking.
 
 ## Related Commits
 
-- [pending]: fix(hooks): expand untracked dirs and drop non-paths in session-scope-guard
+- da7cf19: fix(hooks): expand untracked dirs and drop non-paths in session-scope-guard
 
 ## Next Steps
 
