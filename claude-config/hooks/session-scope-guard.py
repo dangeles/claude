@@ -67,10 +67,16 @@ BASH_MUTATIONS_SINGLE = [
     (re.compile(r"\btee\s+(?:-[a-zA-Z]+\s+)*([^\s].*?)(?:&&|;|\|\||\||$)", re.DOTALL), "non-flag"),
     # sed -i ... <file>: the last token after the sed expression.
     (re.compile(r"\bsed\s+-i(?:\s*'[^']*')?\s+\S+\s+(\S+)", re.DOTALL), "first"),
-    # Shell redirects target a single path.
-    (re.compile(r"(?:^|[\s;&|])>\s*(\S+)"), "first"),
-    (re.compile(r"(?:^|[\s;&|])>>\s*(\S+)"), "first"),
+    # Shell redirects target a single path. The first captured char must not be
+    # `=`, `&`, `<`, or `>`: without that, a comparison inside a quoted string
+    # (`echo "count >=1"`) parses as a redirect to a file named `=1`, and `>&2`
+    # parses as a redirect to `2`. Both polluted the session set.
+    (re.compile(r"(?:^|[\s;&|])>>?\s*([^\s=&<>]\S*)"), "first"),
 ]
+
+# Redirect targets that are never real files. `/dev/null` in particular shows up
+# in almost every diagnostic command and is the single largest source of noise.
+NON_FILE_PATHS = re.compile(r"^/dev/(null|stdout|stderr|tty|fd/\d+|std(in|out|err))$")
 
 
 def block(message: str) -> int:
@@ -103,28 +109,59 @@ def get_repo_root() -> str | None:
         return None
 
 
+def is_stageable(path: str, repo_root: str | None) -> bool:
+    """True if `path` is something git could plausibly stage in this repo.
+
+    The session set is only ever compared against staged/added paths, which are
+    always repo-relative, so entries that can never match are pure noise — and
+    that noise is user-visible, because the block message prints the set. Three
+    kinds get dropped:
+
+      - device pseudo-files (`/dev/null` and friends)
+      - shell fragments that survived regex parsing (`=1`, `&2`)
+      - absolute paths outside the repo (`/tmp/scratch.py`)
+    """
+    if not path:
+        return False
+    if NON_FILE_PATHS.match(path):
+        return False
+    if path[0] in "=&<>|":
+        return False
+    # canonicalize() rewrites in-repo absolutes to relative form, so anything
+    # still absolute here lives outside the repo and cannot be staged.
+    if path.startswith("/") and repo_root:
+        return False
+    return True
+
+
 def derive_session_files(transcript_path: str, repo_root: str | None) -> set[str]:
     """Walk transcript JSONL and collect paths Claude has touched.
 
     Walks the main transcript plus any subagent transcripts, so files
     edited by dispatched agents (Task tool) are recognized as
     session-modified. See _session_transcripts().
+
+    Entries that git could never stage are filtered out — see is_stageable().
     """
     files: set[str] = set()
+
+    def add(raw: str) -> None:
+        if not raw:
+            return
+        p = canonicalize(raw, repo_root)
+        if is_stageable(p, repo_root):
+            files.add(p)
+
     for tp in _session_transcripts(transcript_path):
         for name, inp in iter_tool_uses(tp):
             if name in ("Write", "Edit"):
-                p = inp.get("file_path") or ""
-                if p:
-                    files.add(canonicalize(p, repo_root))
+                add(inp.get("file_path") or "")
             elif name == "NotebookEdit":
-                p = inp.get("notebook_path") or ""
-                if p:
-                    files.add(canonicalize(p, repo_root))
+                add(inp.get("notebook_path") or "")
             elif name == "Bash":
                 cmd = inp.get("command", "") or ""
                 for p in _extract_bash_mutation_paths(cmd):
-                    files.add(canonicalize(p, repo_root))
+                    add(p)
     return files
 
 
@@ -315,10 +352,16 @@ def expand_path_for_session_check(
     if not is_dir_arg:
         return [path]
     try:
+        # `-uall` is load-bearing: without it porcelain collapses an untracked
+        # directory into one `?? tools/` line instead of listing the files
+        # inside it. The directory itself is never in the session set, so the
+        # collapsed form made `git add tools/` unblockable-by-design fail even
+        # when every file under it was session-modified.
+        #
         # Use rstrip("\n") (not strip()) so we don't drop the leading
         # space that porcelain emits for unstaged-modified files (" M path").
         out = subprocess.check_output(
-            ["git", "status", "--porcelain", "--", path.rstrip("/")],
+            ["git", "status", "--porcelain", "-uall", "--", path.rstrip("/")],
             text=True,
             stderr=subprocess.DEVNULL,
         ).rstrip("\n")
@@ -336,7 +379,10 @@ def expand_path_for_session_check(
         if " -> " in rest:
             rest = rest.split(" -> ", 1)[1]
         expanded.append(rest.strip().strip('"'))
-    return expanded if expanded else [path]
+    # A directory with nothing dirty under it stages nothing, so there is
+    # nothing to check. Returning [path] here would hand the caller a
+    # directory name that can never be in the session set, i.e. a false block.
+    return expanded
 
 
 def _looks_like_dir(path: str, repo_root: str | None) -> bool:
