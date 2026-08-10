@@ -104,7 +104,7 @@ been exactly the untracked drift this repo exists to prevent.
 
 ## Related Commits
 
-- [pending]: feat(config): add user-level CLAUDE.md policy and context-hygiene hooks
+- 33ee139: feat(config): add user-level CLAUDE.md policy, context hygiene hooks, token report
 
 ## Next Steps
 

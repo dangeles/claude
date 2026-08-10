@@ -109,7 +109,7 @@ On-invoke skill cost is modest (median SKILL.md ~3.2K tokens, worst `programming
 
 ## Related Commits
 
-- [pending]: config(agents): tier agent models and correct model-dispatch guidance
+- e29c1cb: config(agents): tier agent models and correct model-dispatch guidance
 
 ## Next Steps
 
