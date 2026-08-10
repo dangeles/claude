@@ -1,6 +1,7 @@
 ---
 name: pov-perspective-analyst
 description: Generates structured perspective reports from assigned domains, identifying analogous problems, solutions, and transfer barriers using structure-mapping principles.
+model: sonnet
 ---
 
 # POV-Perspective-Analyst: Domain Perspective Generation

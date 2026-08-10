@@ -4,7 +4,7 @@ description: Synthesizes all review outputs into prioritized action items, conte
 tools:
   - Read
   - Write
-model: opus
+model: sonnet
 permissionMode: default
 ---
 

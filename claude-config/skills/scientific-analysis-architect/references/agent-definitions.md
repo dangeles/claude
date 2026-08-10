@@ -4,23 +4,23 @@
 
 | Agent | Model | Phase | Role |
 |-------|-------|-------|------|
-| research-architect | Sonnet 4.5 | 1 | Primary orchestrator, creates research structure |
-| analysis-brainstormer | Haiku | 1 | Analysis suggestions when uncertainty detected |
-| method-brainstormer | Haiku | 1 | Method suggestions when uncertainty detected |
-| analysis-planner | Sonnet 4.5 | 2 | Subsection planning, spawns expert panel |
-| statistician-consultant | Haiku | 2 | Statistical validation (critical) |
-| mathematician-consultant | Haiku | 2 | Algorithm design (optional) |
-| programmer-consultant | Haiku | 2 | Data requirements (optional) |
-| structure-reviewer | Haiku | 3 | Completeness review |
-| notebook-reviewer | Sonnet 4.5 | 4 | Plan quality review (parallel per chapter) |
-| notebook-generator | Sonnet 4.5 | 5 | Analysis document (.md) creation (parallel per chapter) |
-| statistical-fact-checker | Sonnet 4.5 | 6 | Interview-mode statistical review |
+| research-architect | `sonnet` | 1 | Primary orchestrator, creates research structure |
+| analysis-brainstormer | `haiku` | 1 | Analysis suggestions when uncertainty detected |
+| method-brainstormer | `haiku` | 1 | Method suggestions when uncertainty detected |
+| analysis-planner | `sonnet` | 2 | Subsection planning, spawns expert panel |
+| statistician-consultant | `haiku` | 2 | Statistical validation (critical) |
+| mathematician-consultant | `haiku` | 2 | Algorithm design (optional) |
+| programmer-consultant | `haiku` | 2 | Data requirements (optional) |
+| structure-reviewer | `haiku` | 3 | Completeness review |
+| notebook-reviewer | `sonnet` | 4 | Plan quality review (parallel per chapter) |
+| notebook-generator | `sonnet` | 5 | Analysis document (.md) creation (parallel per chapter) |
+| statistical-fact-checker | `sonnet` | 6 | Interview-mode statistical review |
 
 ## Agent Details
 
 ### research-architect
 
-**Model**: Claude Sonnet 4.5
+**Model**: `sonnet`
 **Phase**: 1 (Birds-Eye Planning)
 **Criticality**: Critical
 
@@ -102,7 +102,7 @@ Include pros/cons for each.
 
 ### analysis-planner
 
-**Model**: Claude Sonnet 4.5
+**Model**: `sonnet`
 **Phase**: 2 (Subsection Planning)
 **Criticality**: Critical
 
@@ -260,7 +260,7 @@ Generate a review report with issues categorized by severity.
 
 ### notebook-reviewer
 
-**Model**: Claude Sonnet 4.5
+**Model**: `sonnet`
 **Phase**: 4 (Notebook Review)
 **Criticality**: Critical
 
@@ -292,7 +292,7 @@ Generate issues categorized as Critical, Major, or Minor.
 
 ### notebook-generator
 
-**Model**: Claude Sonnet 4.5
+**Model**: `sonnet`
 **Phase**: 5 (Document Generation)
 **Criticality**: Critical
 
@@ -337,7 +337,7 @@ Pseudocode detail levels:
 
 ### statistical-fact-checker
 
-**Model**: Claude Sonnet 4.5
+**Model**: `sonnet`
 **Phase**: 6 (Statistical Fact-Checking)
 **Criticality**: Critical
 

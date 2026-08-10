@@ -5,7 +5,7 @@ tools:
   - WebSearch
   - WebFetch
   - Read
-model: opus
+model: sonnet
 permissionMode: default
 skills:
   - essay-fact-checker

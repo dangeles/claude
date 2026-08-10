@@ -115,18 +115,11 @@ On any fallback: log `grouping_method: jaccard_fallback` in `workflow-state.yaml
 
 **Fallback Escalation Chain**:
 
-Current (Task tool inherits model):
+Pass `model` explicitly on the grouping call; do not inherit.
 ```
-Orchestrator model inline (primary)
-  -> retry with orchestrator model (1x, 5-second delay)
-  -> Jaccard keyword overlap (deterministic)
-```
-
-Target (when Task tool supports model selection):
-```
-Haiku 4.5 (primary)
-  -> retry Haiku 4.5 (1x, 5-second delay)
-  -> Sonnet 4.5 (1x escalation)
+haiku (primary)
+  -> retry haiku (1x, 5-second delay)
+  -> sonnet (1x escalation)
   -> Jaccard keyword overlap (deterministic)
 ```
 

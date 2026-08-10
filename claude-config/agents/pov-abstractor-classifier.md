@@ -1,6 +1,7 @@
 ---
 name: pov-abstractor-classifier
 description: Performs problem abstraction using Rasmussen's hierarchy and classifies analogous domains by distance (Near/Mid/Far).
+model: sonnet
 ---
 
 # POV-Abstractor-Classifier: Problem Abstraction and Domain Classification

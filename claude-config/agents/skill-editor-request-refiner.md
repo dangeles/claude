@@ -8,7 +8,7 @@ tools:
   - AskUserQuestion
   - Write
   - Bash
-model: opus
+model: sonnet
 permissionMode: default
 skills:
   - requirements-analyst

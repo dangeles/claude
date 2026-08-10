@@ -7,7 +7,7 @@ tools:
   - Bash
   - Grep
   - Glob
-model: opus
+model: sonnet
 permissionMode: default
 skills:
   - edge-case-analyst

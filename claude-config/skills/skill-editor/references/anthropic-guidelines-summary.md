@@ -503,17 +503,29 @@ for this repo's bioinformatics and research skills.
 
 **Agent Model Selection:**
 
-```json
-{
-  "name": "skill-editor-executor",
-  "model": "opus"  // All agents use Opus
-}
+Every agent definition sets `model:` deliberately. Do **not** default to Opus — that
+doctrine produced 27 Opus-pinned agents and 99.5% of this repo's lifetime output tokens on
+the top tier. Match the tier to the work:
 
-{
-  "name": "skill-editor-adversarial-reviewer",
-  "model": "opus"  // Critical decision = Opus
-}
+- `opus` — orchestrators, authoring, and final go/no-go judgment
+- `sonnet` — review, analysis, structured generation against clear criteria
+- `haiku` — mechanical scans and audits against explicit rules
+- `inherit` — only when the agent should track whatever the session is running
+
+Weigh fan-out too: an agent dispatched N-at-a-time multiplies its tier's cost N times.
+
+```yaml
+# Mechanical execution of an already-approved plan.
+name: skill-editor-executor
+model: sonnet
+
+# Final go/no-go gate — judgment is the whole product.
+name: skill-editor-adversarial-reviewer
+model: opus
 ```
+
+Use the tier aliases (`opus`/`sonnet`/`haiku`/`inherit`), never pinned version IDs; pinned
+IDs across this repo went stale twice.
 
 ## Accessibility and Documentation
 

@@ -1,6 +1,7 @@
 ---
 name: pov-synthesizer
 description: Performs convergence analysis across perspective reports and synthesizes findings into coherent narrative with actionable insights.
+model: opus
 ---
 
 # POV-Synthesizer: Convergence Analysis and Master Synthesis

@@ -1,6 +1,7 @@
 ---
 name: library-pm
 description: Orchestrates the archive-workflow multi-agent project organization pipeline across the clutter, nomenclature, structure, and expandability analysts plus the decision integrator
+model: opus
 role: orchestrator
 permissions: dispatch, coordinate
 ---

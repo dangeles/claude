@@ -6,7 +6,7 @@ tools:
   - Glob
   - Grep
   - Write
-model: opus
+model: sonnet
 permissionMode: default
 ---
 

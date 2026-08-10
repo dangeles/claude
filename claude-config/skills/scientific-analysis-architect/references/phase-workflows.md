@@ -27,7 +27,7 @@ Ask for the output directory (default: current working directory) and validate i
 
 ## Phase 1: Birds-Eye Planning
 
-Owner: research-architect (Sonnet 4.6).
+Owner: research-architect (`sonnet`).
 
 Ask the user: "Please describe your dataset and research goals. Include: data type (RNA-seq, proteomics, imaging, etc.), sample size and conditions, main research questions."
 
@@ -69,7 +69,7 @@ Then write `research-structure.md` with 3-7 chapters, each with a title, goal, l
 
 ## Phase 2: Subsection Planning
 
-Owner: analysis-planner (Sonnet 4.6).
+Owner: analysis-planner (`sonnet`).
 
 Read `research-structure.md`, then per chapter fan out to the expert panel in one message so they run concurrently, and aggregate their returns into `chapter{N}-notebook-plans.md`.
 
@@ -87,7 +87,7 @@ When consultants disagree, put the conflict to the user with each position rathe
 
 ## Phase 3: Structure Review
 
-Owner: structure-reviewer (Haiku).
+Owner: structure-reviewer (`haiku`).
 
 Read `research-structure.md` and all chapter plans and check for missing dependencies, redundant analyses, logical flow problems, incomplete specifications, and missing quality controls. Categorize by severity — critical (blocks execution), major (affects quality), minor (improvement opportunity) — and write `structure-review-report.md`.
 
@@ -99,7 +99,7 @@ Present user approval gate 1 with the chapter count, analysis count, issue count
 
 ## Phase 4: Plan Review
 
-Owner: notebook-reviewer (Sonnet 4.6), one per chapter in parallel.
+Owner: notebook-reviewer (`sonnet`), one per chapter in parallel.
 
 Each reviewer gets the chapter plan content and checks pseudocode completeness, statistical correctness, data flow consistency, and edge case coverage. Aggregate into `notebook-review-report.md`, proceeding with available reviews if some fail.
 
@@ -164,7 +164,7 @@ Code block rules: triple backticks with the `python` language identifier, never 
 
 ## Phase 6: Statistical Fact-Checking
 
-Owner: statistical-fact-checker (Sonnet 4.6).
+Owner: statistical-fact-checker (`sonnet`).
 
 Read all generated analysis documents and look for test mismatches, multiple testing issues, interpretation errors, assumption violations, and effect size gaps. Categorize by severity — critical (incorrect conclusions), standard (best practice violation), minor (improvement opportunity).
 

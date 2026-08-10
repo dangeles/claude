@@ -1,6 +1,7 @@
 ---
 name: archive-structure-organizer
 description: Proposes target directory structure and migration plan based on project-type templates for the archive-workflow skill
+model: haiku
 role: analyst
 permissions: READ-ONLY
 ---

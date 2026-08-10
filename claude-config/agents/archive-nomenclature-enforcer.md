@@ -1,6 +1,7 @@
 ---
 name: archive-nomenclature-enforcer
 description: Audits file and directory naming against project-type conventions; produces a naming violations report for the archive-workflow skill
+model: haiku
 role: analyst
 permissions: READ-ONLY
 ---

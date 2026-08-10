@@ -3,7 +3,7 @@ name: essay-voice-matcher
 description: Reads text and says whether it sounds like the user, against their style profile and sample essays
 tools:
   - Read
-model: opus
+model: sonnet
 permissionMode: default
 skills:
   - essay-voice-matcher

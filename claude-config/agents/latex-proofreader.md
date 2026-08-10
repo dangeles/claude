@@ -4,7 +4,7 @@ description: Proofreads LaTeX documents for prose quality and inline syntax corr
 tools:
   - Read
   - Bash
-model: opus
+model: sonnet
 permissionMode: default
 ---
 

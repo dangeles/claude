@@ -1,6 +1,7 @@
 ---
 name: pov-expansion-pm
 description: Orchestrates the 11-stage POV expansion pipeline, coordinating perspective generation, convergence tracking, and synthesis across specialist agents.
+model: opus
 ---
 
 # POV-Expansion PM: Workflow Orchestrator

@@ -2,88 +2,88 @@
 
 ## Overview
 
-This document provides model selection guidance for each component of the brainstorming-pm workflow. These recommendations are **advisory, not enforced** -- the orchestrator functions correctly with any single model. The guidance exists to inform future optimization when the Task tool supports explicit model selection.
+Model selection for each component of the brainstorming-pm workflow. These are
+**enforced, not advisory**: pass `model` explicitly on every dispatch. A component that
+inherits silently runs at the session's tier, which for an Opus session means five
+parallel perspective agents on Opus — the most expensive thing this workflow does.
 
-These recommendations apply to the Claude 4.5 model family. Future model releases may warrant re-evaluation. The primary optimization axis is cost-efficiency: use the most capable model only where reasoning complexity demands it.
+Use the tier aliases `opus` / `sonnet` / `haiku` rather than pinned version IDs. This
+document previously pinned the 4.5 family and went stale twice; aliases track the current
+generation on their own.
 
-## Current Behavior
+The optimization axis is cost-efficiency: reach for the most capable tier only where
+reasoning complexity demands it.
 
-As of 2026-02, the Claude Code Task tool does not support explicit model selection. All components inherit the orchestrator's model.
+## Assignments
 
-| Component | Model Used | Why |
-|-----------|-----------|-----|
-| All components | Orchestrator model (inherited) | Task tool does not support a `model` parameter; all spawned tasks run the same model as the caller |
+| Component | Model | Rationale | Fallback |
+|-----------|-------|-----------|----------|
+| Orchestrator (brainstorming-pm) | `inherit` | Framing, quality gates, conflict resolution, user communication | n/a — runs at session tier |
+| Perspective Agents (Stage 2) | `sonnet` | Well-bounded structured output, 5x concurrent makes cost dominate | `opus` (higher quality, ~5x cost) |
+| LLM Grouping (Stage 3) | `haiku` | Mechanical clustering of 5 short snippets under a JSON schema | `sonnet` if groupings are low-quality |
+| Workflow Discovery | n/a | File-system scan, no LLM involved | n/a |
+| Relevance Scoring | inline | Simple scoring, no separate call needed | n/a |
 
-This means the fallback chains described below reduce to: orchestrator model inline -> retry -> Jaccard.
+## How to pass it
 
-## Target Architecture
+The Agent/Task tool takes a `model` parameter, and agent definitions take a `model:`
+frontmatter field (`inherit` / `sonnet` / `opus` / `haiku`). The tool parameter takes
+precedence over frontmatter, so an orchestrator can override a general-purpose agent
+per-dispatch:
 
-When the Task tool gains model selection support, the following component-level recommendations apply:
+```
+Agent(model="sonnet", subagent_type="pov-perspective-analyst", prompt="...")
+Agent(model="haiku", prompt="Cluster these 5 snippets, return only JSON matching ...")
+```
 
-| Component | Recommended Model | Rationale | Fallback |
-|-----------|------------------|-----------|----------|
-| Orchestrator (brainstorming-pm) | Claude Opus 4.5 | Best reasoning for framing, quality gates, conflict resolution | Claude Sonnet 4.5 (slightly reduced quality gate precision) |
-| Perspective Agents (Stage 2) | Claude Sonnet 4.5 | Good balance of speed and quality for parallel agents; 5x concurrent makes cost-efficiency important | Claude Opus 4.5 (higher quality but slower, more expensive) |
-| LLM Grouping (Stage 3) | Claude Haiku 4.5 | Fast, low-cost; sufficient for semantic clustering of 5 short texts; JSON schema enforcement reliable | Claude Sonnet 4.5 (if Haiku produces low-quality groupings) |
-| Workflow Discovery | N/A (file-system scan) | No LLM involved | N/A |
-| Relevance Scoring | Orchestrator model (inline) | Simple scoring logic, no separate call needed | N/A |
+When a dedicated agent definition exists and always wants the same tier, set it in that
+agent's frontmatter instead and omit the parameter.
 
 ## Rationale Details
 
-### Perspective Agents (Sonnet 4.5)
+### Perspective Agents (`sonnet`)
 
-The perspective generation task is well-bounded: ~2000 token target, structured output format, 1-2 web searches per agent. Sonnet 4.5 handles this reliably. Running 5 Opus 4.5 agents in parallel would be approximately 5x more expensive with marginal quality improvement for this specific task type. The structured output format (key insight, evidence, confidence, blind spots) constrains the task sufficiently that the additional reasoning depth of Opus provides diminishing returns.
+The perspective generation task is well-bounded: ~2000 token target, structured output
+format, 1-2 web searches per agent. Sonnet handles this reliably. Running five Opus agents
+in parallel costs roughly 5x for marginal quality gain here — the structured output format
+(key insight, evidence, confidence, blind spots) constrains the task enough that Opus's
+additional reasoning depth hits diminishing returns.
 
-### LLM Grouping (Haiku 4.5)
+### LLM Grouping (`haiku`)
 
-The grouping task clusters 5 short text snippets (each 1-2 sentences) by thematic similarity. This is well within Haiku's capabilities. The JSON schema enforcement ensures structured output regardless of model tier. Typical expected latency: <2 seconds. The grouping prompt includes explicit "Return ONLY valid JSON" instructions and a schema definition, making the task mechanical rather than requiring deep reasoning.
+The grouping task clusters 5 short text snippets (each 1-2 sentences) by thematic
+similarity, well within Haiku's range. Schema enforcement guarantees structured output
+regardless of tier, and the prompt is explicit ("Return ONLY valid JSON" plus a schema),
+making the task mechanical rather than reasoning-heavy. Typical latency: <2 seconds.
 
-### Orchestrator (Opus 4.5)
+### Orchestrator (`inherit`)
 
-The orchestrator makes judgment calls throughout the workflow: framing quality assessment, conflict resolution during synthesis, quality gate evaluation, and user communication. These tasks benefit from the strongest reasoning model. The orchestrator runs once per session as a single long-lived process, so the cost premium of Opus over Sonnet is amortized across the entire 15-30 minute workflow.
+The orchestrator makes judgment calls throughout: framing quality assessment, conflict
+resolution during synthesis, quality gate evaluation, user communication. These benefit
+from the strongest tier available. It runs once per session as a single long-lived process,
+so its cost premium is amortized across the whole 15-30 minute workflow — which is exactly
+why it is the one component worth leaving at the session tier.
 
-## Fallback Escalation Chains
+## Fallback Escalation Chain
 
-### Current (Task tool inherits model)
+For LLM grouping:
 
 ```
-Orchestrator model inline (primary)
-  -> retry with orchestrator model (1x, 5-second delay)
-  -> Jaccard keyword overlap (deterministic fallback)
-```
-
-### Target (when Task tool supports model selection)
-
-```
-Haiku 4.5 (primary)
-  -> retry Haiku 4.5 (1x, 5-second delay)
-  -> Sonnet 4.5 (1x escalation)
+haiku (primary)
+  -> retry haiku (1x, 5-second delay)
+  -> sonnet (1x escalation)
   -> Jaccard keyword overlap (deterministic fallback)
 ```
 
 ### Fallback Triggers
 
-Fallback is triggered per-component, not globally. See `../perspective-swarm/references/convergence-algorithm.md` (Step 2a) for the complete list of fallback trigger conditions for LLM grouping.
+Fallback is triggered per-component, not globally. See
+`../../perspective-swarm/references/convergence-algorithm.md` (Step 2a) for the complete
+list of fallback trigger conditions for LLM grouping.
 
-For perspective agents: if an agent produces empty or malformed output, retry with the same model (do not escalate to a higher-tier model). Agent failures are handled by the Stage 2 minimum-agents protocol (>= 4 of 5 required).
-
-## Future: Task Tool Model Parameter
-
-When model selection becomes available in the Task tool, update Stage 2 Task invocations to specify the recommended model:
-
-```
-# Placeholder syntax (not yet supported)
-Task(model="claude-sonnet-4-5", prompt="...", ...)
-```
-
-And update Stage 3 grouping to use:
-
-```
-# Placeholder syntax (not yet supported)
-Task(model="claude-haiku-4-5", prompt="...", ...)
-```
-
-Until then, all components use the orchestrator's inherited model, and the "Current" fallback chain applies.
+For perspective agents: if an agent produces empty or malformed output, retry at the same
+tier rather than escalating. Agent failures are handled by the Stage 2 minimum-agents
+protocol (>= 4 of 5 required).
 
 ## References
 

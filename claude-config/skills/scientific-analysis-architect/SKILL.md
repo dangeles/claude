@@ -54,15 +54,20 @@ If a required specialist is unavailable, stop and tell the user rather than doin
 | Phase | Owner | Deliverable |
 |-------|-------|-------------|
 | 0: Initialization | orchestrator | Session directory, validated output directory, `session-state.json` |
-| 1: Birds-eye planning | research-architect (Sonnet 4.6) | `research-structure.md` (3-7 chapters) |
-| 2: Subsection planning | analysis-planner (Sonnet 4.6) + 3 consultants | `chapter{N}-notebook-plans.md` |
-| 3: Structure review | structure-reviewer (Haiku) | `structure-review-report.md` -> user approval gate 1 |
-| 4: Plan review | notebook-reviewer (Sonnet 4.6), parallel | `notebook-review-report.md` -> user approval gate 2 |
+| 1: Birds-eye planning | research-architect (`sonnet`) | `research-structure.md` (3-7 chapters) |
+| 2: Subsection planning | analysis-planner (`sonnet`) + 3 consultants | `chapter{N}-notebook-plans.md` |
+| 3: Structure review | structure-reviewer (`haiku`) | `structure-review-report.md` -> user approval gate 1 |
+| 4: Plan review | notebook-reviewer (`sonnet`), parallel | `notebook-review-report.md` -> user approval gate 2 |
 | 5: Document generation | orchestrator + notebook-generator | `analysis-strategy-overview.md` + `.md` analysis documents with pseudocode |
-| 6: Statistical fact-checking | statistical-fact-checker (Sonnet 4.6) | Corrected analysis documents, refreshed overview |
+| 6: Statistical fact-checking | statistical-fact-checker (`sonnet`) | Corrected analysis documents, refreshed overview |
 | 7: Audience documents | orchestrator | `researcher-plan.md` + `.research-architecture/{architect-handoff,engineering-translation}.md` |
 
 **Estimated Runtime**: 61-81 minutes for 3 chapters
+
+The tier in parentheses is not decorative — pass it as the `model` parameter on every
+dispatch (`Agent(model="sonnet", ...)`). These roles have no standing agent definition to
+carry a `model:` field, so an omitted parameter silently runs the whole panel at the
+session's tier. Use the aliases, not pinned version IDs.
 
 ## Phase 0: Initialization
 
@@ -74,9 +79,9 @@ Then read `~/.claude/skills/archive-workflow/references/archival-compliance-chec
 
 ## Phase 1: Birds-Eye Planning
 
-Owner: research-architect (Sonnet 4.6).
+Owner: research-architect (`sonnet`).
 
-Ask the user to describe their dataset and research goals. If the answer signals uncertainty ("not sure", "maybe"), fan out to analysis-brainstormer and method-brainstormer (Haiku 4.5) and present their suggestions before continuing. Then generate `{session_dir}/research-structure.md` with 3-7 chapters, each carrying a goal and its analyses.
+Ask the user to describe their dataset and research goals. If the answer signals uncertainty ("not sure", "maybe"), fan out to analysis-brainstormer and method-brainstormer (`haiku`) and present their suggestions before continuing. Then generate `{session_dir}/research-structure.md` with 3-7 chapters, each carrying a goal and its analyses.
 
 Biology-agnostic behavior: agents ask "What biological questions are you trying to answer?" rather than asserting "You should look at cell types".
 
@@ -84,9 +89,9 @@ Biology-agnostic behavior: agents ask "What biological questions are you trying 
 
 ## Phase 2: Subsection Planning
 
-Owner: analysis-planner (Sonnet 4.6).
+Owner: analysis-planner (`sonnet`).
 
-For each chapter, fan out to the expert panel in parallel (all Haiku): statistician-consultant for statistical approach validation, mathematician-consultant for algorithm requirements, programmer-consultant for data requirements. Aggregate their recommendations into `{session_dir}/chapter{N}-notebook-plans.md`, and put any consultant disagreement to the user rather than picking silently.
+For each chapter, fan out to the expert panel in parallel (all `haiku`): statistician-consultant for statistical approach validation, mathematician-consultant for algorithm requirements, programmer-consultant for data requirements. Aggregate their recommendations into `{session_dir}/chapter{N}-notebook-plans.md`, and put any consultant disagreement to the user rather than picking silently.
 
 On parallel failures, wait for all retries and escalate once with all failures in a single prompt. The statistician is critical; the other two are optional.
 
@@ -94,7 +99,7 @@ On parallel failures, wait for all retries and escalate once with all failures i
 
 ## Phase 3: Structure Review
 
-Owner: structure-reviewer (Haiku).
+Owner: structure-reviewer (`haiku`).
 
 Review `research-structure.md` and all chapter plans for missing dependencies, redundancies, and logical issues, and write `{session_dir}/structure-review-report.md`.
 
@@ -112,7 +117,7 @@ Approve / Request changes / Reject? [A/c/r]
 
 ## Phase 4: Plan Review
 
-Owner: notebook-reviewer (Sonnet 4.6), one per chapter in parallel.
+Owner: notebook-reviewer (`sonnet`), one per chapter in parallel.
 
 Reviewers check pseudocode completeness, statistical correctness, and data flow. Aggregate into `{session_dir}/notebook-review-report.md`.
 
@@ -159,7 +164,7 @@ If some chapters fail, offer to proceed with what is available and allow per-cha
 
 ## Phase 6: Statistical Fact-Checking
 
-Owner: statistical-fact-checker (Sonnet 4.6). Full protocol: `references/interview-protocol.md`.
+Owner: statistical-fact-checker (`sonnet`). Full protocol: `references/interview-protocol.md`.
 
 **INTERVIEW MODE**: with <= 5 concerns, present them one at a time; with more, present a summary first and offer batch options.
 

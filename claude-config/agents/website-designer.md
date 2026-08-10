@@ -5,7 +5,7 @@ tools:
   - Read
   - Bash
   - Glob
-model: opus
+model: sonnet
 permissionMode: default
 ---
 

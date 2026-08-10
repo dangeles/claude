@@ -381,13 +381,15 @@ This protocol is designed to be executed by the `brainstorming-pm` orchestrator 
 
 ## Model Selection
 
-Model selection guidance for each workflow component is documented in `brainstorming-pm/references/model-selection.md`. Summary:
+Model selection for each workflow component is documented in
+`brainstorming-pm/references/model-selection.md`. Pass `model` explicitly on every dispatch;
+do not let agents inherit. Summary:
 
-| Component | Current | Target |
-|-----------|---------|--------|
-| Orchestrator | Inherited | Claude Opus 4.5 |
-| Perspective Agents | Inherited | Claude Sonnet 4.5 |
-| LLM Grouping | Inherited (inline) | Claude Haiku 4.5 |
+| Component | Model |
+|-----------|-------|
+| Orchestrator | inherit |
+| Perspective Agents | `sonnet` |
+| LLM Grouping | `haiku` |
 
 ## Notes
 

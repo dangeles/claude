@@ -5,7 +5,7 @@ tools:
   - Read
   - Bash
   - Grep
-model: opus
+model: haiku
 permissionMode: default
 ---
 

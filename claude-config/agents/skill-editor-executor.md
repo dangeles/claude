@@ -8,7 +8,7 @@ tools:
   - Bash
   - Grep
   - Glob
-model: opus
+model: sonnet
 permissionMode: default
 skills:
   - superpowers:verification-before-completion

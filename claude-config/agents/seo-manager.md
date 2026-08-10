@@ -6,7 +6,7 @@ tools:
   - Bash
   - Glob
   - Grep
-model: opus
+model: sonnet
 permissionMode: default
 ---
 

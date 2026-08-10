@@ -1,6 +1,7 @@
 ---
 name: pov-transfer-evaluator
 description: Evaluates transfer feasibility for cross-domain analogies using structure-mapping principles and absorptive capacity framework.
+model: sonnet
 ---
 
 # POV-Transfer-Evaluator: Solution Transferability Assessment

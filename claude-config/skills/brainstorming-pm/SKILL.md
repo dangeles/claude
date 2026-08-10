@@ -90,17 +90,20 @@ You are an orchestrator. You coordinate perspective agents -- you do not generat
 
 ## Model Selection
 
-Model selection is currently advisory. All components inherit the orchestrator's model because the Task tool does not yet support explicit model selection.
+Model selection is enforced, not advisory. The Agent/Task tool takes a `model` parameter,
+so pass it explicitly rather than letting components inherit the orchestrator's model —
+five parallel perspective agents on Opus is the single most expensive thing this workflow
+can do, and the task is well-bounded enough not to need it.
 
-| Component | Current | Target |
-|-----------|---------|--------|
-| Orchestrator | Inherited | Claude Opus 4.6 |
-| Perspective Agents | Inherited | Claude Sonnet 4.6 |
-| LLM Grouping | Inherited (inline) | Claude Haiku 4.5 |
+| Component | Model | Why |
+|-----------|-------|-----|
+| Orchestrator | inherit | Framing, quality gates, and conflict resolution need the session's full capability |
+| Perspective Agents (Stage 2) | `sonnet` | Structured ~2000-token output, 5x concurrent; cost-efficiency dominates |
+| LLM Grouping (Stage 3) | `haiku` | Mechanical clustering of 5 short snippets under a JSON schema |
 
-For full rationale and fallback chains, see `references/model-selection.md`.
-
-**Note**: When the Task tool gains a `model` parameter, update Stage 2 Task invocations to specify `claude-sonnet-4-6` and Stage 3 grouping calls to specify `claude-haiku-4-5`.
+Use the tier aliases (`opus`/`sonnet`/`haiku`), not pinned version IDs — pinned IDs in this
+table went stale twice before. For rationale and fallback chains, see
+`references/model-selection.md`.
 
 ## State Anchoring
 
